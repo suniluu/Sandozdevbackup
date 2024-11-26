@@ -1,0 +1,15 @@
+order request CSS
+
+.dynamic-height-box {
+    display: flex;
+    flex-direction: column;
+}
+.button-div{
+    position: absolute; 
+    width: 95%;
+}
+.tabset-height{
+    /*overflow-y: hidden;
+    max-height: calc(100% - 80px);
+    width: 96%;*/
+}

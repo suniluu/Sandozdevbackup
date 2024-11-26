@@ -1,0 +1,62 @@
+.slds-modal__content ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.slds-modal__content{
+    --sds-c-icon-color-foreground-default: black;
+}
+
+.slds-modal__content li {
+    display: flex;
+    align-items: center;
+}
+
+.backgroundcolor {
+    --sds-c-icon-color-background:var(--slds-c-icon-color-background, rgb(27, 150, 255));
+     cursor:;
+ }
+
+ .lightning-primitive-icon{
+    color:white;
+ }
+
+.icon-success {
+    color: #4CAF50;
+}
+
+
+.icon-error {
+    color: #F44336; 
+}
+
+.icon-success-wrapper lightning-icon {
+    --sds-c-icon-color-foreground-default: green;
+}
+
+.step-label {
+    font-size: 1.2rem;
+}
+
+.design-box{
+    padding-bottom: 0.5%;
+    padding-right:1.5%;
+}
+
+.design-button{
+    background-color: rgb(27, 150, 255);
+    margin-right:0.5%;
+}
+
+.design-box2{
+    border: 2px solid #d8dde6; 
+    border-radius: 0.25rem;
+}
+
+.design-margin-right{
+    margin-right:-1%;
+}
+
+.design-padding{
+    padding: 1%;
+}

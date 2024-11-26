@@ -1,0 +1,16 @@
+.backgroundcolor {
+  background-color: var(--lwc-brandAccessible,rgb(1, 118, 211));
+    border-color: var(--lwc-brandAccessible,rgb(1, 118, 211));
+}
+.search-div{
+    padding-left: 35rem;
+}
+.search-Input{
+ 	width:20rem;
+}
+.icon-div{
+    padding-right: 1rem;
+}
+.reset-icon{
+     transform: scaleX(-1);
+}

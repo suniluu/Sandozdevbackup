@@ -1,0 +1,9 @@
+<template>
+    <template lwc:if={agreementCatelog}>
+         <c-agreement-catelog rec-id={recId}  fields={fields} ongetagreementcatelogprods={handlegetagreementcatelogprods} pre-selected-rows={preSelectedRows} ></c-agreement-catelog>
+    </template>
+    <template lwc:if={agreementSelection}>
+        <c-agreement-fast-selection   rec-id={recId}  fields={fields} ongetagreementfastprods={handlegetagreementfastprods} field-data-with-labels={fieldDataWithLabels} pre-fast-selected-rows={preFastSelectedRows} >
+        </c-agreement-fast-selection>
+    </template>
+</template>

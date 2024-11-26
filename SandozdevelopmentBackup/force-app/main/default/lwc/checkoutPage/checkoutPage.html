@@ -1,0 +1,153 @@
+<template>
+    <div  class="slds-grid slds-wrap">
+        <div class="slds-col slds-size_12-of-12 design-box">
+            <lightning-button
+                variant="destructive"
+                label="Abandon Cart"
+                title="Abandon Cart"
+                onclick={openModal}
+                class="slds-float_right design-margin-right">
+            </lightning-button>
+            <lightning-button
+                variant="brand"
+                label="Save Cart"
+                title="Save Cart"
+                onclick={handleSave}
+                class="slds-float_right design-button">
+            </lightning-button>
+            <lightning-button
+                variant="brand"
+                label="Place Order"
+                title="Place Order"
+                onclick={handleSubmit}
+                class="slds-float_right design-button">
+            </lightning-button>
+            <template if:true={cartredirectenabled.cartredirect}>
+                <lightning-button
+                    variant="brand"
+                    label="Go to Cart"
+                    title="Go to Cart"
+                    onclick={handleSubmit}
+                    class="slds-float_right design-button">
+                </lightning-button>            
+            </template>
+        </div>
+    </div>
+    <div class="slds-grid slds-wrap">
+        <div class="slds-col slds-size_8-of-12 design-box2">
+            <lightning-card icon-name="standard:medication_dispense" title="Cart Summary" variant="base">
+                <div class="design-padding">
+                    <c-product-summary-for-checkout product-data={productData}></c-product-summary-for-checkout>
+                </div>
+            </lightning-card>
+        </div>
+        <div class="slds-col slds-size_4-of-12 design-box2"> 
+            <lightning-card icon-name="standard:bundles_pricing" title="Order Details" variant="base">
+                <lightning-record-edit-form object-api-name={objectname}>
+                    <div class="slds-grid slds-wrap">
+                        <template for:each={fields} for:item="f">
+                            <div key={f.fieldName} class="slds-col slds-size_1-of-2">
+                                <lightning-input-field 
+                                field-name={f.fieldName} 
+                                onchange={handleFieldChange}
+                                value={f.value}
+                                data-field={f}>
+                            </lightning-input-field>
+                            </div>
+                        </template>
+                    </div>
+                </lightning-record-edit-form>
+            </lightning-card>            
+        </div>
+    </div>
+
+    <template if:true={isFirstModalOpen}>
+        <section role="dialog" tabindex="-1" aria-modal="true" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2 class="slds-modal__title slds-hyphenate">Order Creation Confirmation</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <p>Are you sure you want to submit the order?</p>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button variant="neutral" label="Cancel" onclick={handleModalClose}></lightning-button> &nbsp;
+                    <lightning-button variant="brand" label="Yes, Proceed" onclick={handleProceed}></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <template if:true={isSecondModalOpen}>
+        <section role="dialog" tabindex="-1" aria-modal="true" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2 class="slds-modal__title slds-hyphenate">Progress</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <ul class="slds-list_dotted">
+                        <template for:each={processedSteps} for:item="step">
+                            <div key={step.id} class={step.cssClass}>
+                                <lightning-icon 
+                                    icon-name="utility:check" 
+                                    size="medium" 
+                                    class={step.iconClass}>
+                                </lightning-icon>
+                                <span class="step-label">{step.label}</span>
+                            </div>
+                        </template>
+                    </ul>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button variant="neutral" label="Close" onclick={handleSecondModalClose}></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+    <template if:true={isModalOpen}>
+        <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2 class="slds-modal__title">Delete Cart?</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <p>Are you sure you want to abandon the cart?</p>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button variant="neutral" label="Cancel" onclick={closeModal}></lightning-button>
+                    <lightning-button variant="brand" label="Confirm" onclick={deleteCart} class="slds-m-left_small"></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+    <template if:true={isSaveModalOpen}>
+        <section role="dialog" tabindex="-1" aria-modal="true" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <header class="slds-modal__header">
+                    <h2 class="slds-modal__title slds-hyphenate">Progress</h2>
+                </header>
+                <div class="slds-modal__content slds-p-around_medium">
+                    <ul class="slds-list_dotted">
+                        <template for:each={processedSteps1} for:item="step">
+                            <div key={step.id} class={step.cssClass}>
+                                <lightning-icon 
+                                    icon-name="utility:check" 
+                                    size="medium"
+                                    class={step.iconClass}>
+                                </lightning-icon>
+                                <span class="step-label">{step.label}</span>
+                            </div>
+                        </template>
+                    </ul>
+                </div>
+                <footer class="slds-modal__footer">
+                    <lightning-button variant="neutral" label="Close" onclick={closeSaveModal}></lightning-button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

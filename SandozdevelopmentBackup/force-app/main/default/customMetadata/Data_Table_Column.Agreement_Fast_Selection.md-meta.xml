@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Agreement Fast Selection</label>
+    <protected>false</protected>
+    <values>
+        <field>Column_JSON__c</field>
+        <value xsi:type="xsd:string">[
+{ &quot;label&quot;: &quot;Agreement&quot;, &quot;fieldName&quot;: &quot;productType&quot;,&quot;type&quot;: &quot;customCombox&quot;, &quot;sortable&quot;: &quot;true&quot;, &quot;editable&quot;: &quot;true&quot;, &quot;typeAttributes&quot;:{&quot;recordId&quot;:{ &quot;fieldName&quot;: &quot;recordId&quot;},&quot;options&quot;:{ &quot;fieldName&quot;: &quot;options&quot;}} },
+{ &quot;label&quot;: &quot;Product Name &quot;, &quot;type&quot;: &quot;customName&quot;, &quot;fieldName&quot;: &quot;productId&quot;, &quot;sortable&quot;: &quot;true&quot;, &quot;editable&quot;: &quot;true&quot;,&quot;hideDefaultActions&quot;:&quot;true&quot;,
+&quot;typeAttributes&quot;: {&quot;objname&quot;: &quot;Product2&quot;, &quot;fieldapi&quot;: &quot;productName&quot;, &quot;fieldapiname&quot;: &quot;productName&quot;, &quot;fieldLookupName&quot;: &quot;Name&quot;,&quot;addField&quot;:&quot;ProductCode&quot;,
+&quot;addCol&quot;:&quot;nationalId&quot;,&quot;recordId&quot;:{ &quot;fieldName&quot;: &quot;recordId&quot;},&quot;productType&quot;:{ &quot;fieldName&quot;: &quot;productType&quot;},&quot;isDisabled&quot;:{ &quot;fieldName&quot;: &quot;isDisabled&quot;}
+,&quot;hasValue&quot;:{ &quot;fieldName&quot;: &quot;hasValue&quot;},&quot;priceList&quot;:{&quot;fieldName&quot;:&quot;priceList&quot;}},
+&quot;actions&quot; : [{&quot;label&quot;:&quot;Set Filter&quot;,&quot;disabled&quot;:false,&quot;name&quot;:&quot;filter&quot;,&quot;iconName&quot;: &quot;utility:filter&quot;},
+{&quot;label&quot;:&quot;Clear Filter&quot;,&quot;disabled&quot;:true,&quot;name&quot;:&quot;clear&quot;,&quot;iconName&quot;: &quot;utility:clear&quot;}]
+},
+{ &quot;label&quot;: &quot;Product Code&quot;, &quot;type&quot;: &quot;text&quot;, &quot;fieldName&quot;: &quot;productCode&quot;, &quot;sortable&quot;: &quot;true&quot;,&quot;hideDefaultActions&quot;:&quot;true&quot;,
+&quot;actions&quot; : [{&quot;label&quot;:&quot;Set Filter&quot;,&quot;disabled&quot;:false,&quot;name&quot;:&quot;filter&quot;,&quot;iconName&quot;: &quot;utility:filter&quot;},
+{&quot;label&quot;:&quot;Clear Filter&quot;,&quot;disabled&quot;:true,&quot;name&quot;:&quot;clear&quot;,&quot;iconName&quot;: &quot;utility:clear&quot;}]
+},
+{ &quot;label&quot;: &quot;Product Family&quot;, &quot;type&quot;: &quot;familyCombobox&quot;, &quot;fieldName&quot;: &quot;productFamily&quot;, &quot;sortable&quot;: &quot;true&quot;,&quot;hideDefaultActions&quot;:&quot;true&quot;,&quot;typeAttributes&quot;:{&quot;recordId&quot;:{ &quot;fieldName&quot;: &quot;recordId&quot;},&quot;dropdownoptions&quot;:{ &quot;fieldName&quot;: &quot;dropdownoptions&quot;},
+&quot;dropdownValue&quot;:{ &quot;fieldName&quot;: &quot;dropdownValue&quot;},&quot;isFamily&quot;:{ &quot;fieldName&quot;: &quot;isFamily&quot;}} ,
+&quot;actions&quot; : [{&quot;label&quot;:&quot;Set Filter&quot;,&quot;disabled&quot;:false,&quot;name&quot;:&quot;filter&quot;,&quot;iconName&quot;: &quot;utility:filter&quot;},
+{&quot;label&quot;:&quot;Clear Filter&quot;,&quot;disabled&quot;:true,&quot;name&quot;:&quot;clear&quot;,&quot;iconName&quot;: &quot;utility:clear&quot;}]
+},
+{ &quot;label&quot;: &quot;List Price&quot;, &quot;type&quot;: &quot;currency&quot;, &quot;fieldName&quot;: &quot;listPrice&quot;, &quot;sortable&quot;: &quot;true&quot; }
+]</value>
+    </values>
+</CustomMetadata>

@@ -1,0 +1,100 @@
+<template>
+    <div class="slds-grid slds-p-bottom_x-small">
+        <div class="slds-col slds-size_8-of-12">
+        </div>
+        <div class="slds-col slds-size_4-of-12" >
+            <div class="slds-float_right button-div-width">
+                <lightning-input type="number" onchange={handleNumRowsChange} value={numRows} class="inputbox-1 addrow-input"
+                        variant="label-hidden" > </lightning-input>
+                <lightning-button label="Add Rows" alternative-text="Add Row" title="Add Row" onclick={addRows} class="button_radius"
+                        variant="Brand" size="medium" 
+                    ></lightning-button> &nbsp;
+                <!-- <lightning-icon icon-name="action:upload" alternative-text="Mass Upload" 
+                        title="Mass Upload" class="backgroundcolor slds-m-left_x-small " 
+                        size="xx-small" onclick={openPopup}></lightning-icon> -->
+                <lightning-icon icon-name="action:delete" alternative-text="Mass Delete" 
+                        title="Mass Delete" class="backgroundcolor slds-m-left_x-small " 
+                        size="xx-small" onclick={handleMassDelete}></lightning-icon>    
+            </div>
+         </div>
+    </div>
+    <div if:true={dataLoading} class="slds-align_absolute-center slds-spinner_inline spinner-padding spinner-style">
+        <lightning-spinner variant="brand" alternative-text="Loading Data" size="medium">
+        </lightning-spinner>
+    </div>
+    <template  if:false={dataLoading} >
+        <div class="slds-scrollable_y">
+            <c-custom-type-datatable key-field="recordId" data={data} columns={columns}  class="divDataTable " onrowselection={handleRowSelection} onproductchanged={handleproductchanged}
+                selected-rows={preFastSelectedRows} sorted-by={sortBy} sorted-direction={sortDirection} onsort={doSorting} onheaderaction={handleHeaderAction}
+                ondropdownselected={handledropdownselected} ondropdownfamilyselected={handledropdownfamilyselected}>
+            </c-custom-type-datatable>
+        </div>
+    </template>
+
+    <template if:true={isModalOpen}>
+        <!-- Modal/Popup Box LWC starts here -->
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+            aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <!-- Modal/Popup Box LWC header here -->
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        title="Close" onclick={closeModal}>
+                        <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse"
+                            size="small"></lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Mass Upload</h2>
+                </header>
+                <!-- Modal/Popup Box LWC body starts here -->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <div class="slds-align_absolute-center file-upload-width">
+                        <lightning-input label="" variant="label-hidden" name="file uploader" onchange={handleFilesChange} type="file"></lightning-input>
+                    </div>
+                    <template if:true={fileloaded}>    
+                        <div class="slds-align_absolute-center slds-p-top_x-small file-upload-width">
+                            <lightning-badge label={fileName}></lightning-badge>
+                        </div>
+                    </template>
+                </div>
+                <!-- Modal/Popup Box LWC footer starts here -->
+                <footer class="slds-modal__footer">
+                    <button class="slds-button slds-button_neutral" onclick={closeModal} title="Cancel">Cancel</button>
+                    <button class="slds-button slds-button_brand" onclick={handleFileUpload} title="Upload" disabled={isDisabled}>Upload</button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+
+    <template if:true={isOpenFilterInput}>
+        <!-- Modal/Popup Box LWC starts here -->
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+            aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container filter-popup">
+                <!-- Modal/Popup Box LWC header here -->
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        title="Close" onclick={closeFilterModal}>
+                        <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse"
+                            size="small"></lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h2 class="slds-text-heading_medium slds-hyphenate">{inputLabel}</h2>
+                </header>
+                <!-- Modal/Popup Box LWC body starts here -->
+                <div class="slds-modal__content slds-p-around_medium">
+                    <lightning-input onchange={handleChange} value={filterAppliedValue} variant="label-hidden"></lightning-input>
+                </div>
+                <!-- Modal/Popup Box LWC footer starts here -->
+                <footer class="slds-modal__footer">
+                    <button class="slds-button slds-button_neutral" onclick={closeFilterModal}
+                        title="Cancel">Cancel</button>
+                    <button class="slds-button slds-button_brand" onclick={handleFilterRecords}
+                        title="Apply">Apply</button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Order Query</label>
+    <protected>false</protected>
+    <values>
+        <field>Query__c</field>
+        <value xsi:type="xsd:string">SELECT Id,National_Id__c,Product_Name__c,Quantity__c,Percent__c, Price__c,National_Id__r.Name,Product_Name__r.Name FROM Sample_Product__c</value>
+    </values>
+</CustomMetadata>

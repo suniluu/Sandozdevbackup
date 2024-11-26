@@ -1,0 +1,14 @@
+<template>
+    <template lwc:if={quickOrder}>
+        <c-fast-order rec-id={recId} ongetfastorderproduct={handleFastOrderProduct} fields={fields} pre-fast-selected-rows={preFastSelectedRows}></c-fast-order>
+    </template>
+    <template lwc:if={reorder}>
+        <c-reorder rec-id={recId} ongetreorderproduct={handleReorderProds}></c-reorder>
+    </template>
+    <template lwc:if={contractedProducts}>
+        <c-contracted-products rec-id={recId} ></c-contracted-products>
+    </template>
+    <template lwc:if={pricing}>
+        <c-pricing-component rec-id={recId} ongetpricingcompareproduct={handlePricingComapareProds} fields={fields}  pre-selected-rows={preSelectedRows} ></c-pricing-component>
+    </template>
+</template>

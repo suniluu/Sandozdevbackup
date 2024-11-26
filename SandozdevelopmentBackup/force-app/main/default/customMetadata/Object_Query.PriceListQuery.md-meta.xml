@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>PriceListQuery</label>
+    <protected>false</protected>
+    <values>
+        <field>Query__c</field>
+        <value xsi:type="xsd:string">SELECT Product_Name__c,Price_List__c FROM Price_List_Item__c WHERE Price_List__c</value>
+    </values>
+</CustomMetadata>

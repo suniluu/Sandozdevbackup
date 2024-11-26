@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Agreement_Products</label>
+    <protected>false</protected>
+    <values>
+        <field>Column_JSON__c</field>
+        <value xsi:type="xsd:string">[
+{ &quot;label&quot;: &quot;Product Name&quot;, &quot;fieldName&quot;: &quot;productName&quot;, &quot;initialWidth&quot;: 200, &quot;sortable&quot;: &quot;true&quot;,&quot;hideDefaultActions&quot;:&quot;true&quot;,&quot;actions&quot; : [{&quot;label&quot;:&quot;Set Filter&quot;,&quot;disabled&quot;:false,&quot;name&quot;:&quot;filter&quot;,&quot;iconName&quot;: &quot;utility:filter&quot;}, {&quot;label&quot;:&quot;Clear Filter&quot;,&quot;disabled&quot;:true,&quot;name&quot;:&quot;clear&quot;,&quot;iconName&quot;: &quot;utility:clear&quot;}] },
+{ &quot;label&quot;: &quot;National Id&quot;, &quot;fieldName&quot;: &quot;nationalId&quot;, &quot;type&quot;: &quot;text&quot;,&quot;hideDefaultActions&quot;:&quot;true&quot;,&quot;actions&quot; : [{&quot;label&quot;:&quot;Set Filter&quot;,&quot;disabled&quot;:false,&quot;name&quot;:&quot;filter&quot;,&quot;iconName&quot;: &quot;utility:filter&quot;}, {&quot;label&quot;:&quot;Clear Filter&quot;,&quot;disabled&quot;:true,&quot;name&quot;:&quot;clear&quot;,&quot;iconName&quot;: &quot;utility:clear&quot;}] },
+{ &quot;label&quot;: &quot;Agreement Line Item&quot;, &quot;fieldName&quot;: &quot;agreementLineItem&quot;, &quot;type&quot;: &quot;text&quot;,&quot;hideDefaultActions&quot;:&quot;true&quot;,&quot;actions&quot; : [{&quot;label&quot;:&quot;Set Filter&quot;,&quot;disabled&quot;:false,&quot;name&quot;:&quot;filter&quot;,&quot;iconName&quot;: &quot;utility:filter&quot;}, {&quot;label&quot;:&quot;Clear Filter&quot;,&quot;disabled&quot;:true,&quot;name&quot;:&quot;clear&quot;,&quot;iconName&quot;: &quot;utility:clear&quot;}] },
+{ &quot;label&quot;: &quot;Price List Name&quot;, &quot;fieldName&quot;: &quot;priceListName&quot;, &quot;type&quot;: &quot;text&quot;,&quot;hideDefaultActions&quot;:&quot;true&quot;,&quot;actions&quot; : [{&quot;label&quot;:&quot;Set Filter&quot;,&quot;disabled&quot;:false,&quot;name&quot;:&quot;filter&quot;,&quot;iconName&quot;: &quot;utility:filter&quot;}, {&quot;label&quot;:&quot;Clear Filter&quot;,&quot;disabled&quot;:true,&quot;name&quot;:&quot;clear&quot;,&quot;iconName&quot;: &quot;utility:clear&quot;}] },
+{ &quot;label&quot;: &quot;Price&quot;, &quot;fieldName&quot;: &quot;price&quot;, &quot;type&quot;: &quot;currency&quot;,&quot;hideDefaultActions&quot;:&quot;true&quot;, &quot;editable&quot;: &quot;true&quot; },
+{ &quot;label&quot;: &quot;&quot;, &quot;fieldName&quot;: &quot;Id&quot;, &quot;type&quot;: &quot;discountcol&quot;, &quot;initialWidth&quot;: 40}
+]</value>
+    </values>
+</CustomMetadata>

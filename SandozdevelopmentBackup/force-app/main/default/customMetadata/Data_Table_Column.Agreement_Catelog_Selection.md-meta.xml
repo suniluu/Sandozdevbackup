@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Agreement Catelog Selection</label>
+    <protected>false</protected>
+    <values>
+        <field>Column_JSON__c</field>
+        <value xsi:type="xsd:string">[
+{ &quot;label&quot;: &quot;Product Name&quot;, &quot;type&quot;: &quot;text&quot;, &quot;fieldName&quot;: &quot;productName&quot;, &quot;sortable&quot;: &quot;true&quot;, &quot;hideDefaultActions&quot;:&quot;true&quot;,
+	 &quot;actions&quot; : [{&quot;label&quot;:&quot;Set Filter&quot;,&quot;disabled&quot;:false,&quot;name&quot;:&quot;filter&quot;,&quot;iconName&quot;: &quot;utility:filter&quot;},
+             {&quot;label&quot;:&quot;Clear Filter&quot;,&quot;disabled&quot;:true,&quot;name&quot;:&quot;clear&quot;,&quot;iconName&quot;: &quot;utility:clear&quot;}]
+},
+{ &quot;label&quot;: &quot;Product Code&quot;, &quot;type&quot;: &quot;text&quot;, &quot;fieldName&quot;: &quot;productCode&quot;, &quot;sortable&quot;: &quot;true&quot;,&quot;hideDefaultActions&quot;:&quot;true&quot;,
+	 &quot;actions&quot;  : [{&quot;label&quot;:&quot;Set Filter&quot;,&quot;disabled&quot;:false,&quot;name&quot;:&quot;filter&quot;,&quot;iconName&quot;: &quot;utility:filter&quot;},
+             {&quot;label&quot;:&quot;Clear Filter&quot;,&quot;disabled&quot;:true,&quot;name&quot;:&quot;clear&quot;,&quot;iconName&quot;: &quot;utility:clear&quot;}]
+ },
+{ &quot;label&quot;: &quot;Product Family&quot;, &quot;type&quot;: &quot;text&quot;, &quot;fieldName&quot;: &quot;productFamily&quot;, &quot;sortable&quot;: &quot;true&quot;,&quot;hideDefaultActions&quot;:&quot;true&quot;,
+	 &quot;actions&quot;  : [{&quot;label&quot;:&quot;Set Filter&quot;,&quot;disabled&quot;:false,&quot;name&quot;:&quot;filter&quot;,&quot;iconName&quot;: &quot;utility:filter&quot;},
+             {&quot;label&quot;:&quot;Clear Filter&quot;,&quot;disabled&quot;:true,&quot;name&quot;:&quot;clear&quot;,&quot;iconName&quot;: &quot;utility:clear&quot;}]
+},
+{ &quot;label&quot;: &quot;List Price&quot;, &quot;type&quot;: &quot;currency&quot;, &quot;fieldName&quot;: &quot;listPrice&quot;, &quot;sortable&quot;: &quot;true&quot; }
+]</value>
+    </values>
+</CustomMetadata>

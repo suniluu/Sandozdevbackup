@@ -1,0 +1,26 @@
+.slds-p-around_medium {
+    padding: 1rem;
+}
+.search-results {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 0.25rem;
+}
+
+.search-results .slds-item {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid #ddd;
+}
+
+.search-results .slds-item:last-child {
+    border-bottom: none;
+}
+
+.search-results .slds-item:hover {
+    background-color: #f3f3f3;
+}

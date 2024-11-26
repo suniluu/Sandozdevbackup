@@ -1,0 +1,24 @@
+<template>
+    <div if:true={showLoader}>
+        <lightning-spinner variant="brand" alternative-text="Loading Data" size="medium" >
+        </lightning-spinner>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </div>
+    <div if:false={showLoader}>
+        <div class="page">
+            <div class="header">
+                <c-header cart-count={cartCount} order-data={orderData} recname={recname} objname={objname} 
+                objicon={objicon} total-price={totalNetPrice}></c-header>
+            </div>
+            <div class="main">
+                <template if:true={fields}>
+                    <c-body onvaluerecieved={handlevaluerecieved} onparentloader={handleparentloader}  ongetrecorddata={handlegetrecorddata} order-data={orderData} orderdate={orderdate} selected-location={selectedLocation}
+                    typename={typename} rec-id={recId} fields={fields} cart-count={cartCount} objname={relatedobject} ontotalnetpricebody={handleTotalnetPrice} aggrementselected={aggrementselected} orderid={orderid}></c-body>
+                </template>
+            </div>
+            <!-- <div class="footer">
+                <c-footer></c-footer>
+            </div> -->  
+        </div>
+    </div>
+</template>
