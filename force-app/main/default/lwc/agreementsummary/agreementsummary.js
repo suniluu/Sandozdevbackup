@@ -1,11 +1,11 @@
 import { LightningElement, api, wire,track } from 'lwc';
 import getCompanyLocations from '@salesforce/apex/AgreementController.getCompanyLocations';
 import generatePDFAndSave from '@salesforce/apex/DocumentGenerationController.generatePDFAndSave';
+import previewPDF from '@salesforce/apex/DocumentGenerationController.previewPDF';
 import getTemplateOptions from '@salesforce/apex/DocumentGenerationController.getTemplateOptions';
 import getClausesOptions from '@salesforce/apex/DocumentGenerationController.getClausesOptions';
 import getButtonsInfo from "@salesforce/apex/AgreementController.getButtonsInfo";
-import getSignatureSectionInfo from "@salesforce/apex/AgreementController.getSignatureSectionInfo";
-import getSignatoryMetaDatas from "@salesforce/apex/AgreementController.getSignatoryMetaDatas";
+import getSignatureSectionInfo from "@salesforce/apex/AgreementController.getSignatureSectionInfo"
 import { NavigationMixin } from 'lightning/navigation';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
@@ -38,10 +38,6 @@ export default class Agreementsummary extends NavigationMixin(LightningElement) 
     @track values = [];
     @api signatoryList;
     @api globalSelectedItems=[];
-
-    @track signatoryObjeApi;
-    @track signatoryFieldsApiNames;
-    @track signatoryFilterFields;
     /*@track newoptions = [
         { label: 'Template 1', value: 'Template 1' },
         { label: 'Template 2', value: 'Template 2' }
@@ -78,30 +74,22 @@ export default class Agreementsummary extends NavigationMixin(LightningElement) 
     }*/
 
     connectedCallback() {
-        console.log('Connected callback, Record ID:', this.recordId);
-        this.loadButtons();
-        this.loadSections();
-        this.loadSignatorydata();
+    console.log('Connected callback, Record ID:', this.recordId);
+    this.loadButtons();
+    this.loadSections();
+   // this.loadSignatorydata();
     }
 
-    loadSignatorydata(){
-         getSignatoryMetaDatas({ devName: "Signatory" })
-            .then((result) => {
-                if (result && result.length > 0) {
-                    const signatoryMetadata = result[0]; // Assuming single record is returned
-                    this.signatoryObjeApi = signatoryMetadata.objectApiName__c;
-                    this.signatoryFieldsApiNames = signatoryMetadata.fieldApiNames__c;
-                    this.signatoryFilterFields = signatoryMetadata.filterFieldApiName__c;
-                }
-                console.log('signatoryObjeApi:', this.signatoryObjeApi);
-                console.log('signatoryFieldsApiNames:', this.signatoryFieldsApiNames);
-                console.log('signatoryFilterFields:', this.signatoryFilterFields);
-            })
-            .catch((error) => {
+    /*loadSignatorydata(){
+        getSignatoryDetails({recId :this.recordId})
+        .then((result) => {
+            this.signatorydata =result;
+            console.log('signatorydata Data ::: '+JSON.stringify(this.signatorydata));
+        })
+        .catch((error) => {
                 this.error = error;
-                console.error('Error loading signatory metadata:', error);
-            });
-    }
+        });
+    }*/
 
     selectItemEventHandler(event){
         let args = event.detail.arrItems;
@@ -264,7 +252,16 @@ export default class Agreementsummary extends NavigationMixin(LightningElement) 
         console.log('handleGenerate called');
         console.log('Record IDKeer:', this.recordId);
         console.log('Selected Template:', this.selectedTemplate);
-        if (this.selectedTemplate) {
+        if (!this.selectedTemplate) {
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    message: 'Please select a template to generate the document',
+                    variant: 'Success',
+                })
+            );
+            return;
+        }
+
         generatePDFAndSave({ recordId: this.recordId, templateId: this.selectedTemplate})
             .then((fileId) => {
                 this.dispatchEvent(
@@ -284,13 +281,46 @@ export default class Agreementsummary extends NavigationMixin(LightningElement) 
                     })
                 );
             });
-        } 
-        /*else {
-            alert('Please select a template first!');
-        }*/
-    }   
+        }    
 
     handleSignature(){
         console.log('handleSignature called');
+    }
+
+    handlePreview() {
+
+        if (!this.selectedTemplate) {
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    message: 'Please select a template to Preview the document',
+                    variant: 'Success',
+                })
+            );
+            return;
+        }
+
+        console.log('handlepreview called');
+        console.log('Record IDKeerpreview:', this.recordId);
+        console.log('Selected Templatepreview:', this.selectedTemplate);
+
+
+        previewPDF({ recordId: this.recordId, templateId: this.selectedTemplate})
+            .then((pdfUrl) => {
+                this.openPdfFile(pdfUrl);
+            })
+            .catch((error) => {
+                console.error('Error generating PDF:', error);
+                this.dispatchEvent(
+                    new ShowToastEvent({
+                        title: 'Error',
+                        message: 'Failed to generate PDF. Please try again.',
+                        variant: 'error',
+                    })
+                );
+            });
+    }
+
+    openPdfFile(pdfUrl) {
+        window.open(pdfUrl, '_blank');
     }
 }

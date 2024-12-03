@@ -4,6 +4,7 @@ import updateAgreementData from '@salesforce/apex/AgreementController.updateAgre
 import updateAgreementLineItemData from '@salesforce/apex/AgreementController.updateAgreementLineItemData';
 import generateApprovalRequests from '@salesforce/apex/AgreementController.generateApprovalRequests';
 import saveAgreementDetails from '@salesforce/apex/AgreementController.saveAgreementDetails';
+import getApprovalsRelatedData from '@salesforce/apex/AgreementController.getApprovalsRelatedData'; // Import method
 import getColumns from '@salesforce/apex/AgreementController.getColumns';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
@@ -19,6 +20,8 @@ export default class Agreementsummarypage extends NavigationMixin(LightningEleme
     @track formFieldChanges = [];
     @track columns=[];
     @api rawdata = {};
+    @api approvalProduct = null;
+    @api autoApprovals = null; 
 
     @track steps = [
         { id: 1, label: 'Step 1: Updating Agreement', completed: false },
@@ -96,7 +99,36 @@ export default class Agreementsummarypage extends NavigationMixin(LightningEleme
     }
 
     connectedCallback() {
-        console.log('jj summary page raw data is :',JSON.stringify(this.rawdata))
+        console.log('jj summary page raw data is :', JSON.stringify(this.rawdata));
+        getApprovalsRelatedData()
+            .then((result) => {
+                if (result.length > 0) {
+                    this.approvalProduct = result[0];
+                    this.autoApprovals = result[1] === 'true'; // Convert string to boolean
+                }
+                console.log('Approval Product:', this.approvalProduct);
+                console.log('Automatic Approvals:', this.autoApprovals);
+
+                // Dynamically set steps based on autoApprovals
+                if (this.autoApprovals) {
+                    this.steps = [
+                        { id: 1, label: 'Step 1: Updating Agreement', completed: false },
+                        { id: 2, label: 'Step 2: Updating Agreement Line Items', completed: false },
+                        { id: 3, label: 'Step 3: Raising Approval Requests if any', completed: false },
+                    ];
+                } else {
+                    this.steps = [
+                        { id: 1, label: 'Step 1: Updating Agreement', completed: false },
+                        { id: 2, label: 'Step 2: Updating Agreement Line Items', completed: false },
+                    ];
+                }
+
+                console.log('Steps:', JSON.stringify(this.steps));
+            })
+            .catch((error) => {
+                console.error('Error fetching approvals-related data:', error);
+                this.showToast('Error', 'Failed to fetch approvals-related data.', 'error');
+            });
     }
 
     handleCancel() {
@@ -120,19 +152,28 @@ export default class Agreementsummarypage extends NavigationMixin(LightningEleme
     }
 
     combineFieldValues() {
-        let resultArray = Object.keys(this.fieldValues).map(key => ({ fieldName: key, value: this.fieldValues[key] }));
-        this.formFieldChanges.forEach(change => {
-            let existingEntry = resultArray.find(entry => entry.fieldName === change.fieldName);
+        // Step 1: Start with rawdata
+        let resultArray = this.rawdata.map(item => ({
+            fieldName: item.fieldName, // Use the actual fieldName from the object
+            value: item.value || '--' // Default to '--' if value is null or undefined
+        }));
+
+        // Step 2: Incorporate fieldValues (if any) to override or add
+        Object.keys(this.fieldValues).forEach(key => {
+            let existingEntry = resultArray.find(entry => entry.fieldName === key);
             if (existingEntry) {
-                existingEntry.value = change.value;
+                existingEntry.value = this.fieldValues[key];
             } else {
-                resultArray.push({ fieldName: change.fieldName, value: change.value });
+                resultArray.push({ fieldName: key, value: this.fieldValues[key] });
             }
         });
+
         return resultArray;
     }
 
-    handleProceed(){
+
+
+    /*handleProceed(){
         const combinedValues = this.combineFieldValues();
         console.log('jj final values for agreements is :',JSON.stringify(combinedValues));
         console.log('jj final values for products is :',JSON.stringify(this.productData));
@@ -222,7 +263,117 @@ export default class Agreementsummarypage extends NavigationMixin(LightningEleme
                 }
             })
         }
+    }*/
+
+    handleProceed() {
+        const combinedValues = this.combineFieldValues();
+        console.log('jj final values for agreements is :', JSON.stringify(combinedValues));
+        console.log('jj final values for products is :', JSON.stringify(this.productData));
+
+    if (combinedValues.length === 0 && (this.productData == null || this.productData.length === 0)) {
+        this.isFirstModalOpen = false;
+        this.showToast('Error', 'Error: Agreement data is unchanged and ALI data is empty.', 'error');
+        this.isFirstModalOpen = false;
+    } else if (combinedValues.length > 0) {
+        this.isSecondModalOpen = true;
+        this.isFirstModalOpen = false;
+
+            updateAgreementData({ recordId: this.recordId, agreementData: JSON.stringify(combinedValues) })
+                .then(response => {
+                    console.log('jj after first method:', response);
+
+                    if (response.success) {
+                        // Capture the new or updated recordId
+                        const updatedRecordId = response?.agr?.Id;
+                        if (!updatedRecordId) {
+                            console.error('Updated Agreement ID is missing in the response.');
+                            throw new Error('Response does not contain a valid Agreement ID.');
+                        }
+                        console.log('Updated Agreement Record ID:', updatedRecordId);
+
+                        this.markStepCompleted(1);
+
+                        if (this.productData != null && this.productData.length > 0) {
+                            updateAgreementLineItemData({ recordId: updatedRecordId, agreementLineItemData: JSON.stringify(this.productData) })
+                                .then(configResponse1 => {
+                                    console.log('jj is here after second method configResponse :', configResponse1);
+
+                                    if (configResponse1.success) {
+                                        this.markStepCompleted(2);
+
+                                        if (this.autoApprovals) {
+                                            generateApprovalRequests({ agreementId: updatedRecordId })
+                                                .then(approvalsResponse => {
+                                                    console.log('jj is here after approvals method configResponse :', approvalsResponse);
+                                                    this.markStepCompleted(3);
+
+                                                    if (approvalsResponse.success) {
+                                                        this.showToast('Success', 'Agreement and ALI are processed successfully.', 'success');
+                                                        this.dispatchEvent(new CustomEvent('generateapprovalrequests', {
+                                                            detail: approvalsResponse,
+                                                        }));
+                                                        setTimeout(() => {
+                                                            this.isSecondModalOpen = false;
+                                                            this.markStepNotComplete(1);
+                                                            this.markStepNotComplete(2);
+                                                            this.markStepNotComplete(3);
+                                                        }, 500);
+                                                    } else {
+                                                        this.isSecondModalOpen = false;
+                                                        throw new Error(approvalsResponse.message);
+                                                    }
+                                                });
+                                        } else {
+                                            this.showToast('Success', 'Agreement and ALI are processed successfully.', 'success');
+                                            setTimeout(() => {
+                                                this.isSecondModalOpen = false;
+                                                this.markStepNotComplete(1);
+                                                this.markStepNotComplete(2);
+                                            }, 500);
+                                        }
+                                    } else {
+                                        this.isSecondModalOpen = false;
+                                        throw new Error(configResponse1.message);
+                                    }
+                                });
+                        } else {
+                            this.markStepCompleted(2);
+                            this.showToast('Success', 'Agreement is updated successfully.', 'success');
+                            setTimeout(() => {
+                                this.isSecondModalOpen = false;
+                                this.markStepNotComplete(1);
+                                this.markStepNotComplete(2);
+                            }, 500);
+                        }
+                    } else {
+                        this.isSecondModalOpen = false;
+                        throw new Error(response.message);
+                    }
+                });
+        } else if (this.productData != null) {
+            this.isSecondModalOpen = true;
+            this.isFirstModalOpen = false;
+            this.markStepCompleted(1);
+
+            updateAgreementLineItemData({ recordId: this.recordId, agreementLineItemData: JSON.stringify(this.productData) })
+                .then(configResponse1 => {
+                    console.log('jj after second method configResponse :', configResponse1);
+                    if (configResponse1.success) {
+                        this.markStepCompleted(2);
+                        this.showToast('Success', 'ALI are processed successfully.', 'success');
+                        setTimeout(() => {
+                            this.isSecondModalOpen = false;
+                            this.markStepNotComplete(1);
+                            this.markStepNotComplete(2);
+                        }, 500);
+                    } else {
+                        this.isSecondModalOpen = false;
+                        throw new Error(configResponse1.message);
+                    }
+                });
+        }
     }
+
 
     handleSave(){
         console.log('jj summary page raw data is :',JSON.stringify(this.rawdata))

@@ -138,16 +138,11 @@
                             <br/>
                             Signatory:
                             <div class="multisearch">
-                                    <c-agreement-multi-select-look-up label-name="Search Signatory" object-api-name={signatoryObjeApi}
-                                        globalselecteditems={globalSelectedItems}  field-api-names={signatoryFieldsApiNames}
-                                        filter-field-api-name={signatoryFilterFields} icon-name="action:add_contact" rec-id={recordId}
-                                    onretrieve={selectItemEventHandler} onremove={deleteItemEventHandler} >
-                                    </c-agreement-multi-select-look-up >
-                                <!-- <c-agreement-multi-select-look-up label-name="Search Signatory" object-api-name="Agreement_Contacts__c"
+                                <c-agreement-multi-select-look-up label-name="Search Signatory" object-api-name="Agreement_Contacts__c"
                                  globalselecteditems={globalSelectedItems}  field-api-names="Id,Name,Aggreement__c,Contact__r.Name" 
                                  filter-field-api-name="Contact__r.Name" icon-name="action:add_contact" rec-id={recordId}
                                 onretrieve={selectItemEventHandler} onremove={deleteItemEventHandler} >
-                        </c-agreement-multi-select-look-up > -->
+                        </c-agreement-multi-select-look-up >
                                 <!-- class="slds-pill_container" <ul class="slds-listbox slds-listbox_horizontal" aria-label="Selected Options:"
                                     aria-describedby="listbox-pill-with-icon">
                                     <li class="slds-listbox-item">
