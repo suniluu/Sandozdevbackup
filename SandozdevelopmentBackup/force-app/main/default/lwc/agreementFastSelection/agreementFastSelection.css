@@ -1,0 +1,16 @@
+.dummy{
+	color : black;
+}
+.button-div-width {
+    width: 11.5rem;
+}
+.addrow-input{
+    float: left; 
+    width:3rem;
+}
+.backgroundcolor {
+   --sds-c-icon-color-background:var(--slds-c-icon-color-background, rgb(1, 118, 221)); 
+}
+.slds-scrollable_y{
+	height:20rem;
+}

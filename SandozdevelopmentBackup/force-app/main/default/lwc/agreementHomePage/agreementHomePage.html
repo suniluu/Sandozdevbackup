@@ -1,0 +1,79 @@
+<template>
+    <div class="slds-card">
+        <div class="slds-grid header">
+                <div class="slds-col slds-size_7-of-12">
+                    <img src={scalefluidlyLogo} />
+                </div>
+                <div  class="slds-col slds-size_5-of-12">
+                    <div class="container slds-float_right">
+                        <div class="slds-grid" >
+                        <div class="slds-col slds-size_2-of-9">
+                            <lightning-icon
+                                class="badge"
+                                size="Medium"
+                                icon-name="standard:contract_line_item"
+                                onclick={handlePopUpData}
+                                alternative-text="Badge"
+                            ></lightning-icon>
+                            <div class="badge-value">{cartCount}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="slds-grid header-field" >
+            <div class="slds-col slds-size_12-of-12">
+                <lightning-card variant="base">
+                    <div class="slds-grid slds-wrap">
+                        <template for:each={fieldDataWithLabels} for:item="fieldInfo">
+                            <div key={fieldInfo.apiName} class="slds-col slds-size_2-of-12">
+                                <div class="slds-text-title">{fieldInfo.label}</div>
+                                <div class="slds-text-body_small">{fieldInfo.value}</div>
+                            </div>
+                        </template>
+                    </div>
+                </lightning-card>
+            </div> 
+        </div>  
+        <div class="slds-card__header slds-p-bottom_small progress-step">
+            <lightning-progress-indicator current-step={currentStep} type="path" variant="base">
+                <lightning-progress-step label="Agreement header info" value="1" onclick={handleTabClick} data-step="1"></lightning-progress-step>
+                <lightning-progress-step label="Product Selection" value="2" onclick={handleTabClick} data-step="2"></lightning-progress-step>
+                <lightning-progress-step label="Product Discounts" value="3" onclick={handleTabClick} data-step="3"></lightning-progress-step>
+                <lightning-progress-step label="Agreement Summary" value="4" onclick={handleTabClick} data-step="4"></lightning-progress-step>
+                <lightning-progress-step label="Approval Details" value="5" onclick={handleTabClick} data-step="5"></lightning-progress-step>
+                <lightning-progress-step label="Signatures" value="6" onclick={handleTabClick} data-step="6"></lightning-progress-step>
+            </lightning-progress-indicator>
+        </div>
+        <div class={firstPageClass} data-step="1">
+            <c-agreement-header-page record-id={recordId} object-name={objectName} onfieldchange={handleFieldChange} onfieldschange={handleFieldValuesChange}></c-agreement-header-page>
+        </div>
+        <div class={secondPageClass} data-step="2">
+            <template if:true={orderReduestLoaded}>
+                <c-product-selection-component selected-rows={productdata} record-id={recordId}  field-values={fieldValues} deleterecorddata={deleteRecordData} field-data-with-labels={fieldDataWithLabels}
+                ongetproductselections={handlegetproductselections} pre-selected-rows={preSelectedRows} pre-fast-selected-rows={preFastSelectedRows}></c-product-selection-component>
+            </template>
+        </div>
+        <div class={thirdPageClass} data-step="3">
+            <c-agreementpriceproduct product-data={productdata} index={index} ondiscount={discount} initial-records={initialRecords} initial-data={initialData} onproductdatadelete={deletedata}></c-agreementpriceproduct>
+        </div>
+        <div class={fourthPageClass} data-step="4">
+            <c-agreementsummarypage record-id={recordId} objectname={objectName} product-data={discountdataprod}  field-values={fieldValues}></c-agreementsummarypage>
+        </div>
+        <div class={fifthPageClass} data-step="5">
+            <!-- <template if:false={refreshApprovals}>
+                <c-agreementsummarypage
+                    record-id={recordId}
+                    ongenerateapprovalrequests={handleGenerateApprovalRequests}>
+                </c-agreementsummarypage>
+            </template> -->
+            
+            <!-- <template if:false={refreshApprovals}> -->
+                <c-agreementapprovaldetails recordid={recordId}></c-agreementapprovaldetails>
+            <!-- </template> -->
+        </div>
+        <div class={sixthPageClass} data-step="6">
+            <c-agreementsummary record-id={recordId}></c-agreementsummary>
+        </div>
+    </div>    
+</template>

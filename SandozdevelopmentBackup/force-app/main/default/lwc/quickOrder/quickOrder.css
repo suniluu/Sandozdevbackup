@@ -1,0 +1,32 @@
+.page
+{
+    margin-left:0.5% ;
+    width: 99%;
+    height: 100%;
+}
+.header
+{
+    position: relative;
+    margin: 0px;
+    padding: 0px;
+    width: 100%;
+	//border-bottom: 1px solid #496077;
+}
+.main
+{
+    height:100% ;
+    background-color: white;
+	
+}
+.footer
+{
+    padding-bottom: 8px;
+    margin: 0px auto;
+    text-align: center;
+    line-height: normal;
+	background-color: #f4f6f9;
+    border-top: 1px solid #496077;
+}
+.slds-tabs_default__nav{
+	padding-left: 40%!important;
+}

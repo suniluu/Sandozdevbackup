@@ -1,0 +1,40 @@
+.custom-padding {
+    padding: 0.25rem;
+}
+.icon-class{
+    padding-left:1rem;
+    margin-top:-1rem;
+}
+.icon-name{
+    font-size: 16px;
+    margin-left:0.5rem;
+}
+
+.readonly-input-field {
+    padding: 0; 
+    background-color: #f3f2f2; 
+    border-radius: 0.25rem; 
+    display: flex; 
+    border: 1px solid #d8dde6; 
+}
+
+.readonly-input-field lightning-output-field {
+    flex: 1; 
+    padding: var(--lwc-inputPadding, 0.75rem 0.5rem); 
+}
+
+.readonly-input-label {
+    display: block;
+    color: #706e6b;
+    font-weight: 400;
+    font-size: 0.625rem;
+    line-height: 1.5;
+    margin-bottom: 0.125rem;
+    text-transform: uppercase;
+}
+
+.readonly-input-value {
+    color: #080707;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+}

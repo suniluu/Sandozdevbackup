@@ -1,0 +1,31 @@
+.dot {
+  height: 20px;
+  width: 20px;
+  background-color: #bbb;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.greenClass {
+  height: 20px;
+  width: 20px;
+  background-color: #45b76d;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.yellowClass {
+  height: 20px;
+  width: 20px;
+  background-color: #fdad40;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.redClass {
+  height: 20px;
+  width: 20px;
+  background-color: #e67e79;
+  border-radius: 50%;
+  display: inline-block;
+}

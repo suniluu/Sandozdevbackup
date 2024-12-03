@@ -1,0 +1,45 @@
+.menu {
+	width: 20%; 
+	list-style-type: none; /* removing bullerts from list */
+}
+	/* Styling the links */	 
+.menu li {
+	display: block;	  
+	text-decoration: none; 
+}
+.menu li:hover {
+	background-color: #d4e7d499; 
+}
+.menu a.active {
+	background-color: #04AA6D; 
+	color: white;
+}
+
+.ul-styling {
+	border: 1px solid #c9c9c9;
+	float:left;
+	width:15%; 
+	overflow: auto;
+	overflow-x: hidden
+}
+
+.line-item-section{
+	float:left;
+	width:85%;
+	background-color: white;
+	border: 1px solid #c9c9c9;
+}
+
+.spinner-style{
+	padding-top :10rem; 
+	height:23rem;
+}
+
+.filter-popup{
+	max-width: 30rem;
+	width: 30rem;
+}
+
+.tab-height {
+	max-height: 24.9rem;
+}

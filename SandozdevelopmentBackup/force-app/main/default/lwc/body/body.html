@@ -1,0 +1,30 @@
+<template>
+	<div class="slds-card__header slds-p-bottom_small">
+		<lightning-progress-indicator current-step={currentStep} type="path" variant="base">
+			<lightning-progress-step label="Entry" value="1" onclick={handleTabClick}></lightning-progress-step>
+			<lightning-progress-step label="Add Products" value="2" onclick={handleTabClick}></lightning-progress-step>
+			<lightning-progress-step label="Price Products" value="3" onclick={handleTabClick}>
+			</lightning-progress-step>
+			<lightning-progress-step label="Checkout" value="4" onclick={handleTabClick}></lightning-progress-step>
+		</lightning-progress-indicator>
+	</div>
+	<div class={firstPageClass}>
+		<div if:true={fields}>
+			<c-entry-component object-name={objname} field-set={typename} onloadercompletion={handleloadercompletion} onvalueselected={handlevalueselected} rec-id={recId} fields={fields}></c-entry-component>
+		</div>
+	</div>
+	<div class={secondPageClass}>
+		<template if:true={orderReduestLoaded}>
+			<c-order-request order-datas={orderproductdata} ongetorderrequestdata={handleDatafromOrderReq} fields={fields} deleterecorddata={deleteRecordData}
+				 			pre-selected-rows={preSelectedRows} pre-fast-selected-rows={preFastSelectedRows}
+			></c-order-request>
+		</template>
+	</div>
+	<div class={thirdPageClass}>
+		<c-products-summary product-data={productData} index={index} initial-data={initialData} initial-records={initialRecords} 
+		ontotalnetprice={handletotalnetprice} cart-count={cartCount} onproductdiscount={discountdata}  ondelete={deletedata} fields={fields}></c-products-summary>
+	</div>
+	<div class={fourthPageClass}>
+		<c-checkout-Page objectname={objname} rec-id={recId} product-data={discountdataprod} typename={typename} entryselecteddata={fields} orderid={orderid}></c-checkout-Page>
+	</div>
+</template>

@@ -1,0 +1,39 @@
+.slds-tabs_default__nav{
+	padding-left: 40%!important;
+}
+.header{
+    background-color: whitesmoke;
+    padding:1rem;
+    margin:0.5rem;
+}
+.header-field{
+    padding-left: 1rem;
+    margin-top: -0.5rem;
+}
+.progress-step{
+    padding: 0rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+.show-div {
+	display: block;
+}
+.hide-div {
+	display: none;
+}
+.container {
+    position: relative;
+    display: inline-block; 
+}
+.badge-value {
+    font-size: 12px;
+    color: #fff;
+    background: rgb(73,75,123);
+    border-radius: 50%;
+    padding: 0 5px;
+    position: absolute;
+    left: 90%; 
+    top: -5px; 
+    transform: translateX(-50%);
+    z-index: 1; 
+}

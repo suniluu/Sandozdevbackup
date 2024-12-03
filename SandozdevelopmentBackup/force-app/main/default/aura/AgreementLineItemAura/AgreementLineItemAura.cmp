@@ -1,0 +1,7 @@
+<aura:component controller="AgreementInfoHelper" implements="force:lightningQuickAction,force:hasRecordId" access="global" >
+    <lightning:navigation aura:id="navService"/>
+    <aura:attribute name="pageReference" type="Object"/>
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="objectName" type="String" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+</aura:component>

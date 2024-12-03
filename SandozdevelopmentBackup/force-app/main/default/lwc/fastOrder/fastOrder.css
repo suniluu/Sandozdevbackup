@@ -1,0 +1,25 @@
+.custom-textarea {
+    --sds-c-textarea-sizing-min-height:250px;
+}
+.button-div-width {
+    width: 13rem;
+}
+.addrow-input{
+    float: left; 
+    width:19%;
+}
+.spinner-style{
+    padding-top :10rem; 
+    height:23rem;
+}
+.filter-popup{
+    max-width: 30rem;
+    width: 30rem;
+}
+.file-upload-width {
+    width: 100%;
+}
+.backgroundcolor {
+   --sds-c-icon-color-background:var(--slds-c-icon-color-background, rgb(1, 118, 221));
+    
+}

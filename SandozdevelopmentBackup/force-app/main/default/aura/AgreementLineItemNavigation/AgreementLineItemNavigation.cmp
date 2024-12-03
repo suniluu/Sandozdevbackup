@@ -1,0 +1,11 @@
+<aura:component implements="lightning:isUrlAddressable">
+    
+    <aura:attribute name="currentRecId" type="String"/>
+    <aura:attribute name="type" type="String"/>
+    <aura:attribute name="typename" type="String"/>
+    <aura:attribute name="recname" type="String"/>
+    <aura:attribute name="objname" type="String"/>
+    <aura:attribute name="objicon" type="String"/>
+	<aura:handler name="init" value="{!this}" action="{!c.doInit}" description=""/>
+    <c:agreementHomePage recId="{!v.currentRecId}" type="{!v.type}" typename="{!v.typename}" recname="{!v.recname}" objname="{!v.objname}" objicon="{!v.objicon}"></c:agreementHomePage>
+</aura:component>

@@ -1,0 +1,151 @@
+<template>
+    <div if:true={showLoader}>
+        <lightning-spinner variant="brand" alternative-text="Loading Data" size="medium" >
+        </lightning-spinner>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </div>
+    <!--<lightning-textarea name="input3" variant="label-hidden" placeholder="Type or Paste your order..."></lightning-textarea><br/>-->
+    <div if:true={dataLoading} class="slds-align_absolute-center slds-spinner_inline spinner-padding spinner-style">
+        <lightning-spinner variant="brand" alternative-text="Loading Data" size="medium" >
+        </lightning-spinner>
+    </div>
+    <template  if:false={dataLoading}>
+        <c-custom-type-datatable  key-field="recordId" columns={columns} data={productData} onrowselection={onRowSelection}
+            class="divDataTable" sorted-by={sortBy} sorted-direction={sortDirection} oncancel={handleCancel}
+            onsave={handleSave} draft-values={saveDraftValues} onsort={doSorting} onremove={deleteRow}
+            hide-checkbox-column="true"
+            onproductselected={handleproductselected} onheaderaction={handleHeaderAction} ondropdownselected={handledropdownselected} 
+            onproductchanged={handleproductchanged}></c-custom-type-datatable>
+    </template>
+    <template if:true={isModalOpen}>
+        <!-- Modal/Popup Box LWC starts here -->
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+            aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <!-- Modal/Popup Box LWC header here -->
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        title="Close" onclick={closeModal}>
+                        <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse"
+                            size="small"></lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Mass Upload</h2>
+                </header>
+                <!-- Modal/Popup Box LWC body starts here -->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <!--<lightning-textarea name="input3" value={productsDataCSV} onchange={onChangeData}
+                        variant="label-hidden" placeholder="Type or Paste your order..."
+                        class="custom-textarea"></lightning-textarea>-->
+                    <div class="slds-align_absolute-center file-upload-width">
+                        <lightning-input label="" variant="label-hidden" name="file uploader" onchange={handleFilesChange} type="file"></lightning-input>
+                    </div>
+                    <template if:true={fileloaded}>    
+                        <div class="slds-align_absolute-center slds-p-top_x-small file-upload-width">
+                            <lightning-badge label={fileName}></lightning-badge>
+                        </div>
+                    </template>
+                </div>
+                <!-- Modal/Popup Box LWC footer starts here -->
+                <footer class="slds-modal__footer">
+                    <button class="slds-button slds-button_neutral" onclick={closeModal} title="Cancel">Cancel</button>
+                    <button class="slds-button slds-button_brand" onclick={handleFileUpload} title="Upload" disabled={isDisabled}>Upload</button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+    <template if:true={isOpenFilterInput}>
+        <!-- Modal/Popup Box LWC starts here -->
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+            aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container filter-popup">
+                <!-- Modal/Popup Box LWC header here -->
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        title="Close" onclick={closeFilterModal}>
+                        <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse"
+                            size="small"></lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h2 class="slds-text-heading_medium slds-hyphenate">{inputLabel}</h2>
+                </header>
+                <!-- Modal/Popup Box LWC body starts here -->
+                <div class="slds-modal__content slds-p-around_medium">
+                    <lightning-input onchange={handleChange} value={filterAppliedValue} variant="label-hidden"></lightning-input>
+                </div>
+                <!-- Modal/Popup Box LWC footer starts here -->
+                <footer class="slds-modal__footer">
+                    <button class="slds-button slds-button_neutral" onclick={closeFilterModal}
+                        title="Cancel">Cancel</button>
+                    <button class="slds-button slds-button_brand" onclick={handleFilterRecords}
+                        title="Apply">Apply</button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+    <template if:true={isMassEditPopup}>
+        <!-- Modal/Popup Box LWC starts here -->
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+            aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <!-- Modal/Popup Box LWC header here -->
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                        title="Close" onclick={closeMassEditPopup}>
+                        <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse"
+                            size="small"></lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h2 class="slds-text-heading_medium slds-hyphenate">Mass Edit</h2>
+                </header>
+                <!-- Modal/Popup Box LWC body starts here -->
+                <div class="slds-modal__content slds-p-around_medium">
+                    <template for:each={massColumnUpdates} for:item="q">
+                        <template if:true={q.lookup}>
+                            <lightning-record-picker
+                                object-api-name={q.objname}
+                                key={q.fieldName}
+                                placeholder="Search..."
+                                label={q.label} 
+                                type={q.type}
+                                onchange={handleInputType} 
+                                field-name={q.fieldName}
+                                display-info={displayInfo}
+                                value={q.inputValue}
+                                matching-info={matchingInfo}
+                                size="small"
+                                class="slds-size_full slds-combobox-addon_end"></lightning-record-picker>
+                        </template>
+                        <template if:true={q.combobox}>
+                            <lightning-combobox
+                                    name="progress"
+                                    key={q.fieldName}
+                                    label={q.label} 
+                                    type={q.type}
+                                    value={comboboxValue}
+                                    placeholder="Select Progress"
+                                    options={comboboxOptions}
+                                    onchange={handleInputType} 
+                                    field-name={q.fieldName}
+                                    required
+                            ></lightning-combobox>
+                        </template>
+                        <template if:true={q.regularType}>
+                            <lightning-input type={q.type} label={q.label} value={q.inputValue} key={q.fieldName} onchange={handleInputType} field-name={q.fieldName}></lightning-input>
+                        </template>
+                    </template>
+                </div>
+                <!-- Modal/Popup Box LWC footer starts here -->
+                <footer class="slds-modal__footer">
+                    <button class="slds-button slds-button_neutral" onclick={closeMassEditPopup}
+                        title="Cancel">Cancel</button>
+                    <button class="slds-button slds-button_brand" onclick={updateMassEditPopup}
+                        title="Apply">Update</button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+</template>

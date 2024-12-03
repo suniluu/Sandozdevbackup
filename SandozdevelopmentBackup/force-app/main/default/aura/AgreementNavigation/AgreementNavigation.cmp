@@ -1,0 +1,6 @@
+<aura:component implements="lightning:isUrlAddressable">
+	    <aura:attribute name="objname" type="String"/>
+        <aura:attribute name="currentRecId" type="String"/>
+    	<aura:handler name="init" value="{!this}" action="{!c.doInit}" description=""/>
+    	<c:agreementHomePage recordId = "{!v.currentRecId}" objectName = "{!v.objname}"/> 
+</aura:component>
