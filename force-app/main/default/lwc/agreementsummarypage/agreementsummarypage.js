@@ -18,6 +18,7 @@ export default class Agreementsummarypage extends NavigationMixin(LightningEleme
     @api fieldValues = {};
     @track formFieldChanges = [];
     @track columns=[];
+    @api rawdata = {};
 
     @track steps = [
         { id: 1, label: 'Step 1: Updating Agreement', completed: false },
@@ -95,7 +96,7 @@ export default class Agreementsummarypage extends NavigationMixin(LightningEleme
     }
 
     connectedCallback() {
-
+        console.log('jj summary page raw data is :',JSON.stringify(this.rawdata))
     }
 
     handleCancel() {
@@ -224,6 +225,7 @@ export default class Agreementsummarypage extends NavigationMixin(LightningEleme
     }
 
     handleSave(){
+        console.log('jj summary page raw data is :',JSON.stringify(this.rawdata))
         const combinedValues = this.combineFieldValues();
         console.log('jj final values for agreements is :',JSON.stringify(combinedValues));
         console.log('jj final values for products is :',JSON.stringify(this.productData));

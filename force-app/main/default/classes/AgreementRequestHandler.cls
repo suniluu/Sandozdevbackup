@@ -1116,6 +1116,18 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
         return [Select id,Section_Name__c,Component_Name__c,Hide_Section__c,Label  from Agreement_Signature_Configuration__mdt where Component_Name__c =: compName  WITH SECURITY_ENFORCED];
     }
 
+
+    public List<Object> getSignatoryMetaDatas(String devName){
+      /*  List<Agreement_Signatory_Detail__mdt> signlist = new List<Agreement_Signatory_Detail__mdt>();
+        if(devName == 'Signatory'){
+            signlist = [Select id,objectApiName__c,fieldApiNames__c,filterFieldApiName__c,Label  from Agreement_Signatory_Detail__mdt where Label =: devName  WITH SECURITY_ENFORCED];
+        }
+        if(devName == 'Authorize Signer'){
+            signlist = [Select id,objectApiName__c,fieldApiNames__c,filterFieldApiName__c,Label  from Agreement_Signatory_Detail__mdt where Label =: devName  WITH SECURITY_ENFORCED];
+        }*/
+        return [Select id,objectApiName__c,fieldApiNames__c,filterFieldApiName__c,Label  from Agreement_Signatory_Detail__mdt where Label =: devName  WITH SECURITY_ENFORCED]; 
+    }
+
     /* public List<SObjectQueryResult> getSignatoryDetails(String objectName,
                                                 String fieldAPINames,
                                                 String filterFieldAPIName,

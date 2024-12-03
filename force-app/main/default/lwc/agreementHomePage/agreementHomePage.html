@@ -72,7 +72,7 @@
             <c-agreementpriceproduct product-data={productdata} newlineitems={newlineitems} index={index} onerrormsg={errormsg} ondiscount={discount} initial-records={initialRecords} initial-data={initialData} onproductdatadelete={deletedata}></c-agreementpriceproduct>
         </div>
         <div class={fourthPageClass} data-step="4">
-            <c-agreementsummarypage record-id={recordId} objectname={objectName} product-data={discountdataprod}  field-values={fieldValues}></c-agreementsummarypage>
+            <c-agreementsummarypage record-id={recordId} objectname={objectName} product-data={discountdataprod}  field-values={fieldValues} rawdata = {rawFieldSetData}></c-agreementsummarypage>
         </div>
         <div class={fifthPageClass} data-step="5">
             <!-- <template if:false={refreshApprovals}>

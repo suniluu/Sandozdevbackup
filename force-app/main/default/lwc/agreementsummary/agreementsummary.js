@@ -4,7 +4,8 @@ import generatePDFAndSave from '@salesforce/apex/DocumentGenerationController.ge
 import getTemplateOptions from '@salesforce/apex/DocumentGenerationController.getTemplateOptions';
 import getClausesOptions from '@salesforce/apex/DocumentGenerationController.getClausesOptions';
 import getButtonsInfo from "@salesforce/apex/AgreementController.getButtonsInfo";
-import getSignatureSectionInfo from "@salesforce/apex/AgreementController.getSignatureSectionInfo"
+import getSignatureSectionInfo from "@salesforce/apex/AgreementController.getSignatureSectionInfo";
+import getSignatoryMetaDatas from "@salesforce/apex/AgreementController.getSignatoryMetaDatas";
 import { NavigationMixin } from 'lightning/navigation';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
@@ -37,6 +38,10 @@ export default class Agreementsummary extends NavigationMixin(LightningElement) 
     @track values = [];
     @api signatoryList;
     @api globalSelectedItems=[];
+
+    @track signatoryObjeApi;
+    @track signatoryFieldsApiNames;
+    @track signatoryFilterFields;
     /*@track newoptions = [
         { label: 'Template 1', value: 'Template 1' },
         { label: 'Template 2', value: 'Template 2' }
@@ -73,22 +78,30 @@ export default class Agreementsummary extends NavigationMixin(LightningElement) 
     }*/
 
     connectedCallback() {
-    console.log('Connected callback, Record ID:', this.recordId);
-    this.loadButtons();
-    this.loadSections();
-   // this.loadSignatorydata();
+        console.log('Connected callback, Record ID:', this.recordId);
+        this.loadButtons();
+        this.loadSections();
+        this.loadSignatorydata();
     }
 
-    /*loadSignatorydata(){
-        getSignatoryDetails({recId :this.recordId})
-        .then((result) => {
-            this.signatorydata =result;
-            console.log('signatorydata Data ::: '+JSON.stringify(this.signatorydata));
-        })
-        .catch((error) => {
+    loadSignatorydata(){
+         getSignatoryMetaDatas({ devName: "Signatory" })
+            .then((result) => {
+                if (result && result.length > 0) {
+                    const signatoryMetadata = result[0]; // Assuming single record is returned
+                    this.signatoryObjeApi = signatoryMetadata.objectApiName__c;
+                    this.signatoryFieldsApiNames = signatoryMetadata.fieldApiNames__c;
+                    this.signatoryFilterFields = signatoryMetadata.filterFieldApiName__c;
+                }
+                console.log('signatoryObjeApi:', this.signatoryObjeApi);
+                console.log('signatoryFieldsApiNames:', this.signatoryFieldsApiNames);
+                console.log('signatoryFilterFields:', this.signatoryFilterFields);
+            })
+            .catch((error) => {
                 this.error = error;
-        });
-    }*/
+                console.error('Error loading signatory metadata:', error);
+            });
+    }
 
     selectItemEventHandler(event){
         let args = event.detail.arrItems;

@@ -62,7 +62,7 @@ global Interface IGenerateAgreementController {
     
     List<Object> AgreementPricevalidate(string agreementLineItemData);
     
-    boolean Agreementlineitemsvalidate(string agreementLineItemData);  
+    List<String> Agreementlineitemsvalidate(string agreementLineItemData);  
 
     List<Object> getButtonData(String compName); 
 	

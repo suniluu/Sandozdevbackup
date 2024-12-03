@@ -450,6 +450,5 @@ export default class AgreementHomePage extends LightningElement {
             });
             this.dispatchEvent(event);
         }
-      
     }
 }

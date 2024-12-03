@@ -22,18 +22,18 @@ public with sharing class DocumentGenerationController {
     }
 
 
-    @AuraEnabled
-    public static Blob previewPDFAndSave(Id recordId,Id templateId) {
+        @AuraEnabled
+        public static String previewPDF(Id recordId,Id templateId) {
 
-        Aggrement__c agreement = [SELECT Id, Name FROM Aggrement__c WHERE Id = :recordId LIMIT 1];
-        PageReference pdfPage = Page.DocumentTemplate;
-        pdfPage.getParameters().put('Id', recordId);
-        pdfPage.getParameters().put('templateId', templateId);
+            Aggrement__c agreement = [SELECT Id, Name FROM Aggrement__c WHERE Id = :recordId LIMIT 1];
+            PageReference pdfPage = Page.DocumentTemplate;
+            pdfPage.getParameters().put('Id', recordId);
+            pdfPage.getParameters().put('templateId', templateId);
 
-        system.debug('templateId'+templateId+'recordId'+recordId);
-        Blob pdfBlob = pdfPage.getContentAsPDF();
-        return pdfBlob;
-    }
+            system.debug('templateId'+templateId+'recordId'+recordId);
+           // Blob pdfBlob = pdfPage.getContentAsPDF();
+            return pdfPage.getUrl();
+        }
 
     @AuraEnabled(cacheable=true)
     public static List<Map<String, String>> getTemplateOptions() {

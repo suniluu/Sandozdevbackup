@@ -208,8 +208,8 @@ public with sharing class AgreementController {
     }
     
         @AuraEnabled
-    public static boolean Agreementlineitemsvalidate(string agreementLineItemData){
-        boolean lstrecord;
+    public static List<String> Agreementlineitemsvalidate(string agreementLineItemData){
+        List<String> lstrecord;
         IGenerateAgreementController customPlugin = AgreementRequestController.getCerPluginInstance('AgreementRequest');
  
         if(customPlugin != null){
