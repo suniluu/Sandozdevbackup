@@ -279,12 +279,18 @@ export default class Agreementsummarypage extends NavigationMixin(LightningEleme
         this.isFirstModalOpen = false;
 
             updateAgreementData({ recordId: this.recordId, agreementData: JSON.stringify(combinedValues) })
-                .then(response => {
-                    console.log('jj after first method:', response);
+            .then(response => {
+                console.log('jj after first method:', JSON.stringify(response));
+                const parsedResponse = response instanceof Object ? response : JSON.parse(response);
+                console.log('Parsed response:', parsedResponse);
+                console.log('Parsed response.success:', parsedResponse.success);
+                console.log('Type of parsed response.success:', typeof parsedResponse.success);
+                console.log('jj before if 1');
 
-                    if (response.success) {
-                        // Capture the new or updated recordId
-                        const updatedRecordId = response?.agr?.Id;
+                const isSuccess = parsedResponse.success === true || parsedResponse.success === 'true';
+                if (isSuccess) {
+                    console.log('jj after if');
+                    const updatedRecordId = parsedResponse?.agr?.Id;
                         if (!updatedRecordId) {
                             console.error('Updated Agreement ID is missing in the response.');
                             throw new Error('Response does not contain a valid Agreement ID.');
@@ -298,7 +304,7 @@ export default class Agreementsummarypage extends NavigationMixin(LightningEleme
                                 .then(configResponse1 => {
                                     console.log('jj is here after second method configResponse :', configResponse1);
 
-                                    if (configResponse1.success) {
+                                    if (configResponse1.success === true || configResponse1.success === 'true') {
                                         this.markStepCompleted(2);
 
                                         if (this.autoApprovals) {
@@ -307,7 +313,7 @@ export default class Agreementsummarypage extends NavigationMixin(LightningEleme
                                                     console.log('jj is here after approvals method configResponse :', approvalsResponse);
                                                     this.markStepCompleted(3);
 
-                                                    if (approvalsResponse.success) {
+                                                    if (approvalsResponse.success === true || approvalsResponse.success === 'true') {
                                                         this.showToast('Success', 'Agreement and ALI are processed successfully.', 'success');
                                                         this.dispatchEvent(new CustomEvent('generateapprovalrequests', {
                                                             detail: approvalsResponse,
