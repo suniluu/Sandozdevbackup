@@ -1,0 +1,6 @@
+<aura:component implements="force:appHostable,flexipage:availableForAllPageTypes,force:lightningQuickActionWithoutHeader,flexipage:availableForRecordHome,force:hasRecordId" access="global"  controller="AgreementController" >
+<aura:attribute name="hasAgreement" type="Boolean" />
+    <aura:handler name="init" action="{!c.doInit}" value="{!this}" />
+
+	
+</aura:component>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomMetadata xmlns="http://soap.sforce.com/2006/04/metadata" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <label>Contracted Products Table</label>
+    <protected>false</protected>
+    <values>
+        <field>Column_JSON__c</field>
+        <value xsi:type="xsd:string">[
+{ &quot;label&quot;: &quot;Product Name&quot;, &quot;fieldName&quot;: &quot;name&quot;,&quot;hideDefaultActions&quot;:&quot;true&quot;,&quot;actions&quot; : [{&quot;label&quot;:&quot;Set Filter&quot;,&quot;disabled&quot;:false,&quot;name&quot;:&quot;filter&quot;,&quot;iconName&quot;: &quot;utility:filter&quot;}, {&quot;label&quot;:&quot;Clear Filter&quot;,&quot;disabled&quot;:true,&quot;name&quot;:&quot;clear&quot;,&quot;iconName&quot;: &quot;utility:clear&quot;}] },
+{ &quot;label&quot;: &quot;National Id&quot;, &quot;fieldName&quot;: &quot;nationalId&quot;, &quot;type&quot;: &quot;text&quot;,&quot;hideDefaultActions&quot;:&quot;true&quot;,&quot;actions&quot; : [{&quot;label&quot;:&quot;Set Filter&quot;,&quot;disabled&quot;:false,&quot;name&quot;:&quot;filter&quot;,&quot;iconName&quot;: &quot;utility:filter&quot;}, {&quot;label&quot;:&quot;Clear Filter&quot;,&quot;disabled&quot;:true,&quot;name&quot;:&quot;clear&quot;,&quot;iconName&quot;: &quot;utility:clear&quot;}] },
+{ &quot;label&quot;: &quot;Contract Number&quot;, &quot;fieldName&quot;: &quot;contractNumber&quot;, &quot;type&quot;: &quot;text&quot;,&quot;hideDefaultActions&quot;:&quot;true&quot;,&quot;actions&quot; : [{&quot;label&quot;:&quot;Set Filter&quot;,&quot;disabled&quot;:false,&quot;name&quot;:&quot;filter&quot;,&quot;iconName&quot;: &quot;utility:filter&quot;}, {&quot;label&quot;:&quot;Clear Filter&quot;,&quot;disabled&quot;:true,&quot;name&quot;:&quot;clear&quot;,&quot;iconName&quot;: &quot;utility:clear&quot;}] },
+{ &quot;label&quot;: &quot;Quantity&quot;, &quot;fieldName&quot;: &quot;quantity&quot;, &quot;type&quot;: &quot;number&quot;, &quot;editable&quot;: &quot;true&quot; ,&quot;hideDefaultActions&quot;:&quot;true&quot;,&quot;actions&quot; : [{&quot;label&quot;:&quot;Set Filter&quot;,&quot;disabled&quot;:false,&quot;name&quot;:&quot;filter&quot;,&quot;iconName&quot;: &quot;utility:filter&quot;}, {&quot;label&quot;:&quot;Clear Filter&quot;,&quot;disabled&quot;:true,&quot;name&quot;:&quot;clear&quot;,&quot;iconName&quot;: &quot;utility:clear&quot;}]}
+]</value>
+    </values>
+</CustomMetadata>

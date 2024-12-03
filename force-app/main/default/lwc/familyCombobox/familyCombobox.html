@@ -1,0 +1,17 @@
+<template>
+    <template if:true={isFamily}>
+        <lightning-combobox
+                name="progress"
+                label="Status"
+                value={dropdownValue}
+                variant="label-hidden" 
+                placeholder="Select Type"
+                options={dropdownoptions}
+                onchange={handleChange}
+                required
+        ></lightning-combobox>
+    </template>
+    <template if:false={isFamily}>
+        {dropdownValue}
+    </template>
+</template>

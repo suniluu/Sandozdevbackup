@@ -1,0 +1,64 @@
+<template>
+    <div class="slds-page-header slds-page-header_record-home">
+      <div class="slds-page-header__row">
+        <div class="slds-page-header__col-title">
+          <div class="slds-media">
+            <div class="slds-col slds-size_2-of-12">
+              <img src={scalefluidlyLogo} />
+            </div>
+            <div class="slds-media__figure slds-p-left_medium">
+              <div class="container slds-float_left">
+                <lightning-icon
+                  icon-name={objicon}
+                  alternative-text="Account Icon"
+                  title="Icon"
+                >
+                </lightning-icon>
+              </div>
+            </div>
+            <div class="slds-media__body">
+              <div class="slds-page-header__name">
+                <div class="slds-page-header__name-title">
+                  <h1>
+                    <span>{objname}</span>
+                    <span class="slds-page-header__title slds-truncate"
+                      >{recname}</span
+                    >
+                  </h1>
+                 </div>
+            </div>
+            <div class="container slds-float_right">
+              <div class="slds-grid grid-class" >
+                <div class="slds-col slds-size_7-of-9 totalprice" >
+                  <b> Total Net Price : {totalPrice}</b>
+                </div>
+                <div class="slds-col slds-size_2-of-9">
+                  <lightning-icon
+                    class="badge"
+                    size="Medium"
+                    icon-name="custom:custom93"
+                    onclick={handlePopUpData}
+                    alternative-text="Badge"
+                  ></lightning-icon>
+                  <div class="badge-value">{cartCount}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="slds-page-header__row slds-page-header__row_gutters ">
+      <div class="slds-page-header__col-details">
+        <ul class="slds-page-header__detail-row fields">
+          <template for:each={orderData} for:item="q">
+            <li class="slds-page-header__detail-block" key={q.fieldName}>
+              <div class="slds-text-title slds-truncate">{q.label}</div>
+              <div class="slds-truncate">{q.value}</div>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </div>
+  </div>
+</template>

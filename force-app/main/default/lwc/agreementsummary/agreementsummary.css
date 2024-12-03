@@ -1,0 +1,118 @@
+.map-container lightning-map {
+    height: 85%; 
+}
+.combobox{
+   width: 150px;
+    padding: 10px;
+}
+
+.multisearch{
+    margin-top: -10px;
+}
+
+.custom{
+    height: 19rem;
+    margin-left: 10px;
+    width: 26rem;
+    border: 1px solid black;
+   
+}
+
+.custom2{
+    height: 19rem;
+    margin-left: 10px;
+    width: 20rem;
+    border: 1px solid black;
+   
+}
+
+h4{
+    width: 8rem;
+    margin-top: -10px;
+    margin-left: 0.5rem;
+    background-color: white;
+}
+
+h3{
+   width: 4rem;
+    margin-top: -10px;
+    margin-left: 0.5rem;
+    background-color: white;
+}
+
+.custom1{
+    width: 30px;
+    margin-top:-12px;
+    margin-left:7px;
+    padding-right:44%;
+    background-color : white;
+}
+.button{
+    margin-top: -15px;
+}
+.custom-button {
+    background-color: green; 
+    color: white;
+    border: none;
+    float:right;
+    border-radius: 0.25rem;
+    font-size: 0.90rem;
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out;
+    padding-right:0.15rem;
+    margin-right: 5px;
+    margin-left: 5px;
+    height: 2rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+}
+
+.first-box{
+    width:15rem;
+    margin-left:1rem;
+}
+
+.new-contract-design{
+    padding-top:0.5rem;
+    padding-left:0.2rem;
+}
+
+.amend-contract-design{
+    padding-left:1rem;
+}
+
+.amend-contract-form{
+    padding-top:0.5rem;
+    padding-left:0.2rem;
+}
+
+.column-design{
+    padding-left: 0.8rem;
+    padding-right: 0.8rem;
+    margin-top:0.3rem;
+}
+
+.design-right{
+    padding-right:0.15rem;
+}
+
+.design-top{
+    margin-top: 2rem;
+}
+
+.design-map{
+    padding-left: 1rem;
+    padding-right:1rem;
+}
+
+.design-more-padding-left{
+    padding-left: 2rem;
+}
+
+.design-less-padding-left{
+    margin-left: -1rem;
+}
+
+.design-width{
+    width:30rem;
+}

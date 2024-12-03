@@ -1,0 +1,61 @@
+<template>
+    <div class="slds-form-element slds-grid slds-wrap">
+        <div class="slds-form-element__control">
+            <div class="slds-combobox_container slds-m-bottom_xxx-small">
+                <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open slds-m-bottom_xxx-small"
+                    aria-expanded="true" aria-haspopup="listbox" role="combobox">
+                    <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-has-focus slds-m-top_medium searchBox"
+                        role="none">
+                        <lightning-input id="input" value={searchInput} onchange={onchangeSearchInput}
+                            variant="label-hidden" aria-autocomplete="list" role="textbox" autocomplete="off"
+                            placeholder="Search Signatory....." type="search">
+                        </lightning-input>
+                    </div>
+                    <template if:true={isDisplayCheckbox}>
+                        <section aria-describedby="dialog-body-id-26" aria-label="Language Options"
+                            class="slds-card  " id="popover-unique-id-02" role="dialog">
+                            <div class="slds-popover__body slds-popover__body_small" id="dialog-body-id-26">
+                                <div class="slds-scrollable_y" style="height:3rem;">
+                                    <fieldset class="slds-form-element ">
+                                        <lightning-checkbox-group name="Checkbox Group" label={objectAPIName}
+                                            options={items} value={value} onchange={handleCheckboxChange}>
+                                        </lightning-checkbox-group>
+                                    </fieldset>
+                                </div>
+
+                            </div>
+                        </section>
+                    </template>
+                   
+                    <div class="slds-m-top_xxx-small slds-m-bottom_xxx-small" role="none" if:true={globalSelectedItems}>
+                        <article class="slds-scrollable_y" style="max-height:1.8rem;">
+                            <div class="slds-grid slds-wrap selectedTagsClass ">
+                                <template for:each={globalSelectedItems} for:item="selectedItem">
+                                    <div key={selectedItem.value}
+                                        class=" slds-p-around_xx-small slds-p-right_xx-small ">
+                                        <article
+                                            class="slds-card slds-card_boundary slds-p-left_xx-small slds-p-right_xx-small"
+                                            style="margin-bottom: -2px; ">
+                                            <div>
+                                                <lightning-icon icon-name="standard:avatar" size='x-small'>
+                                                </lightning-icon>&nbsp;
+                                                <label name={selectedItem.value}
+                                                    >{selectedItem.label}</label> &nbsp;
+                                                <lightning-icon icon-name="utility:close" variant="circle"
+                                                    size="xx-small" data-item={selectedItem.value} 
+                                                    onclick={handleRemoveRecord}></lightning-icon>
+                                            </div>
+                                        </article>
+                                    </div>
+                                </template>
+                            </div>
+
+                        </article>
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</template>

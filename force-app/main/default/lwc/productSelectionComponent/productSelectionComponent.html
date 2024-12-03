@@ -1,0 +1,28 @@
+<template>
+    <lightning-card>
+        <div class="slds-grid slds-p-bottom_x-small" style="position: absolute; width: 98%;">
+            <div class="slds-col slds-size_10-of-12" style="padding-left: 1rem;" >
+            </div>
+            <div class="slds-col slds-size_2-of-12" style="padding-left:4.7rem;">
+                <lightning-button variant="brand" label="Add Products" title="Add Products"
+                       disabled={disableButton} onclick={handleAddLineItems} class="slds-m-left_x-small" style="float:right; margin-right:-1rem;"></lightning-button> 			 
+            </div>
+        </div>		
+	
+		<div class="tabset-height">
+			<lightning-tabset >
+				<template for:each={tabsData} for:item="q" >
+					<template if:false={q.Hide_Tab__c}>
+						<lightning-tab label={q.Tab_Label__c} icon-name={q.Icon_Name__c} key={q.DeveloperName} >
+							<c-agreement-tab-comp tablabel={q.DeveloperName} rec-id={recordId}  fields={fieldValues} objectapiname={objectapiname}
+								 pre-selected-record={preSelectedData}
+								ongetagreementcatelog={handlegetagreementcatelog} ongetagreementfast={handlegetagreementfast} pre-selected-rows={preSelectedRows}
+								pre-fast-selected-rows={preFastSelectedRows} field-data-with-labels={fieldDataWithLabels} 
+							></c-agreement-tab-comp>
+						</lightning-tab>
+					</template>
+				</template>
+			</lightning-tabset>		
+		</div>
+    </lightning-card>
+</template>

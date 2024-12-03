@@ -1,0 +1,54 @@
+<template>
+    <lightning-card>
+        <div class="slds-col slds-size_6-of-12 icon-class">
+            <lightning-icon
+                icon-name="standard:contract_line_item"
+                alternative-text="Agreement Information"
+                size="xx-medium"
+                title="Agreement Information"
+                variant="inverse">
+            </lightning-icon>
+            <b class="icon-name">Agreement Information</b>
+        </div>
+        <template if:true={fieldSetFields}>
+            <lightning-record-edit-form object-api-name={objectName} onsuccess={handleSuccess}>
+                <lightning-layout multiple-rows>
+                    <template for:each={fieldSetFields} for:item="field">
+                        <lightning-layout-item key={field.fieldName} size="6">
+                            <template if:true={field.isReadOnly}>
+                                <lightning-input-field
+                                    field-name={field.fieldName}
+                                    value={field.value}
+                                    disabled="true">
+                                </lightning-input-field>
+                            </template>
+                            <template if:false={field.isReadOnly}>
+                                <lightning-input-field
+                                    field-name={field.fieldName}
+                                    value={field.value}
+                                    required={field.isRequired}
+                                    onchange={handleFieldChange}>
+                                </lightning-input-field>
+                            </template>
+                        </lightning-layout-item>
+                    </template>
+                </lightning-layout>
+                <template if:true={showButtons}>
+                    <div class="slds-grid slds-grid_align-center slds-m-top_medium">
+                        <lightning-button
+                            label="Cancel"
+                            variant="neutral"
+                            class="slds-m-right_medium"
+                            onclick={handleCancel}>
+                        </lightning-button>
+                        <lightning-button
+                            label="Save"
+                            variant="brand"
+                            onclick={handleSave}>
+                        </lightning-button>
+                    </div>
+                </template>
+            </lightning-record-edit-form>
+        </template>
+    </lightning-card>
+</template>

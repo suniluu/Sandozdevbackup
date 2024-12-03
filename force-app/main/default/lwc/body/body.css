@@ -1,0 +1,11 @@
+.slds-tabs_default__nav{
+	padding-left: 40%!important;
+}
+
+.show-div {
+	display: block;
+}
+
+.hide-div {
+	display: none;
+}

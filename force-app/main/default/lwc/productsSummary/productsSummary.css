@@ -1,0 +1,20 @@
+.backgroundcolor {
+  background-color: var(--lwc-brandAccessible,rgb(1, 118, 211));
+    border-color: var(--lwc-brandAccessible,rgb(1, 118, 211));
+}
+.button-div{
+    padding-left: 0.25rem;
+}
+.search-Input{
+ 	width:20rem;
+}
+.icon-div{
+    padding-right: 1rem;
+}
+.reset-icon{
+    transform: scaleX(-1);
+}
+
+.slds-modal__container {
+    width: 60%;
+}

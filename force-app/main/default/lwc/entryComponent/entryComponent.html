@@ -1,0 +1,21 @@
+<template>
+    <template if:true={isLoading}>
+        <lightning-spinner variant="brand" alternative-text="Loading Data" size="medium" >
+        </lightning-spinner>
+    </template >
+    <lightning-record-edit-form object-api-name={objectName}  onload={onloaded}
+        onsuccess={handleSuccess} onsubmit={validateFields} onerror={handleError}>
+        <lightning-messages data-id="message">
+        </lightning-messages>
+        <div class="slds-grid slds-wrap">
+            <template if:true={fields}>
+                <template for:each={fields} for:item="f">
+                    <div key={f.Id} class="slds-col slds-size_1-of-2">
+                        <lightning-input-field  field-name={f.fieldName} onchange={handleFieldChange} field-label={f.Label} value={f.value} disabled={f.isDisabled} required={f.isRequired}>
+                        </lightning-input-field>
+                    </div>
+                </template>
+            </template>
+        </div>
+    </lightning-record-edit-form>
+</template>
