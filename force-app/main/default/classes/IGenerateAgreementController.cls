@@ -5,7 +5,9 @@ global Interface IGenerateAgreementController {
     * @param Map<Id Object> scopeObjectLst 
     * @param ; 
     **/
-    
+
+    List<String> getApprovalsRelatedData();
+
 	List<Map<String, Object>> populateDefaultAgreementData(List<Map<String, Object>> fields, Id recordId); 
     
     List<Map<String, Object>> getAgreementHomePageFieldSet(String objectName, Id recordId);
@@ -62,13 +64,15 @@ global Interface IGenerateAgreementController {
     
     List<Object> AgreementPricevalidate(string agreementLineItemData);
     
-    List<String> Agreementlineitemsvalidate(string agreementLineItemData);  
+    boolean Agreementlineitemsvalidate(string agreementLineItemData);  
 
     List<Object> getButtonData(String compName); 
 	
     List<Object> getSignatureSection(String compName); 
 
-    List<Object> getSignatoryMetaDatas(String devName); 
+    List<Object> getSignatoryMetaDatas(String devName);
+
+    List<Object> getAuthorizeSignerMetaData(String devName); 
 
      List<Object> getSignatoryDetails(String objectName,
                                                 String fieldAPINames,

@@ -13,7 +13,21 @@ public with sharing class AgreementController {
         }
         return accList;
     }
-        
+
+    @AuraEnabled(cacheable=true)
+    public static List<String> getApprovalsRelatedData(){
+        List<String> result = new List<String>();
+        IGenerateAgreementController customPlugin = AgreementRequestController.getCerPluginInstance('AgreementRequest');
+        if(customPlugin != null){
+            try{
+                result = customPlugin.getApprovalsRelatedData();
+            } catch(Exception e){
+                system.debug('Error encountered');
+            }
+        }
+        return result;
+    }
+
     @AuraEnabled(cacheable=true)
     public static List<Account> getCompanyLocations(String agrID) {
         List<Account> accList = new List<Account>();
@@ -208,8 +222,8 @@ public with sharing class AgreementController {
     }
     
         @AuraEnabled
-    public static List<String> Agreementlineitemsvalidate(string agreementLineItemData){
-        List<String> lstrecord;
+    public static boolean Agreementlineitemsvalidate(string agreementLineItemData){
+        boolean lstrecord;
         IGenerateAgreementController customPlugin = AgreementRequestController.getCerPluginInstance('AgreementRequest');
  
         if(customPlugin != null){
@@ -490,6 +504,20 @@ public with sharing class AgreementController {
         if(customPlugin != null){
             try{
             	lstButtonInfo = customPlugin.getSignatoryMetaDatas(devName);
+            } catch(Exception e){
+                customPlugin.errorHandleling('',e);
+            }
+        }
+        return lstButtonInfo;
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static List<Object> getAuthorizeSignerMetaData(String devName){
+        List<Object> lstButtonInfo = new List<Object>();
+        IGenerateAgreementController customPlugin = AgreementRequestController.getCerPluginInstance('AgreementRequest');
+        if(customPlugin != null){
+            try{
+            	lstButtonInfo = customPlugin.getAuthorizeSignerMetaData(devName);
             } catch(Exception e){
                 customPlugin.errorHandleling('',e);
             }

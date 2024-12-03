@@ -39,6 +39,40 @@ public class AgreementRequestHandler implements IGenerateAgreementController {
         @AuraEnabled
         public String relatedName { get; set; }
     }
+
+    @AuraEnabled
+    public static List<String> getApprovalsRelatedData() {
+        List<String> result = new List<String>();
+        
+        try {
+            List<Agreement_Request_Setting__mdt> approvalMetaData = [
+                SELECT Approval_Product_To_Be_Used__c, Submit_Approvals_Automatically__c
+                FROM Agreement_Request_Setting__mdt
+                WHERE Approval_Product_To_Be_Used__c != NULL
+                AND Submit_Approvals_Automatically__c != NULL
+                LIMIT 1
+            ];
+            
+            // Ensure metadata is available
+            if (!approvalMetaData.isEmpty()) {
+                Agreement_Request_Setting__mdt metaData = approvalMetaData[0];
+                
+                // Add the values to the result list, ensuring null safety
+                if (metaData.Approval_Product_To_Be_Used__c != null) {
+                    result.add(metaData.Approval_Product_To_Be_Used__c);
+                }
+                if (metaData.Submit_Approvals_Automatically__c != null) {
+                    result.add(String.valueOf(metaData.Submit_Approvals_Automatically__c));
+                }
+            }
+        } catch (Exception ex) {
+            // Log and rethrow the exception for visibility
+            System.debug('Error fetching approval metadata: ' + ex.getMessage());
+            throw new AuraHandledException('An error occurred while retrieving approval metadata.');
+        }
+        
+        return result;
+    }
     
     @AuraEnabled
     public static List<Map<String, Object>> populateDefaultAgreementData(List<Map<String, Object>> fields, Id recordId) {
@@ -453,23 +487,53 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
         }
     }
     
-    public Object generateApprovalRequests(String agreementId){        
+    public Object generateApprovalRequests(String agreementId) {
         try {
+            // Step 1: Query the Agreement record
             Aggrement__c agrObj = [SELECT Id, Owner.Id FROM Aggrement__c WHERE Id = :agreementId];
+
+            // Step 2: Create an Approval__c record (if required as a supporting object)
             Approval__c approvalObj = new Approval__c();
             approvalObj.Related_Agreement__c = agreementId;
             approvalObj.Approval_Description__c = 'This is an approval request created';
             approvalObj.Approval_Owner__c = agrObj.Owner.Id;
             insert approvalObj;
-            AgreementUpdateResponse agrResponse =  new AgreementUpdateResponse(true, 'Approval Generated Successfully.', null);
-            String jsonResponse = JSON.serialize(agrResponse);
+
+            // Step 3: Submit the Agreement for Approval
+            Approval.ProcessSubmitRequest approvalRequest = new Approval.ProcessSubmitRequest();
+            approvalRequest.setComments('Submitting Agreement to Sample Approval Process');
+            approvalRequest.setObjectId(agrObj.Id); // Set the record ID to be submitted
+            approvalRequest.setProcessDefinitionNameOrId('Sample_Approval_Process'); // Name or ID of the approval process
+
+            Approval.ProcessResult result = Approval.process(approvalRequest); // Submit the approval request
+
+            // Step 4: Check result status and return response
+            if (result.isSuccess()) {
+                AgreementUpdateResponse agrResponse = new AgreementUpdateResponse(
+                    true,
+                    'Approval Process started successfully.',
+                    null
+                );
+                return agrResponse;
+            } else {
+                AgreementUpdateResponse agrResponse = new AgreementUpdateResponse(
+                    false,
+                    'Failed to start approval process. Errors: ' + result.getInstanceStatus(),
+                    null
+                );
+                return agrResponse;
+            }
+        } catch (Exception e) {
+            // Step 5: Handle any exceptions
+            AgreementUpdateResponse agrResponse = new AgreementUpdateResponse(
+                false,
+                'Error generating approvals: ' + e.getMessage(),
+                null
+            );
             return agrResponse;
-        } catch (DmlException e) {
-            AgreementUpdateResponse agrResponse =  new AgreementUpdateResponse(false, 'Error generating approvals: '+ e.getMessage(), null);           
-            String jsonResponse = JSON.serialize(agrResponse);
-            return jsonResponse;
         }
     }
+
     
     
 	public List<Object> getRecordTypeData(){
@@ -579,19 +643,44 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
     }
         
     
-    public Object updateAgreementData(String recordId, List<Object> agreementData){
-        List<AgreementField> orderFields = new List<AgreementField>();
-        Aggrement__c agrObj = [Select Id FROM Aggrement__c WHERE Id =:recordId];
-		String accName;
-		String priceListName;
-		Account accObj;
-		Price_List__c plObj;
+    public Object updateAgreementData(String recordId, List<Object> agreementData) {
+        Aggrement__c agrObj;
+        String accName;
+        String priceListName;
+        Account accObj;
+        Price_List__c plObj;
+
         try {
+            // Determine the type of record for the given recordId
+            String recordType = '';
+            if ([SELECT Id FROM Account WHERE Id = :recordId LIMIT 1].size() > 0) {
+                recordType = 'Account';
+            } else if ([SELECT Id FROM Opportunity WHERE Id = :recordId LIMIT 1].size() > 0) {
+                recordType = 'Opportunity';
+            } else if ([SELECT Id FROM Aggrement__c WHERE Id = :recordId LIMIT 1].size() > 0) {
+                recordType = 'Agreement';
+            } else {
+                system.debug('Invalid recordId provided. Record does not belong to Account, Opportunity, or Agreement.');
+            }
+
+            // If record belongs to Agreement, fetch it; otherwise, create a new agreement
+            if (recordType == 'Agreement') {
+                agrObj = [SELECT Id FROM Aggrement__c WHERE Id = :recordId LIMIT 1];
+            } else {
+                agrObj = new Aggrement__c();
+                if (recordType == 'Account') {
+                    agrObj.Account__c = recordId;
+                } else if (recordType == 'Opportunity') {
+                    agrObj.Opportunity__c = recordId;
+                }
+            }
+
+            // Process agreementData to populate fields
             for (Object item : agreementData) {
                 Map<String, Object> fieldMap = (Map<String, Object>)item;
                 String fieldName = (String)fieldMap.get('fieldName');
-                Object value = fieldMap.get('value');  // Use Object to handle any type
-            
+                Object value = fieldMap.get('value'); // Use Object to handle any type
+
                 if (String.isNotBlank(fieldName) && !fieldName.equals('Account__c') && !fieldName.equals('Price_List__c') && !fieldName.equals('Name')) {
                     if (fieldName.equals('Agreement_Start_Date__c') && value instanceof String) {
                         Date startDate = Date.valueOf((String)value);
@@ -600,42 +689,56 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
                         Date endDate = Date.valueOf((String)value);
                         agrObj.put(fieldName, endDate);
                     } else if (fieldName.equals('Active__c') && value instanceof Boolean) {
-                        agrObj.put(fieldName, value);  // Directly use Boolean value
+                        agrObj.put(fieldName, value); // Directly use Boolean value
                     } else {
-                        agrObj.put(fieldName, value != null ? String.valueOf(value) : null);  // Convert to string if needed
+                        agrObj.put(fieldName, value != null ? String.valueOf(value) : null); // Convert to string if needed
                     }
                 }
-                if(fieldName.equals('Account__c')){
+                if (fieldName.equals('Account__c')) {
                     accName = (String)value;
                 }
-                if(fieldName.equals('Price_List__c')){
+                if (fieldName.equals('Price_List__c')) {
                     priceListName = (String)value;
                 }
             }
-			if(accName!=null && !accName.startsWith('001')){
-                system.debug('jj accName is :'+accName);
-                accObj = [SELECT Id FROM Account WHERE Name = :accName];
-                if(accObj!=null){
+
+            // Handle Account reference
+            if (accName != null && !accName.startsWith('001')) {
+                System.debug('jj accName is :' + accName);
+                accObj = [SELECT Id FROM Account WHERE Name = :accName LIMIT 1];
+                if (accObj != null) {
                     agrObj.Account__c = accObj.Id;
                 }
-			}
-			if(priceListName!=null && !priceListName.startsWith('a0F')){
-                system.debug('jj priceListName is :'+priceListName);
-                plObj = [SELECT Id FROM Price_List__c WHERE Name = :priceListName];
-                if(plObj!=null){
+            }
+
+            // Handle Price List reference
+            if (priceListName != null && !priceListName.startsWith('a0F')) {
+                System.debug('jj priceListName is :' + priceListName);
+                plObj = [SELECT Id FROM Price_List__c WHERE Name = :priceListName LIMIT 1];
+                if (plObj != null) {
                     agrObj.Price_List__c = plObj.Id;
                 }
-			}
-            update agrObj;
-            AgreementUpdateResponse agrResponse =  new AgreementUpdateResponse(true, 'Updated Agreement Successfully.', agrObj);
-            String jsonResponse = JSON.serialize(agrResponse);
-            return agrResponse;
+            }
+
+            // Insert or update the agreement record
+            if (recordType == 'Agreement') {
+                update agrObj;
+            } else {
+                agrObj.Agreement_Name__c = 'Agreement Created';
+                insert agrObj;
+            }
+
+            // Prepare success response
+            AgreementUpdateResponse agrResponse = new AgreementUpdateResponse(true, 'Agreement processed successfully.', agrObj);
+            return JSON.serialize(agrResponse);
+
         } catch (Exception e) {
-            AgreementUpdateResponse agrResponse =  new AgreementUpdateResponse(false, 'Error updating Agreement: '+ e.getMessage(), null);           
-            String jsonResponse = JSON.serialize(agrResponse);
-            return jsonResponse;
+            // Handle errors
+            AgreementUpdateResponse agrResponse = new AgreementUpdateResponse(false, 'Error processing Agreement: ' + e.getMessage(), null);
+            return JSON.serialize(agrResponse);
         }
-    }    
+    }
+  
     
     public class AgreementLineItemData {
         public Decimal listPrice;
@@ -1118,13 +1221,10 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
 
 
     public List<Object> getSignatoryMetaDatas(String devName){
-      /*  List<Agreement_Signatory_Detail__mdt> signlist = new List<Agreement_Signatory_Detail__mdt>();
-        if(devName == 'Signatory'){
-            signlist = [Select id,objectApiName__c,fieldApiNames__c,filterFieldApiName__c,Label  from Agreement_Signatory_Detail__mdt where Label =: devName  WITH SECURITY_ENFORCED];
-        }
-        if(devName == 'Authorize Signer'){
-            signlist = [Select id,objectApiName__c,fieldApiNames__c,filterFieldApiName__c,Label  from Agreement_Signatory_Detail__mdt where Label =: devName  WITH SECURITY_ENFORCED];
-        }*/
+        return [Select id,objectApiName__c,fieldApiNames__c,filterFieldApiName__c,Label  from Agreement_Signatory_Detail__mdt where Label =: devName  WITH SECURITY_ENFORCED]; 
+    }
+
+    public List<Object> getAuthorizeSignerMetaData(String devName){
         return [Select id,objectApiName__c,fieldApiNames__c,filterFieldApiName__c,Label  from Agreement_Signatory_Detail__mdt where Label =: devName  WITH SECURITY_ENFORCED]; 
     }
 
