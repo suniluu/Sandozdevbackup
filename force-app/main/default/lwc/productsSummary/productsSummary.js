@@ -13,6 +13,7 @@ import getRecordsFromPromoAction from "@salesforce/apex/ProductController.getRec
 import applyPromotionToProduct from "@salesforce/apex/ProductController.applyPromotionToProduct";
 import orderPricevalidate from "@salesforce/apex/ProductController.orderPricevalidate";
 import orderlineitemsvalidate from "@salesforce/apex/ProductController.orderlineitemsvalidate";
+import customPriceCalculation from "@salesforce/apex/ProductController.customPriceCalculation";
 const FIELDS = [
     'QOEGraph__mdt.MasterLabel',
     'QOEGraph__mdt.DeveloperName',
@@ -61,6 +62,8 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
   @track chartConfiguration;
   @track barchart = false;
   @track searchKey = '';
+  @track displayerror='';
+  @api newlineitems=[];
 
   //added by K
   @track isModalOpen = false;
@@ -161,6 +164,9 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
             massColObj.selectedField =
               this.columns[i].typeAttributes.selectedValue.fieldName;
           } else {
+             massColObj.customdiscount= this.columns[i].typeAttributes.customdiscount == "true"
+                ? true
+                : false;
             massColObj.regularType = true;
             massColObj.reqDropdown =
               this.columns[i].typeAttributes.reqDropdown == "true"
@@ -195,6 +201,9 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
             inlinecol.selectedField =
               this.columns[i].typeAttributes.selectedValue.fieldName;
           } else {
+             inlinecol.customdiscount= this.columns[i].typeAttributes.customdiscount == "true"
+                ? true
+                : false;
             inlinecol.regularType = true;
             inlinecol.reqDropdown =
               this.columns[i].typeAttributes.reqDropdown == "true"
@@ -390,6 +399,9 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
                     obj.selectedDropdownValue =
                       this.massColumnUpdates[j].selectedDropdownValue;
                   }
+                  if(this.massColumnUpdates[j].customdiscount){
+                     obj.customdiscount=this.massColumnUpdates[j].customdiscount?this.massColumnUpdates[j].customdiscount:'';
+                  }
                   obj[this.massColumnUpdates[j].fieldName] =
                     this.massColumnUpdates[j].inputValue;
                   if (this.massColumnUpdates[j].fieldName == this.discount) {
@@ -400,6 +412,7 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
                     this.massColumnUpdates[j].inputValue;
                 }
               }
+              console.log(JSON.stringify(obj)+' obj');
               editedArray.push(draftObj);
               this.discountmap[obj.recordIndex] = obj;
             }
@@ -438,16 +451,16 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
     );
     for (var j = 0; j < this.inlineEditCol.length; j++) {
       for (var i = 0; i < proddata.length; i++) {
-
         if (this.inlineEditCol[j].inputValue) {
           valuenull = false;
         }
         if (
           this.inlineEditCol[j].reqDropdown &&
-          this.inlineEditCol[j].selectedDropdownValue == "" &&
+         this.inlineEditCol[j].selectedDropdownValue == "" &&
           valuenull == false &&
           this.inlineEditCol[j].inputValue != ""
         ) {
+    
           const event = new ShowToastEvent({
             title: "Error",
             message: "Please Select Discount Type",
@@ -457,6 +470,7 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
           this.dispatchEvent(event);
           inlinetypeval = false;
           break;
+          
         }
         if (
           this.inlineEditCol[j].reqDropdown &&
@@ -510,7 +524,9 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
         if (this.inlinerecordindex == obj.recordIndex) {
           var draftObj = {};
           for (var j = 0; j < this.inlineEditCol.length; j++) {
+             console.log(this.inlineEditCol[j].inputValue+' this.inlineEditCol[j].inputValue 515');
             if (this.inlineEditCol[j].inputValue) {
+               console.log(this.inlineEditCol[j].inputValue+' this.inlineEditCol[j].inputValue 517');
               valuenull = false;
               draftObj.recordIndex = obj.recordIndex;
               if (this.inlineEditCol[j].type == "customName") {
@@ -520,13 +536,16 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
                   this.inlineEditCol[j].inputValue;
               } else if (this.inlineEditCol[j].type == "customCombox") {
                 var hasValue = false;
+
                 for (var k = 0; k < obj.options.length; k++) {
+                   console.log( obj.options[k].value == this.inlineEditCol[j].inputValue+'  528');
                   if (
                     obj.options[k].value == this.inlineEditCol[j].inputValue
                   ) {
                     hasValue = true;
                   }
                 }
+                console.log( hasValue+'  535');
                 if (hasValue) {
                   obj[this.inlineEditCol[j].selectedField] =
                     this.inlineEditCol[j].inputValue;
@@ -554,6 +573,22 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
                       this.inlineEditCol[j].inputValue;
                   }
                 }
+                if(this.inlineEditCol[j].customdiscount){
+                   obj[this.inlineEditCol[j].fieldName] =
+                      this.inlineEditCol[j].inputValue;
+                draftObj[this.inlineEditCol[j].fieldName] =
+                      this.inlineEditCol[j].inputValue;
+                      obj.customdiscount=this.inlineEditCol[j].customdiscount;
+                }
+                if(this.inlineEditCol[j].fieldupdate){
+                   obj[this.inlineEditCol[j].fieldName] =
+                      this.inlineEditCol[j].inputValue;
+                draftObj[this.inlineEditCol[j].fieldName] =
+                      this.inlineEditCol[j].inputValue;
+                      obj.customdiscount=this.inlineEditCol[j].customdiscount;
+                }
+                
+               
               }
             }
           }
@@ -619,6 +654,15 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
       composed: true
     });
     this.dispatchEvent(netPriceEvent);
+     this.displayerror = false;
+    let checkingvalue=true;
+    const displayerror = { displayerror: this.displayerror, checkingvalue: checkingvalue };
+    const errormsg1 = new CustomEvent("errormsg", {
+      detail: displayerror,
+      bubbles: true,
+      composed: true
+    });
+    this.dispatchEvent(errormsg1);
     this.totalNetPrice = 0;
   }
   handleSearch(event) {
@@ -728,13 +772,15 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
             this.inlineEditCol[j].type == "customName"
               ? event.detail.recordId
               : event.detail.value;
+              console.log(this.inlineEditCol[j].inputValue+' this.inlineEditCol[j].inputValue');
         } else if (
           event.target.name == "DiscountType" &&
           this.inlineEditCol[j].reqDropdown == true
         ) {
-          this.inlineEditCol[j].selectedDropdownValue = event.detail.value;
+          this.inlineEditCol[j].selectedDropdownValue = this.inlineEditCol[j].reqDropdown == true?event.detail.value:'';
         }
       }
+       console.log(JSON.stringify(this.inlineEditCol)+' this.inlineEditCol');
     } else {
       for (var j = 0; j < this.massColumnUpdates.length; j++) {
         if (this.massColumnUpdates[j].fieldName == event.target.name) {
@@ -746,9 +792,10 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
           event.target.name == "DiscountType" &&
           this.massColumnUpdates[j].reqDropdown == true
         ) {
-          this.massColumnUpdates[j].selectedDropdownValue = event.detail.value;
+          this.massColumnUpdates[j].selectedDropdownValue =  this.massColumnUpdates[j].reqDropdown == true?event.detail.value:'';
         }
       }
+      console.log(JSON.stringify(this.massColumnUpdates)+' this.massColumnUpdates');
     }
   }
   closeMassEditPopup() {
@@ -805,9 +852,50 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
   }
 
   handleSave(event) {
+    let prodatawithcustomdiscount=[];
     this.saveDraftValues = event.detail.draftValues;
     var dataArray = [];
     let quantityUpdated = false;
+    let checkingvalue;
+    let errormsg;
+    orderlineitemsvalidate({
+      orderLineItemData: JSON.stringify(this.productData)
+    })
+     .then((result) => {
+     
+        if (result) {
+             this.displayerror = true;
+        checkingvalue=true;
+        errormsg=result;
+           console.log('this.displayerror' +this.displayerror);
+          let displayerror = { displayerror: this.displayerror, checkingvalue: checkingvalue,errormsg: errormsg };
+           console.log('this.displayerror' +JSON.stringify(displayerror));
+          let errormsg1 = new CustomEvent("errormsg", {
+            detail: displayerror,
+            bubbles: true,
+            composed: true
+          });
+          this.dispatchEvent(errormsg1);
+           console.log('this.errormsg1' +JSON.stringify(errormsg1));
+        } else {
+          this.displayerror = false;
+           checkingvalue=true;
+          const displayerror = { displayerror: this.displayerror, checkingvalue: checkingvalue };
+          const errormsg1 = new CustomEvent("errormsg", {
+            detail: displayerror,
+            bubbles: true,
+            composed: true
+          });
+          const event = new ShowToastEvent({
+                title: "Success",
+                message: "Cart validated successfully! No errors found!",
+                variant: "Success",
+                mode: "dismissable"
+            });
+            this.dispatchEvent(event);
+          this.dispatchEvent(errormsg1);
+    
+
     for (var i = 0; i < this.saveDraftValues.length; i++) {
       if (this.saveDraftValues[i][this.quantity]) {
         quantityUpdated = false;
@@ -923,16 +1011,58 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
           }
         }
         this.mapProductData[obj.recordIndex] = obj;
-        dataArray.push(obj);
+        if(obj.customdiscount){
+          prodatawithcustomdiscount.push(obj);
+       
+        }
+        else{
+             dataArray.push(obj);
+        }
       }
-      this.productData = dataArray;
+     console.log('dataArray before stringifying:', JSON.stringify(dataArray));
+     console.log('prodatawithcustomdiscount before stringifying:', JSON.stringify(prodatawithcustomdiscount));
+
+if (prodatawithcustomdiscount.length > 0) {
+    customPriceCalculation({ orderdata: JSON.stringify(prodatawithcustomdiscount) })
+        .then((result) => {
+            console.log('Processed result:', JSON.stringify(result));
+            result.forEach(res => {
+    this.mapProductData[res.recordIndex] = res;
+});
+             this.productData =result.length>0?result.concat(dataArray):dataArray;
       this.handleAfterSave();
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+} else {
+     this.productData =dataArray;
+      this.handleAfterSave();
+}
+     
     }
+
+        }
+        console.log(JSON.stringify(result) + 'result');
+      })
+      .catch((error) => {
+        this.error = error;
+      });
+  
   }
 
   handleAfterSave() {
     const arr = [];
     this.totalNetPrice = 0;
+     let checkingvalue=true;
+      this.displayerror = false;
+      const displayerror = { displayerror: this.displayerror, checkingvalue: checkingvalue };
+      const errormsg1 = new CustomEvent("errormsg", {
+        detail: displayerror,
+        bubbles: true,
+        composed: true
+      });
+      this.dispatchEvent(errormsg1);
     for (var i = 0; i < this.initialRecords.length; i++) {
       var obj = { ...this.initialRecords[i] };
       obj = this.mapProductData[obj.recordIndex]
@@ -995,7 +1125,7 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
         });
     }
     else if (event.detail.name == "Discounts") {
-
+console.log(  JSON.stringify(this.inlineEditCol)+'  1120');
       this.isInlinepopup = true;
       var obj = [];
       const proddata = this.productData.filter(
@@ -1007,23 +1137,50 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
           break
         }
       }
-
-
-      if (obj.selectedDropdownValue != '' && this.discountmap[this.inlinerecordindex]) {
+      console.log(  JSON.stringify(obj)+'  obj');
+const discontmap=this.discountmap[this.inlinerecordindex];
+  console.log(  obj.selectedDropdownValue+'  obj.selectedDropdownValue');
+          console.log( obj.selectedDropdownValue != '  obj.selectedDropdownValue != ');
+          console.log(  obj.customdiscount+'  obj.customdiscount');
+          console.log(  obj.customdiscount == true+'  obj.customdiscount == true');
+          console.log( discontmap!=undefined+'   this.discontmap!=undefined[this.inlinerecordindex]');
+            console.log(   discontmap+'   this.discountmap');
+          console.log(  obj.selectedDropdownValue != '' || obj.customdiscount == true && discontmap!=undefined+' Alll');
+      if (obj.selectedDropdownValue != undefined || obj.customdiscount == true && discontmap!=undefined) {
+        
         for (var j = 0; j < this.inlineEditCol.length; j++) {
-          if (obj.selectedDropdownValue == 'PriceOverride') {
+          if (obj.selectedDropdownValue == 'PriceOverride' && this.inlineEditCol[j].reqDropdown == true) {
             this.inlineEditCol[j].inputValue = obj.listPrice;
-          } else {
-            this.inlineEditCol[j].inputValue = obj.adddiscount ? obj.adddiscount : obj.discount;
+              this.inlineEditCol[j].selectedDropdownValue = obj.selectedDropdownValue?obj.selectedDropdownValue:'';
+          }  else if(obj.selectedDropdownValue !=''&& this.inlineEditCol[j].reqDropdown == true){
+            this.inlineEditCol[j].inputValue = obj.adddiscount ? obj.adddiscount : obj.discount>0?obj.discount:'';
+              this.inlineEditCol[j].selectedDropdownValue = obj.selectedDropdownValue?obj.selectedDropdownValue:'';
+               console.log(  JSON.stringify(this.inlineEditCol[j].inputValue)+'  ].inputValue');
+                  console.log(  JSON.stringify(this.inlineEditCol[j].fieldName)+'  ].fieldName');
+             console.log(  JSON.stringify(obj)+'  obj1143');
+             console.log(  JSON.stringify(this.inlineEditCol[j])+'  1144');
           }
-          this.inlineEditCol[j].selectedDropdownValue = obj.selectedDropdownValue;
+          if (this.inlineEditCol[j].customdiscount == true && obj.customdiscount == true) {
+              this.inlineEditCol[j].inputValue = obj[this.inlineEditCol[j].fieldName];
+          
+
+
+
+          }
+        
         }
+         console.log(  JSON.stringify(this.inlineEditCol)+'  1107');
       } else {
         for (var j = 0; j < this.inlineEditCol.length; j++) {
+           console.log(  JSON.stringify(this.inlineEditCol[j].inputValue)+'  ].inputValueelse');
+                  console.log(  JSON.stringify(this.inlineEditCol[j].fieldName)+'  ].fieldNameelse');
           this.inlineEditCol[j].inputValue = "";
           this.inlineEditCol[j].selectedDropdownValue = "";
+          
         }
+        
       }
+      console.log(  JSON.stringify(this.inlineEditCol)+'  1152');
     } else {
        console.log(JSON.stringify(this.metadatarecord.data.fields.Graph_Values__c.value)+'  Graph_Values__c');
        const valuesArray =this.metadatarecord.data.fields.Graph_Values__c.value?this.metadatarecord.data.fields.Graph_Values__c.value.split("\r\n"):'';
@@ -1303,12 +1460,24 @@ if(selectedid.length>=1){
   }
 
   cloneProducts(event) {
-   
-    const productDataWithIndex = this.selectedrows.map((record, i) => {
-      this.mapProductData[record.recordIndex] = record;
-      return { ...record, recordIndex: this.index++ };
-    });
 
+    this.selectedrows=this.selectedrows.map((record, i) => {
+      record=this.mapProductData[record.recordIndex]?this.mapProductData[record.recordIndex]:record ;
+      return { ...record};
+    });
+   
+
+    this.index = this.index?this.index:''; 
+    console.log('this.this.index '+this.index++);
+let productDataWithIndex = this.selectedrows.map((record) => {
+  let index=this.index++;
+    this.mapProductData[record.index] = record;
+    if(this.discountmap[record.recordIndex]){
+    this.discountmap[record.index]=record;
+    }
+    return { ...record, recordIndex: index};
+});
+console.log('productDataWithIndex '+JSON.stringify(productDataWithIndex));
     const cloningdata = [...this.productData];
     cloningdata.push(...productDataWithIndex);
     this.productData = cloningdata;
@@ -1530,23 +1699,47 @@ if(selectedid.length>=1){
 
   onvalidateProduct(event) {
     console.log('hionvalidateProduct');
+    let checkingvalue;
+    let errormsg;
     orderlineitemsvalidate({
       orderLineItemData: JSON.stringify(this.productData)
     })
-      .then((result) => {
-        if (result == true) {
-
-          
-            const evt = new ShowToastEvent({
-              title: 'Discount Error',
-              message: 'The discount applied is invalid. Please review and try again',
-              variant: 'error',
-              mode: 'dismissable'
+     .then((result) => {
+     
+        if (result) {
+             this.displayerror = true;
+        checkingvalue=true;
+        errormsg=result;
+           console.log('this.displayerror' +this.displayerror);
+          let displayerror = { displayerror: this.displayerror, checkingvalue: checkingvalue,errormsg: errormsg };
+           console.log('this.displayerror' +JSON.stringify(displayerror));
+          let errormsg1 = new CustomEvent("errormsg", {
+            detail: displayerror,
+            bubbles: true,
+            composed: true
+          });
+          this.dispatchEvent(errormsg1);
+           console.log('this.errormsg1' +JSON.stringify(errormsg1));
+        } else {
+          this.displayerror = false;
+           checkingvalue=false;
+          const displayerror = { displayerror: this.displayerror, checkingvalue: checkingvalue };
+          const errormsg1 = new CustomEvent("errormsg", {
+            detail: displayerror,
+            bubbles: true,
+            composed: true
+          });
+          const event = new ShowToastEvent({
+                title: "Success",
+                message: "Cart validated successfully! No errors found!",
+                variant: "Success",
+                mode: "dismissable"
             });
-            this.dispatchEvent(evt);
-          
+            this.dispatchEvent(event);
+          this.dispatchEvent(errormsg1);
+
         }
-        console.log(result + 'result');
+        console.log(JSON.stringify(result) + 'result');
       })
       .catch((error) => {
         this.error = error;

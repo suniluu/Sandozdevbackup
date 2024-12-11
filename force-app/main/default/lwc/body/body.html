@@ -10,7 +10,7 @@
 	</div>
 	<div class={firstPageClass}>
 		<div if:true={fields}>
-			<c-entry-component object-name={objname} field-set={typename} onloadercompletion={handleloadercompletion} pre-selected-rows={preSelectedRows} pre-fast-selected-rows={preFastSelectedRows} onvalueselected={handlevalueselected} rec-id={recId} fields={fields}></c-entry-component>
+			<c-entry-component object-name={objname} field-set={typename} onloadercompletion={handleloadercompletion} pre-selected-rows={preSelectedRows} pre-fast-selected-rows={preFastSelectedRows} onentrysaved={handleEntrySaved} rec-id={recId} fields={fields}></c-entry-component>
 		</div>
 	</div>
 	<div class={secondPageClass}>
@@ -21,7 +21,7 @@
 		</template>
 	</div>
 	<div class={thirdPageClass}>
-		<c-products-summary product-data={productData} index={index} initial-data={initialData} initial-records={initialRecords} 
+		<c-products-summary product-data={productData} index={index}  initial-data={initialData} initial-records={initialRecords}  onerrormsg={errormsg}
 		ontotalnetprice={handletotalnetprice} cart-count={cartCount} onproductdiscount={discountdata}  ondelete={deletedata} fields={fields}></c-products-summary>
 	</div>
 	<div class={fourthPageClass}>

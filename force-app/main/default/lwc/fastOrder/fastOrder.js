@@ -299,7 +299,6 @@ export default class FastOrder extends LightningElement {
                 (item) => item.recordId
         );
         let selectedData = {selectedRecord: this.fastSelection, preselected :this.preFastSelectedRows};
-        console.log('fast selected record :::: '+JSON.stringify(selectedData));
         const selectFastOrder = new CustomEvent("getfastorderproduct",{
             detail:selectedData, bubbles: true, composed: true
         });
@@ -330,16 +329,13 @@ export default class FastOrder extends LightningElement {
 
     addRows() {
         var uploadedData = [];
-        console.log('priceList fast order :: 1  ' + JSON.stringify(this.fields));
         var pricelistId='';
 
         for (var row of this.fields) {
             if (row.isPriceList) {
-                console.log('priceList fast order :: 2');
                 pricelistId = row.value;
             }
         }
-        console.log('priceList fast order ::3  '+pricelistId);
         for (let i = 1; i <= this.numRows; i++) {
             var rowData = {"recordId": this.rowIndex,"isDisabled" :true,"priceList" : pricelistId,"recId":this.recId};
             uploadedData.push(rowData);

@@ -194,6 +194,20 @@ public inherited sharing class OrderRequestAddToCart {
         return returnURL;
     }
     
+    @AuraEnabled(cacheable=true)
+    public static Object validateData(Map<String, String> fieldValues) {
+        List<Object> result = new List<Object>();
+        IGenerateReqestOrder customPlugin = getCerPluginInstance('OrderEntry');
+        if(customPlugin != null){
+            try{
+            	result = customPlugin.validateData(fieldValues);
+            } catch(Exception e){
+                system.debug('Error encountered');
+            }
+        }
+        return result;
+    }
+    
     public static IGenerateReqestOrder getCerPluginInstance(String controllerName){
         IGenerateReqestOrder pluginHandler;      
         if(CustomMetadataService.contractSetting(controllerName) != null && CustomMetadataService.contractSetting(controllerName).plugin__c != null && CustomMetadataService.contractSetting(controllerName).plugin__c != ''){

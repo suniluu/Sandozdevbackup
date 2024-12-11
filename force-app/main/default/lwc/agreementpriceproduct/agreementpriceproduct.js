@@ -59,8 +59,6 @@ export default class agreementpriceproduct extends NavigationMixin(
   @track inlinerecordindex = "";
   @track searchKey = '';
   @track disableicon;
-  @api newlineitems=[];
-  @api initialnewlineitems=[];
   @track displayerror='';
 
 
@@ -102,6 +100,9 @@ export default class agreementpriceproduct extends NavigationMixin(
       }
     }
 
+  }
+  connectedCallback() {
+    console.log('agreementpriceproducts');
   }
   async onRemove(id, index) {
     const result = await LightningConfirm.open({
@@ -1414,9 +1415,8 @@ export default class agreementpriceproduct extends NavigationMixin(
       composed: true
     });
     this.dispatchEvent(discountdata);
-    this.displayerror = false;
-    let checkingvalue=false;
-    const displayerror = { displayerror: this.displayerror, checkingvalue: checkingvalue };
+    let checkingvalue=true;
+    const displayerror = { checkingvalue: checkingvalue };
     const errormsg1 = new CustomEvent("errormsg", {
       detail: displayerror,
       bubbles: true,
@@ -1624,18 +1624,20 @@ export default class agreementpriceproduct extends NavigationMixin(
     var dataArray = [];
     this.totalNetPrice = 0;
     let checkingvalue;
+    let errormsg;
     console.log(JSON.stringify(this.productData) + 'productdaaata');
       Agreementlineitemsvalidate({
       agreementLineItemData: JSON.stringify(this.productData)
     }).then((result) => {
          console.log('this.result' +result);
-          console.log('this.displayerror' +this.displayerror);
-        this.displayerror = result;
+         
+        if (result) {
+          errormsg=result;
+           console.log('this.result' +result);
+        this.displayerror = true;
 		checkingvalue=true;
     console.log('this.displayerror' +this.displayerror);
-        if (this.displayerror == true) {
-           console.log('this.displayerror' +this.displayerror);
-          let displayerror = { displayerror: this.displayerror, checkingvalue: checkingvalue };
+          let displayerror = { displayerror: this.displayerror, checkingvalue: checkingvalue,errormsg: errormsg };
            console.log('this.displayerror' +JSON.stringify(displayerror));
           let errormsg1 = new CustomEvent("errormsg", {
             detail: displayerror,
@@ -2234,18 +2236,23 @@ this.selectedids = [...selectedItemsSet];
 
 
   onvalidateProduct(event) {
-    this.initialnewlineitems=this.newlineitems;
-    console.log('initialnewlineitems'+ JSON.stringify(this.initialnewlineitems));
     let checkingvalue;
+    let errormsg;
+    if(this.productData.length>0)
+    {
+
+    
     Agreementlineitemsvalidate({
       agreementLineItemData: JSON.stringify(this.productData)
     })
       .then((result) => {
-        this.displayerror = result;
-        checkingvalue=false;
-        if (this.displayerror == true) {
+     
+        if (result) {
+             this.displayerror = true;
+        checkingvalue=true;
+        errormsg=result;
            console.log('this.displayerror' +this.displayerror);
-          let displayerror = { displayerror: this.displayerror, checkingvalue: checkingvalue };
+          let displayerror = { displayerror: this.displayerror, checkingvalue: checkingvalue,errormsg: errormsg };
            console.log('this.displayerror' +JSON.stringify(displayerror));
           let errormsg1 = new CustomEvent("errormsg", {
             detail: displayerror,
@@ -2269,6 +2276,8 @@ this.selectedids = [...selectedItemsSet];
                 variant: "Success",
                 mode: "dismissable"
             });
+
+
             this.dispatchEvent(event);
           this.dispatchEvent(errormsg1);
 
@@ -2278,13 +2287,25 @@ this.selectedids = [...selectedItemsSet];
       .catch((error) => {
         this.error = error;
       });
+    }
+    else
+    {
+
+    const event = new ShowToastEvent({
+                title: "Error",
+                message: "Add Products To Perform Cart Validations",
+                variant: "Error",
+                mode: "dismissable"
+            });
+          this.dispatchEvent(event);
+            }
   }
   onValidatePricing(event) {
     AgreementPricevalidate({
       agreementLineItemData: JSON.stringify(this.productData)
     })
       .then((result) => {
-        this.productData = result;
+        this.productData = result.length>=1?result:this.productData;
         console.log(JSON.stringify(result) + 'result');
         const event = new ShowToastEvent({
                 title: "Success",
@@ -2292,10 +2313,25 @@ this.selectedids = [...selectedItemsSet];
                 variant: "Success",
                 mode: "dismissable"
             });
-            this.dispatchEvent(event);
+            if(this.productData.length >0)
+            {
+                this.dispatchEvent(event);
+            }
+
+            else{
+              const event = new ShowToastEvent({
+                title: "Error",
+                message: "Add Products To Perform Validations",
+                variant: "Error",
+                mode: "dismissable"
+            });
+          this.dispatchEvent(event);
+            }
       })
       .catch((error) => {
         this.error = error;
+        
+            
       });
   }
 }

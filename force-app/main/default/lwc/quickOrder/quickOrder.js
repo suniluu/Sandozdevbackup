@@ -36,9 +36,6 @@ export default class QuickOrder extends NavigationMixin(LightningElement) {
         this.fetchRecord();
         this.loadHeaderData();
         this.getUserCurrencySymbol();
-         console.log('recId ::: '+ JSON.stringify(this.recId));
-          console.log('priceList ::: '+ JSON.stringify(this.priceList));
-           console.log('cerApi ::: '+ JSON.stringify(this.cerApi));
     }
 
     getUserCurrencySymbol() {
@@ -125,7 +122,6 @@ export default class QuickOrder extends NavigationMixin(LightningElement) {
     loadHeaderData() {
         fetchHeaderData({ recId: this.recId, typename: this.typename, orderId: this.orderid })
         .then(result => {
-            console.log(result);
             this.orderData = result;
         })
         .catch(error => {
@@ -134,76 +130,61 @@ export default class QuickOrder extends NavigationMixin(LightningElement) {
     }
 
     handlevaluerecieved(event) {
-        const { fieldName, value, label } = event.detail;
-
-        var fieldSetArray = [];
-        for (var i = 0; i < this.fields.length; i++) {
-            var obj = { ...this.fields[i] };
-            if (this.fields[i].fieldName == fieldName) {
-                obj.value = value;
-            }
-            if (this.locationfield == fieldName) {
-                this.selectedLocation = value;
-            }
-            if (this.datefield == fieldName) {
-                this.orderdate = value;
-            }
-            fieldSetArray.push(obj);
-        }
-        this.fields = fieldSetArray;
-
-        var hasfieldName = false;
-        var hasReference = false;
-        var objName = '';
-        var fieldLookupName = '';
-        for (var i = 0; i < this.orderData.length; i++) {
-            if (this.orderData[i].fieldName == fieldName) {
-                hasfieldName = true;
-                if (this.orderData[i].isReference && value) {
-                    hasReference = true;
-                    objName = this.orderData[i].objName;
-                    fieldLookupName = this.orderData[i].fieldLookupName;
+        const fieldEntries = Object.entries(event.detail);
+        fieldEntries.forEach(([fieldName, value]) => {
+                // Update fields
+            this.fields = this.fields.map(field => {
+                const updatedField = { ...field };
+                if (field.fieldName === fieldName) {
+                    updatedField.value = value;
                 }
-            }
-        }
+                if (this.locationField === fieldName) {
+                    this.selectedLocation = value;
+                }
+                if (this.dateField === fieldName) {
+                    this.orderDate = value;
+                }
+                return updatedField;
+            });
 
-        if (hasfieldName) {
-            if (hasReference) {
-                getRecordName({ objName: objName, recId: value, fieldLookupName: fieldLookupName, addfield: '' })
+            let orderField = this.orderData.find(order => order.fieldName === fieldName);
+            if (orderField) {
+                if (orderField.isReference && value) {
+                    getRecordName({ 
+                        objName: orderField.objName, 
+                        recId: value, 
+                        fieldLookupName: orderField.fieldLookupName,
+                        addField: '' 
+                    })
                     .then(result => {
-                        var dataArray = [];
-                        for (var i = 0; i < this.orderData.length; i++) {
-                            var obj = { ...this.orderData[i] };
-                            if (this.orderData[i].fieldName == fieldName) {
-                                obj.value = result[this.orderData[i].fieldLookupName];
+                        this.orderData = this.orderData.map(order => {
+                            const updatedOrder = { ...order };
+                            if (order.fieldName === fieldName) {
+                                updatedOrder.value = result[order.fieldLookupName];
                             }
-                            dataArray.push(obj);
-                        }
-                        this.orderData = dataArray;
+                            return updatedOrder;
+                        });
                     })
                     .catch(error => {
                         this.error = error;
-                    })
-            } else {
-                var dataArray = [];
-                for (var i = 0; i < this.orderData.length; i++) {
-                    var obj = { ...this.orderData[i] };
-                    if (this.orderData[i].fieldName == fieldName) {
-                        obj.value = value;
-                    }
-                    dataArray.push(obj);
+                    });
+                } else {
+                    this.orderData = this.orderData.map(order => {
+                        const updatedOrder = { ...order };
+                        if (order.fieldName === fieldName) {
+                            updatedOrder.value = value;
+                        }
+                        return updatedOrder;
+                    });
                 }
-                this.orderData = dataArray;
-            }
-        }
+            } 
+        });
     }
 
     handlegetrecorddata(event) {
         this.prodData = event.detail.orderproductdata;
         this.preFastSelectedRows = event.detail.fastpreSelect;
         this.preSelectedRows = event.detail.preselected;
-        console.log('Main cmp fast pre :: ' + JSON.stringify( this.preFastSelectedRows));
-        console.log('Main cmp catlog pre :: ' + JSON.stringify( this.preSelectedRows));
     }
 
     handleparentloader(event) {

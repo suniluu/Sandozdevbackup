@@ -47,7 +47,7 @@
                     var toastEvent = $A.get("e.force:showToast");
                     toastEvent.setParams({
                         title: 'Error',
-                        message: 'Agreement already exists for this opportunity.',
+                        message: 'Agreement already exists for this Account!',
                         type: 'error',
                     });
                     toastEvent.fire();

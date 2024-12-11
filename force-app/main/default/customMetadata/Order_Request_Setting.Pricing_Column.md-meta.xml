@@ -3,6 +3,10 @@
     <label>Pricing Column</label>
     <protected>false</protected>
     <values>
+        <field>Is_Conga_CPQ_Used__c</field>
+        <value xsi:type="xsd:boolean">false</value>
+    </values>
+    <values>
         <field>Plugin__c</field>
         <value xsi:type="xsd:string">netPrice</value>
     </values>

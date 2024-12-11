@@ -2,31 +2,31 @@ public class AgreementRequestHandler implements IGenerateAgreementController {
     public static List<Object> getAgreementLineitems(String recordId) {
         system.debug(recordId+'recordId');
         list<AggrementlineitemWrapper> lineitems=new list<AggrementlineitemWrapper>();
-          JSON_Data__c jsonData = new JSON_Data__c();
-        for(JSON_Data__c jd : [SELECT Id,Data_Object_Id__c,Agreement_Header_Data__c,Agreement_Line_Items_Data__c FROM JSON_Data__c WHERE Data_Object_Id__c = :recordId]){
+        SCF_Agreement_JSON_Data__c jsonData = new SCF_Agreement_JSON_Data__c();
+        for(SCF_Agreement_JSON_Data__c jd : [SELECT Id,Agreement_ID__c,Agreement_Header_Data__c,Agreement_Line_Item_Data__c FROM SCF_Agreement_JSON_Data__c WHERE Agreement_ID__c = :recordId]){
             jsonData = jd;
         }
-        if(jsonData.Agreement_Line_Items_Data__c != null){
-            lineitems = (List<AggrementlineitemWrapper>)JSON.deserialize(jsonData.Agreement_Line_Items_Data__c, List<AggrementlineitemWrapper>.class);
-        for (AggrementlineitemWrapper pw :lineitems) {
-            pw.discountApplied = false;
-        }
+        if(jsonData.Agreement_Line_Item_Data__c != null){
+            lineitems = (List<AggrementlineitemWrapper>)JSON.deserialize(jsonData.Agreement_Line_Item_Data__c, List<AggrementlineitemWrapper>.class);
+            for (AggrementlineitemWrapper pw :lineitems) {
+                pw.discountApplied = false;
+            }
         }
         else{
-        for(Agreement_Line_Item__c ali:[select id,Product__r.Name, Product__r.Family, Product_Code__c,Product__c, List_Price__c,Aggreement__c from Agreement_Line_Item__c where Aggreement__c=:recordId])
-        {
-            
-            AggrementlineitemWrapper alw =new AggrementlineitemWrapper();
-            alw.productName=ali.Product__r.Name;
-            alw.productId=ali.Product__c;
-            alw.productFamily=ali.Product__r.Family;
-            alw.productCode=ali.Product_Code__c;
-            alw.listPrice=ali.List_Price__c;
-            alw.agreement=ali.Aggreement__c;
-            alw.Id=ali.id;
-            
-            lineitems.add(alw);     
-        }
+            for(Agreement_Line_Item__c ali:[select id,Product__r.Name, Product__r.Family, Product_Code__c,Product__c, List_Price__c,Aggreement__c from Agreement_Line_Item__c where Aggreement__c=:recordId])
+            {
+                
+                AggrementlineitemWrapper alw =new AggrementlineitemWrapper();
+                alw.productName=ali.Product__r.Name;
+                alw.productId=ali.Product__c;
+                alw.productFamily=ali.Product__r.Family;
+                alw.productCode=ali.Product_Code__c;
+                alw.listPrice=ali.List_Price__c;
+                alw.agreement=ali.Aggreement__c;
+                alw.Id=ali.id;
+                
+                lineitems.add(alw);     
+            }
         }
         return lineitems;
     }
@@ -39,7 +39,7 @@ public class AgreementRequestHandler implements IGenerateAgreementController {
         @AuraEnabled
         public String relatedName { get; set; }
     }
-
+    
     @AuraEnabled
     public static List<String> getApprovalsRelatedData() {
         List<String> result = new List<String>();
@@ -77,10 +77,10 @@ public class AgreementRequestHandler implements IGenerateAgreementController {
     @AuraEnabled
     public static List<Map<String, Object>> populateDefaultAgreementData(List<Map<String, Object>> fields, Id recordId) {
         List<Map<String, Object>> updatedFields = new List<Map<String, Object>>();
-    	Opportunity oppObj;
+        Opportunity oppObj;
         for (Map<String, Object> field : fields) {
             Map<String, Object> updatedField = new Map<String, Object>(field);
-    
+            
             if (String.valueOf(field.get('fieldName')) == 'Agreement_Start_Date__c') {
                 updatedField.put('value', Date.today());
             } else if (String.valueOf(field.get('fieldName')) == 'Agreement_End_Date__c') {
@@ -94,6 +94,16 @@ public class AgreementRequestHandler implements IGenerateAgreementController {
         return updatedFields;
     }
     
+    
+    @AuraEnabled(cacheable=true)
+    public static List<Object> getApprovalObjMetadata( ) {
+        return [Select id,Submit_Approvals_Automatically__c,Approval_Product_To_Be_Used__c  from Agreement_Request_Setting__mdt where DeveloperName ='Approval_Settings'  WITH SECURITY_ENFORCED];
+    }
+    
+    @AuraEnabled(cacheable=true)
+    public static List<Object> getAgreementRequestSettingMetadata(String devName ) {
+        return [Select id,DeveloperName,Is_Agreement_Accelerator__c,Is_Signature__c,Is_Approval_Detail__c from Agreement_Request_Setting__mdt where DeveloperName = :devName   WITH SECURITY_ENFORCED];
+    }
     
     @AuraEnabled(cacheable=true)
     public static List<Object> fetchDynamicNames(String objectName, Map<String, String> fieldValues) {
@@ -123,8 +133,8 @@ public class AgreementRequestHandler implements IGenerateAgreementController {
         system.debug('Result in fetchDynamicNames: ' + result);
         return result;
     }
-
-
+    
+    
     
     public class ValidationResult {
         @AuraEnabled
@@ -133,26 +143,26 @@ public class AgreementRequestHandler implements IGenerateAgreementController {
         public String fieldName;
         @AuraEnabled
         public String errorMessage;
-    
+        
         public ValidationResult(Boolean isValid, String fieldName, String errorMessage) {
             this.isValid = isValid;
             this.fieldName = fieldName;
             this.errorMessage = errorMessage;
         }
     }
-
+    
     @AuraEnabled(cacheable=true)
     public static Map<Id, String> getLookupFieldNames(List<Id> ids) {
         Map<Id, String> idToNameMap = new Map<Id, String>();
-    
+        
         if (ids == null || ids.isEmpty()) {
             return idToNameMap;
         }
-    
+        
         // Identify object types based on ID prefixes
         Set<Id> accountIds = new Set<Id>();
         Set<Id> priceListIds = new Set<Id>();
-    
+        
         for (Id id : ids) {
             String prefix = String.valueOf(id).substring(0, 3);
             if (prefix == '001') { // Account ID prefix
@@ -162,36 +172,36 @@ public class AgreementRequestHandler implements IGenerateAgreementController {
             }
             // Add more prefixes for additional objects
         }
-    
+        
         // Query Accounts
         if (!accountIds.isEmpty()) {
             for (Account acc : [SELECT Id, Name FROM Account WHERE Id IN :accountIds]) {
                 idToNameMap.put(acc.Id, acc.Name);
             }
         }
-    
+        
         // Query Price Lists
         if (!priceListIds.isEmpty()) {
             for (Price_List__c pl : [SELECT Id, Name FROM Price_List__c WHERE Id IN :priceListIds]) {
                 idToNameMap.put(pl.Id, pl.Name);
             }
         }
-    
+        
         // Add queries for other objects as necessary
         return idToNameMap;
     }
-
-
+    
+    
     
     
     @AuraEnabled
     public static List<ValidationResult> validateData(Map<String, String> fieldValues) {
         List<ValidationResult> validationResults = new List<ValidationResult>();
-    
+        
         for (String field : fieldValues.keySet()) {
             System.debug('Validating field: ' + field);
             String fieldValue = fieldValues.get(field);
-    
+            
             // Example validation logic
             if (field == 'Description__c' && fieldValue == 'test') {
                 validationResults.add(
@@ -199,13 +209,13 @@ public class AgreementRequestHandler implements IGenerateAgreementController {
                 );
             }
         }
-    
+        
         // If no validation errors, return an empty list
         return validationResults;
     }
-
     
-
+    
+    
     @AuraEnabled(cacheable=true)
     public static List<Object> getFieldDataFromMetadata(String recordId, String objectName) {
         Agreement_Request_Setting__mdt metadata = [
@@ -214,23 +224,23 @@ public class AgreementRequestHandler implements IGenerateAgreementController {
             WHERE Home_Page_Object_Name__c = :objectName 
             LIMIT 1
         ];        
-    
+        
         List<String> headerFields = new List<String>();
         if(metadata.Agreement_Header_Fields__c != null) {
             headerFields = metadata.Agreement_Header_Fields__c.split(',');
         }
-    
+        
         // Fetch field metadata
         Map<String, Schema.DescribeFieldResult> fieldDescriptions = new Map<String, Schema.DescribeFieldResult>();
         Map<String, Schema.SObjectField> sObjectFields = Schema.Aggrement__c.SObjectType.getDescribe().fields.getMap();
-    
+        
         for (String fieldApi : headerFields) {
             fieldDescriptions.put(fieldApi, sObjectFields.get(fieldApi).getDescribe());
         }
-    
+        
         // Prepare result
         List<EntryFormWrapper> lstEntryFormWrapper = new List<EntryFormWrapper>();
-    
+        
         if (recordId != null) {
             try {
                 // Fetch record data if recordId is provided
@@ -239,26 +249,26 @@ public class AgreementRequestHandler implements IGenerateAgreementController {
                     query += ', ' + fieldApi;
                 }
                 query += ' FROM Aggrement__c WHERE Id = :recordId';
-    
+                
                 List<Aggrement__c> lstSampleProduct = Database.query(query);
-    
+                
                 // Prepare related data
                 Set<Id> accountIds = new Set<Id>();
                 Set<Id> priceListIds = new Set<Id>();
-    
+                
                 for (Aggrement__c record : lstSampleProduct) {
                     if (record.Account__c != null) accountIds.add(record.Account__c);
                     if (record.Price_List__c != null) priceListIds.add(record.Price_List__c);
                 }
-    
+                
                 Map<Id, Account> mapAccounts = accountIds.isEmpty() 
                     ? new Map<Id, Account>() 
                     : new Map<Id, Account>([SELECT Id, Name FROM Account WHERE Id IN :accountIds]);
-    
+                
                 Map<Id, Price_List__c> mapPriceLists = priceListIds.isEmpty() 
                     ? new Map<Id, Price_List__c>() 
                     : new Map<Id, Price_List__c>([SELECT Id, Name FROM Price_List__c WHERE Id IN :priceListIds]);
-    
+                
                 // Map fields to their values
                 for (Aggrement__c record : lstSampleProduct) {
                     for (String fieldApi : headerFields) {
@@ -267,7 +277,7 @@ public class AgreementRequestHandler implements IGenerateAgreementController {
                         efw.fieldName = fieldApi;
                         efw.label = fieldDescribe.getLabel();
                         efw.value = record.get(fieldApi) != null ? String.valueOf(record.get(fieldApi)) : null;
-    
+                        
                         if (fieldDescribe.getType() == Schema.DisplayType.REFERENCE) {
                             if (fieldApi == 'Account__c' && record.Account__c != null) {
                                 efw.value = mapAccounts.get(record.Account__c) != null ? mapAccounts.get(record.Account__c).Name : null;
@@ -275,11 +285,11 @@ public class AgreementRequestHandler implements IGenerateAgreementController {
                                 efw.value = mapPriceLists.get(record.Price_List__c) != null ? mapPriceLists.get(record.Price_List__c).Name : null;
                             }
                         }
-    
+                        
                         if (fieldDescribe.getType() == Schema.DisplayType.DATE && efw.value != null) {
                             efw.value = efw.value.split(' ')[0];
                         }
-    
+                        
                         lstEntryFormWrapper.add(efw);
                     }
                 }
@@ -287,7 +297,7 @@ public class AgreementRequestHandler implements IGenerateAgreementController {
                 System.debug('Error fetching record: ' + e.getMessage());
             }
         }
-    
+        
         // If no record is found, return metadata-based defaults
         if (lstEntryFormWrapper.isEmpty()) {
             for (String fieldApi : headerFields) {
@@ -299,136 +309,136 @@ public class AgreementRequestHandler implements IGenerateAgreementController {
                 lstEntryFormWrapper.add(efw);
             }
         }
-    
+        
         return lstEntryFormWrapper;
     }
-
+    
     
     /*@AuraEnabled(cacheable=true)
-    public static Map<String, Object> getFieldDataFromMetadata(String recordId, String objectName) {
-        Agreement_Request_Setting__mdt metadata = [
-            SELECT Home_Page__c FROM Agreement_Request_Setting__mdt where Summary_Page__c = :objectName LIMIT 1
+public static Map<String, Object> getFieldDataFromMetadata(String recordId, String objectName) {
+Agreement_Request_Setting__mdt metadata = [
+SELECT Home_Page__c FROM Agreement_Request_Setting__mdt where Summary_Page__c = :objectName LIMIT 1
+];
+
+// Parse the field names from the metadata
+String[] fieldNames = metadata.Home_Page__c.split(',');
+
+// Build a dynamic SOQL query string
+String queryString = 'SELECT ' + String.join(fieldNames, ',') + ' FROM ' + objectName + ' WHERE Id = :recordId';
+
+// Query the record to get the field values
+SObject record = Database.query(queryString);
+
+// Extract the field values
+Map<String, Object> fieldData = new Map<String, Object>();
+for (String fieldName : fieldNames) {
+fieldData.put(fieldName.trim(), record.get(fieldName.trim()));
+}
+return fieldData;
+
+
+}*/
+    
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, Object>> getAgreementHomePageFieldSet(String objectName, Id recordId) {
+        // Fetch metadata
+        Agreement_Request_Setting__mdt reqMetadata = [
+            SELECT Id, Home_Page_Object_Field_Set__c, Home_Page_Object_Name__c, 
+            Home_Page_Read_Only_Fields__c, Home_Page_Required_Fields__c 
+            FROM Agreement_Request_Setting__mdt 
+            WHERE Home_Page_Object_Name__c = :objectName 
+            LIMIT 1
         ];
         
-        // Parse the field names from the metadata
-        String[] fieldNames = metadata.Home_Page__c.split(',');
+        system.debug('JJ reqMetadata: ' + reqMetadata);
         
-        // Build a dynamic SOQL query string
-        String queryString = 'SELECT ' + String.join(fieldNames, ',') + ' FROM ' + objectName + ' WHERE Id = :recordId';
+        // Initialize variables for field processing
+        List<Map<String, Object>> fieldInfos = new List<Map<String, Object>>();
+        Set<String> readOnlyFields = reqMetadata.Home_Page_Read_Only_Fields__c != null 
+            ? new Set<String>(reqMetadata.Home_Page_Read_Only_Fields__c.split(',')) 
+            : new Set<String>();
+        Set<String> requiredFields = reqMetadata.Home_Page_Required_Fields__c != null 
+            ? new Set<String>(reqMetadata.Home_Page_Required_Fields__c.split(',')) 
+            : new Set<String>();
+        SObjectType objectType = Schema.getGlobalDescribe().get(reqMetadata.Home_Page_Object_Name__c);
+        DescribeSObjectResult describeResult = objectType.getDescribe();
+        FieldSet fieldSet = describeResult.FieldSets.getMap().get(reqMetadata.Home_Page_Object_Field_Set__c);
         
-        // Query the record to get the field values
-        SObject record = Database.query(queryString);
-        
-        // Extract the field values
-        Map<String, Object> fieldData = new Map<String, Object>();
-        for (String fieldName : fieldNames) {
-            fieldData.put(fieldName.trim(), record.get(fieldName.trim()));
-        }
-        return fieldData;
-        
-        
-    }*/
-
-@AuraEnabled(cacheable=true)
-public static List<Map<String, Object>> getAgreementHomePageFieldSet(String objectName, Id recordId) {
-    // Fetch metadata
-    Agreement_Request_Setting__mdt reqMetadata = [
-        SELECT Id, Home_Page_Object_Field_Set__c, Home_Page_Object_Name__c, 
-               Home_Page_Read_Only_Fields__c, Home_Page_Required_Fields__c 
-        FROM Agreement_Request_Setting__mdt 
-        WHERE Home_Page_Object_Name__c = :objectName 
-        LIMIT 1
-    ];
-
-    system.debug('JJ reqMetadata: ' + reqMetadata);
-
-    // Initialize variables for field processing
-    List<Map<String, Object>> fieldInfos = new List<Map<String, Object>>();
-    Set<String> readOnlyFields = reqMetadata.Home_Page_Read_Only_Fields__c != null 
-        ? new Set<String>(reqMetadata.Home_Page_Read_Only_Fields__c.split(',')) 
-        : new Set<String>();
-    Set<String> requiredFields = reqMetadata.Home_Page_Required_Fields__c != null 
-        ? new Set<String>(reqMetadata.Home_Page_Required_Fields__c.split(',')) 
-        : new Set<String>();
-    SObjectType objectType = Schema.getGlobalDescribe().get(reqMetadata.Home_Page_Object_Name__c);
-    DescribeSObjectResult describeResult = objectType.getDescribe();
-    FieldSet fieldSet = describeResult.FieldSets.getMap().get(reqMetadata.Home_Page_Object_Field_Set__c);
-
-    // Map to store record data
-    Map<String, Object> recordData = new Map<String, Object>();
-    try {
-        if (recordId != null) {
-            // Dynamically fetch record fields
-            List<String> fieldPaths = new List<String>();
-            for (Schema.FieldSetMember fsm : fieldSet.getFields()) {
-                fieldPaths.add(fsm.getFieldPath());
-            }
-
-            String query = 'SELECT ' + String.join(fieldPaths, ',') +
-                           ' FROM ' + reqMetadata.Home_Page_Object_Name__c +
-                           ' WHERE Id = :recordId LIMIT 1';
-
-            SObject record = Database.query(query);
-            if (record != null) {
-                for (String fieldPath : fieldPaths) {
-                    recordData.put(fieldPath, record.get(fieldPath));
+        // Map to store record data
+        Map<String, Object> recordData = new Map<String, Object>();
+        try {
+            if (recordId != null) {
+                // Dynamically fetch record fields
+                List<String> fieldPaths = new List<String>();
+                for (Schema.FieldSetMember fsm : fieldSet.getFields()) {
+                    fieldPaths.add(fsm.getFieldPath());
+                }
+                
+                String query = 'SELECT ' + String.join(fieldPaths, ',') +
+                    ' FROM ' + reqMetadata.Home_Page_Object_Name__c +
+                    ' WHERE Id = :recordId LIMIT 1';
+                
+                SObject record = Database.query(query);
+                if (record != null) {
+                    for (String fieldPath : fieldPaths) {
+                        recordData.put(fieldPath, record.get(fieldPath));
+                    }
                 }
             }
+        } catch (Exception e) {
+            system.debug('Error fetching record: ' + e.getMessage());
         }
-    } catch (Exception e) {
-        system.debug('Error fetching record: ' + e.getMessage());
-    }
-
-    // Process field set members
-    for (Schema.FieldSetMember fsm : fieldSet.getFields()) {
-        Schema.DescribeFieldResult fieldDescribe = describeResult.fields.getMap().get(fsm.getFieldPath()).getDescribe();
-        String fieldName = fsm.getFieldPath();
-        Boolean isLookup = fieldDescribe.getType() == Schema.DisplayType.Reference;
-        Boolean isReadOnly = readOnlyFields.contains(fieldName);
-        Boolean isRequired = requiredFields.contains(fieldName);
-        Boolean isPriceList = fieldName == 'Price_List__c';
-
-        Map<String, Object> fieldInfoMap = new Map<String, Object>();
-        fieldInfoMap.put('fieldName', fieldName);
-        fieldInfoMap.put('label', fieldDescribe.getLabel());
-        fieldInfoMap.put('isLookup', isLookup);
-        fieldInfoMap.put('isReadOnly', isReadOnly);
-        fieldInfoMap.put('isRequired', isRequired);
-        fieldInfoMap.put('isPriceList', isPriceList);
-        fieldInfoMap.put('value', recordData.containsKey(fieldName) ? recordData.get(fieldName) : null); // Use record data if available
-
-        fieldInfos.add(fieldInfoMap);
-    }
-
-    system.debug('JJ fieldInfos: ' + fieldInfos);
-    return fieldInfos;
-}
-
-    
-    
-    
-
-    /*@AuraEnabled(cacheable=true)
-    public static List<Object> getAgreementHomePageFieldSet(String objectName) {
-        Agreement_Request_Setting__mdt reqMetadata = [SELECT Id, Object_Api_Name__c, Home_Page__c, Summary_Page__c FROM Agreement_Request_Setting__mdt WHERE Object_Api_Name__c = :objectName LIMIT 1];
-        SObjectType objectType = Schema.getGlobalDescribe().get(reqMetadata.Object_Api_Name__c);
-        DescribeSObjectResult describeResult = objectType.getDescribe();
-        FieldSet fs = describeResult.FieldSets.getMap().get(reqMetadata.Home_Page__c);
-
-        List<Object> fieldInfos = new List<Object>();
-        for (Schema.FieldSetMember fsm : fs.getFields()) {
-            Map<String, Object> fieldInfoMap = new Map<String, Object>();
+        
+        // Process field set members
+        for (Schema.FieldSetMember fsm : fieldSet.getFields()) {
             Schema.DescribeFieldResult fieldDescribe = describeResult.fields.getMap().get(fsm.getFieldPath()).getDescribe();
-            Boolean isFieldRequired = !fieldDescribe.isNillable() && !fieldDescribe.isDefaultedOnCreate();
-
-            fieldInfoMap.put('fieldName', fsm.getFieldPath());
-            fieldInfoMap.put('isRequired', isFieldRequired);
+            String fieldName = fsm.getFieldPath();
+            Boolean isLookup = fieldDescribe.getType() == Schema.DisplayType.Reference;
+            Boolean isReadOnly = readOnlyFields.contains(fieldName);
+            Boolean isRequired = requiredFields.contains(fieldName);
+            Boolean isPriceList = fieldName == 'Price_List__c';
+            
+            Map<String, Object> fieldInfoMap = new Map<String, Object>();
+            fieldInfoMap.put('fieldName', fieldName);
+            fieldInfoMap.put('label', fieldDescribe.getLabel());
+            fieldInfoMap.put('isLookup', isLookup);
+            fieldInfoMap.put('isReadOnly', isReadOnly);
+            fieldInfoMap.put('isRequired', isRequired);
+            fieldInfoMap.put('isPriceList', isPriceList);
+            fieldInfoMap.put('value', recordData.containsKey(fieldName) ? recordData.get(fieldName) : null); // Use record data if available
+            
             fieldInfos.add(fieldInfoMap);
         }
-
+        
+        system.debug('JJ fieldInfos: ' + fieldInfos);
         return fieldInfos;
-    }*/
+    }
+    
+    
+    
+    
+    
+    /*@AuraEnabled(cacheable=true)
+public static List<Object> getAgreementHomePageFieldSet(String objectName) {
+Agreement_Request_Setting__mdt reqMetadata = [SELECT Id, Object_Api_Name__c, Home_Page__c, Summary_Page__c FROM Agreement_Request_Setting__mdt WHERE Object_Api_Name__c = :objectName LIMIT 1];
+SObjectType objectType = Schema.getGlobalDescribe().get(reqMetadata.Object_Api_Name__c);
+DescribeSObjectResult describeResult = objectType.getDescribe();
+FieldSet fs = describeResult.FieldSets.getMap().get(reqMetadata.Home_Page__c);
 
+List<Object> fieldInfos = new List<Object>();
+for (Schema.FieldSetMember fsm : fs.getFields()) {
+Map<String, Object> fieldInfoMap = new Map<String, Object>();
+Schema.DescribeFieldResult fieldDescribe = describeResult.fields.getMap().get(fsm.getFieldPath()).getDescribe();
+Boolean isFieldRequired = !fieldDescribe.isNillable() && !fieldDescribe.isDefaultedOnCreate();
+
+fieldInfoMap.put('fieldName', fsm.getFieldPath());
+fieldInfoMap.put('isRequired', isFieldRequired);
+fieldInfos.add(fieldInfoMap);
+}
+
+return fieldInfos;
+}*/
+    
     
     @AuraEnabled(cacheable=true)
     public static List<Object> getAgreementSummaryPageFieldSet(String objectName) {
@@ -436,18 +446,18 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
         SObjectType objectType = Schema.getGlobalDescribe().get(reqMetadata.Object_Api_Name__c);
         DescribeSObjectResult describeResult = objectType.getDescribe();
         FieldSet fs = describeResult.FieldSets.getMap().get(reqMetadata.Summary_Page__c);
-
+        
         List<Object> fieldInfos = new List<Object>();
         for (Schema.FieldSetMember fsm : fs.getFields()) {
             Map<String, Object> fieldInfoMap = new Map<String, Object>();
             Schema.DescribeFieldResult fieldDescribe = describeResult.fields.getMap().get(fsm.getFieldPath()).getDescribe();
             Boolean isFieldRequired = !fieldDescribe.isNillable() && !fieldDescribe.isDefaultedOnCreate();
-
+            
             fieldInfoMap.put('fieldName', fsm.getFieldPath());
             fieldInfoMap.put('isRequired', isFieldRequired);
             fieldInfos.add(fieldInfoMap);
         }
-
+        
         return fieldInfos;
     }
     
@@ -467,46 +477,262 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
             this.agr = agr;
         }
     }
+    
+    public class AgreementUpdateResponse1 {
+        public Boolean success;
+        public String message;
+        public Aggrement__c agreement;
+        public String objectName;
+        
+        public AgreementUpdateResponse1(Boolean success, String message, Aggrement__c agreement, String objectName) {
+            this.success = success;
+            this.message = message;
+            this.agreement = agreement;
+            this.objectName = objectName;
+        }
+    }    
+    
+    /* public Object saveAgreementDetails(String agreementId, List<Object> agreementData, List<Object> agreementLineItemData) {
+try {
+Aggrement__c agrObj;
+String accName;
+String priceListName;
+Account accObj;
+Price_List__c plObj;
+SCF_Agreement_JSON_Data__c jsonDataObj = new SCF_Agreement_JSON_Data__c();
+String objectName = 'Aggrement__c'; // To store the object name
+System.debug('Agreement ID is :' + agreementId);
 
-    public Object saveAgreementDetails(String agreementId, List<Object> agreementData, List<Object> agreementLineItemData){        
+if (agreementId != null) {
+List<SCF_Agreement_JSON_Data__c> jsonDataList = [
+SELECT Agreement_ID__c, Agreement_Line_Item_Data__c 
+FROM SCF_Agreement_JSON_Data__c 
+WHERE Id = :agreementId
+];
+if (!jsonDataList.isEmpty()) {
+SCF_Agreement_JSON_Data__c jsonDataObj1 = jsonDataList[0];
+String agreementLineItemsJson = JSON.serialize(agreementLineItemData);
+jsonDataObj1.Agreement_Line_Item_Data__c = agreementLineItemsJson;
+update jsonDataObj1;
+} 
+else {
+// Determine the object type (Account, Opportunity, Agreement)
+String recordType = '';
+if ([SELECT Id FROM Account WHERE Id = :agreementId LIMIT 1].size() > 0) {
+recordType = 'Account';
+objectName = 'Account';
+} else if ([SELECT Id FROM Opportunity WHERE Id = :agreementId LIMIT 1].size() > 0) {
+recordType = 'Opportunity';
+objectName = 'Opportunity';
+} else if ([SELECT Id FROM Aggrement__c WHERE Id = :agreementId LIMIT 1].size() > 0) {
+recordType = 'Agreement';
+objectName = 'Agreement';
+} else {
+System.debug('Invalid recordId provided. Record does not belong to Account, Opportunity, or Agreement.');
+}
+
+// Create or update the agreement record based on the recordType
+if (recordType == 'Agreement') {
+agrObj = [SELECT Id FROM Aggrement__c WHERE Id = :agreementId LIMIT 1];
+} else {
+agrObj = new Aggrement__c();
+if (recordType == 'Account') {
+agrObj.Account__c = agreementId;
+} else if (recordType == 'Opportunity') {
+agrObj.Opportunity__c = agreementId;
+}
+}
+
+// Process the agreement data
+for (Object item : agreementData) {
+System.debug(item+' item');
+Map<String, Object> fieldMap = (Map<String, Object>)item;
+String fieldName = (String)fieldMap.get('fieldName');
+Object value = fieldMap.get('value'); // Use Object to handle any type
+
+if (String.isNotBlank(fieldName) && !fieldName.equals('Account__c') && !fieldName.equals('Price_List__c') && !fieldName.equals('Name')) {
+if (fieldName.equals('Agreement_Start_Date__c') && value instanceof String) {
+Date startDate = Date.valueOf((String)value);
+agrObj.put(fieldName, startDate);
+} else if (fieldName.equals('Agreement_End_Date__c') && value instanceof String) {
+Date endDate = Date.valueOf((String)value);
+agrObj.put(fieldName, endDate);
+} else if (fieldName.equals('Active__c') && value instanceof Boolean) {
+system.debug('active value is :'+value);
+if(value == 'true'){
+agrObj.Active__c = True; 
+}else{
+agrObj.Active__c = False;
+}                       
+} else {
+agrObj.put(fieldName, value != null ? String.valueOf(value) : null); // Convert to string if needed
+}
+}
+if (fieldName.equals('Account__c')) {                    
+system.debug('Account__c value is :'+value);
+agrObj.Account__c = (String)value;
+}
+if (fieldName.equals('Price_List__c')) {
+agrObj.Price_List__c = (String)value;
+}
+if(fieldName.equals('Billing_Preferences__c')){
+agrObj.Billing_Preferences__c='Monthly';
+}
+if(fieldName.equals('Description__c')){
+agrObj.Description__c=(String)value;
+}
+}
+
+
+// Insert or update the agreement
+if (recordType == 'Agreement') {
+update agrObj;
+} else {
+agrObj.Agreement_Name__c = 'Agreement Created';
+insert agrObj;
+}
+
+// Handle the JSON data update
+String agreementLineItemsJson = JSON.serialize(agreementLineItemData);
+jsonDataObj.Agreement_ID__c = agrObj.Id;
+jsonDataObj.Agreement_Line_Item_Data__c = agreementLineItemsJson;
+insert jsonDataObj;
+}
+}
+objectName = '	Aggrement__c';
+// Create the response object with agrObj and objectName
+AgreementUpdateResponse1 agrResponse = new AgreementUpdateResponse1(
+true, 
+'Saved Agreement Successfully.', 
+agrObj, 
+objectName
+);
+return JSON.serialize(agrResponse);
+
+
+} catch (DmlException e) {
+AgreementUpdateResponse1 agrResponse = new AgreementUpdateResponse1(
+false, 
+'Error updating Agreement: ' + e.getMessage(), 
+null, 
+null
+);
+return JSON.serialize(agrResponse);
+
+}
+} */
+    
+    public Object saveAgreementDetails(String agreementId, List<Object> agreementData, List<Object> agreementLineItemData) {
         try {
-			JSON_Data__c jsonDataObj = new JSON_Data__c();
-            String agreementJson = JSON.serialize(agreementData);
+            Aggrement__c agrObj = new Aggrement__c();
+            SCF_Agreement_JSON_Data__c jsonDataObj = new SCF_Agreement_JSON_Data__c();
+            String objectName = 'Aggrement__c';
+            System.debug('Agreement ID is :' + agreementId);
+            
+            // Process each item in agreementData
+            for (Object item : agreementData) {
+                System.debug('Raw item: ' + JSON.serialize(item));
+                
+                Map<String, Object> fieldMap;
+                try {
+                    // Safely convert ANY to Map<String, Object>
+                    fieldMap = (Map<String, Object>)JSON.deserializeUntyped(JSON.serialize(item));
+                } catch (Exception ex) {
+                    System.debug('Failed to process item. Error: ' + ex.getMessage());
+                    continue; // Skip invalid items
+                }
+                
+                System.debug('Processed fieldMap: ' + JSON.serialize(fieldMap));
+                
+                // Validate keys
+                if (!fieldMap.containsKey('fieldName') || !fieldMap.containsKey('value')) {
+                    System.debug('Skipping invalid fieldMap: ' + JSON.serialize(fieldMap));
+                    continue;
+                }
+                
+                String fieldName = (String)fieldMap.get('fieldName');
+                Object value = fieldMap.get('value');
+                
+                // Assign field values to agrObj
+                if (String.isNotBlank(fieldName)) {
+                    try {
+                        if (fieldName.equals('Agreement_Start_Date__c') && value instanceof String) {
+                            agrObj.Agreement_Start_Date__c = Date.valueOf((String)value);
+                        } else if (fieldName.equals('Agreement_End_Date__c') && value instanceof String) {
+                            agrObj.Agreement_End_Date__c = Date.valueOf((String)value);
+                        } else if (fieldName.equals('Active__c') && value instanceof Boolean) {
+                            agrObj.Active__c = (Boolean)value;
+                        } else if (fieldName.equals('Account__c')) {
+                            agrObj.Account__c = (String)value;
+                        } else if (fieldName.equals('Price_List__c')) {
+                            agrObj.Price_List__c = (String)value;
+                        } else if (fieldName.equals('Billing_Preferences__c')) {
+                            agrObj.Billing_Preferences__c = 'Monthly';
+                        } else if (fieldName.equals('Description__c')) {
+                            agrObj.Description__c = (String)value;
+                        } else {
+                            agrObj.put(fieldName, value != null ? String.valueOf(value) : null);
+                        }
+                    } catch (Exception fieldEx) {
+                        System.debug('Failed to process field: ' + fieldName + ' Error: ' + fieldEx.getMessage());
+                    }
+                }
+            }
+            
+            // Insert the agreement
+            agrObj.Agreement_Name__c = 'Agreement Created';
+            insert agrObj;
+            
+            // Handle line item data
             String agreementLineItemsJson = JSON.serialize(agreementLineItemData);
-            jsonDataObj.Data_Object_Id__c = agreementId;
-            jsonDataObj.Agreement_Header_Data__c = agreementJson;
-            jsonDataObj.Agreement_Line_Items_Data__c = agreementLineItemsJson;
+            jsonDataObj.Agreement_ID__c = agrObj.Id;
+            jsonDataObj.Agreement_Line_Item_Data__c = agreementLineItemsJson;
             insert jsonDataObj;
-            AgreementUpdateResponse agrResponse =  new AgreementUpdateResponse(true, 'Saved Agreement Successfully.', null);
-            String jsonResponse = JSON.serialize(agrResponse);
-            return agrResponse;
-        } catch (DmlException e) {
-            AgreementUpdateResponse agrResponse =  new AgreementUpdateResponse(false, 'Error updating Agreement: '+ e.getMessage(), null);           
-            String jsonResponse = JSON.serialize(agrResponse);
-            return jsonResponse;
+            
+            AgreementUpdateResponse1 agrResponse = new AgreementUpdateResponse1(
+                true,
+                'Saved Agreement Successfully.',
+                agrObj,
+                objectName
+            );
+            return JSON.serialize(agrResponse);
+            
+        } catch (Exception e) {
+            System.debug('Error: ' + e.getMessage());
+            AgreementUpdateResponse1 agrResponse = new AgreementUpdateResponse1(
+                false,
+                'Error updating Agreement: ' + e.getMessage(),
+                null,
+                null
+            );
+            return JSON.serialize(agrResponse);
         }
     }
+    
+    
+    
+    
     
     public Object generateApprovalRequests(String agreementId) {
         try {
             // Step 1: Query the Agreement record
             Aggrement__c agrObj = [SELECT Id, Owner.Id FROM Aggrement__c WHERE Id = :agreementId];
-
+            
             // Step 2: Create an Approval__c record (if required as a supporting object)
             Approval__c approvalObj = new Approval__c();
             approvalObj.Related_Agreement__c = agreementId;
             approvalObj.Approval_Description__c = 'This is an approval request created';
             approvalObj.Approval_Owner__c = agrObj.Owner.Id;
             insert approvalObj;
-
+            
             // Step 3: Submit the Agreement for Approval
             Approval.ProcessSubmitRequest approvalRequest = new Approval.ProcessSubmitRequest();
             approvalRequest.setComments('Submitting Agreement to Sample Approval Process');
             approvalRequest.setObjectId(agrObj.Id); // Set the record ID to be submitted
             approvalRequest.setProcessDefinitionNameOrId('Sample_Approval_Process'); // Name or ID of the approval process
-
+            
             Approval.ProcessResult result = Approval.process(approvalRequest); // Submit the approval request
-
+            
             // Step 4: Check result status and return response
             if (result.isSuccess()) {
                 AgreementUpdateResponse agrResponse = new AgreementUpdateResponse(
@@ -523,58 +749,70 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
                 );
                 return agrResponse;
             }
-        } catch (Exception e) {
-            // Step 5: Handle any exceptions
-            AgreementUpdateResponse agrResponse = new AgreementUpdateResponse(
-                false,
-                'Error generating approvals: ' + e.getMessage(),
-                null
-            );
-            return agrResponse;
+        } catch (Exception ce) {
+            // Specific exception for no applicable process
+            if (ce.getMessage().contains('No applicable approval process was found')) {
+                AgreementUpdateResponse agrResponse = new AgreementUpdateResponse(
+                    true, // Proceed as successful since no approval is required
+                    'No applicable approval process found. Proceeding without approval.',
+                    null
+                );
+                return agrResponse;
+            } else {
+                AgreementUpdateResponse agrResponse = new AgreementUpdateResponse(
+                    false,
+                    'Approval exception occurred: ' + ce.getMessage(),
+                    null
+                );
+                return agrResponse;
+            }
         }
     }
-
     
     
-	public List<Object> getRecordTypeData(){
+    
+    
+    public List<Object> getRecordTypeData(){
         return [select Id,Name from RecordType where sObjectType='Aggrement__c'];
     }
     
     public string getRecordTitle(Id recId){       
-     string   objName = 'Aggrement__c';
+        string   objName = 'Aggrement__c';
         return objName;
     }
     @AuraEnabled
-     public static List<Object>  AgreementPricevalidate(string agreementLineItemData){  
-         System.debug( 'apw.discount'+agreementLineItemData);
-         List<AgreementProductWrapper> lstProductData = (List<AgreementProductWrapper>)JSON.deserialize(agreementLineItemData, List<AgreementProductWrapper>.class);
-         System.debug( 'apw.lstProductData'+lstProductData);
-         for(AgreementProductWrapper apw:lstProductData){
-             System.debug( 'apw'+apw);
-             if(apw.productCode=='SL9060'&&apw.discount==10){
+    public static List<Object>  AgreementPricevalidate(string agreementLineItemData){  
+        System.debug( 'apw.discount'+agreementLineItemData);
+        List<aggrementItems> lstProductData = (List<aggrementItems>)JSON.deserialize(agreementLineItemData, List<aggrementItems>.class);
+        System.debug( 'apw.lstProductData'+lstProductData);
+        for(aggrementItems apw:lstProductData){
+            System.debug( 'apw'+apw);
+            if(apw.productCode=='SL9060'&&apw.discount==10){
                 apw.discount=20;
-                 System.debug(apw.discount+'apw.discount');
-                 apw.netPrice= apw.netPrice-( apw.netPrice* 10)/100;
-                 System.debug(apw.netPrice+'apw.netPrice');
-             }
-         }
-    		System.debug(lstProductData+'lstProductDataq');
-         return lstProductData;
+                System.debug(apw.discount+'apw.discount');
+                apw.netPrice= apw.netPrice-( apw.netPrice* 10)/100;
+                System.debug(apw.netPrice+'apw.netPrice');
+            }
+        }
+        System.debug(lstProductData+'lstProductDataq');
+        return lstProductData;
     }
     
     @AuraEnabled
-     public static boolean Agreementlineitemsvalidate(string agreementLineItemData){ 
-         boolean error;
-          List<AggrementPricingWrapper> lstProductData = (List<AggrementPricingWrapper>)JSON.deserialize(agreementLineItemData, List<AggrementPricingWrapper>.class);
-         for(AggrementPricingWrapper apw:lstProductData){
-             if(apw.productCode=='SL9040'&&apw.discount>10){
-                 error=true;
-             }
-             
-         }
-    		
-   System.debug(error+'error');
-            return error;
+    public static string Agreementlineitemsvalidate(string agreementLineItemData){ 
+        String errorMessage = '';
+        boolean error;
+        List<aggrementItems> lstProductData = (List<aggrementItems>)JSON.deserialize(agreementLineItemData, List<aggrementItems>.class);
+        for(aggrementItems apw:lstProductData){
+            if(apw.productCode=='SL9040'&&apw.discount>10){
+                error=true;
+                errorMessage += 'Row ' + apw.recordIndex + ': Discount exceeds 10% for ' + apw.productName;
+            }
+            
+        }
+        
+        System.debug(error+'error');
+        return errorMessage;
     }
     
     @AuraEnabled(cacheable=true)
@@ -593,55 +831,60 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
             system.debug('hasAttribute true :: '+hasAgreement );
         }else{
             hasAgreement= false;
-             system.debug('hasAttribute false :: '+hasAgreement );
+            system.debug('hasAttribute false :: '+hasAgreement );
         }
         return hasAgreement;
     }
     
-     @AuraEnabled(cacheable=true)
+    @AuraEnabled(cacheable=true)
     public static String getObjectMetaData() {
         // Use the getObjectMetaData method to retrieve the object from custom setting
-       String objectApiName = [Select Object_API_Name__c from Pricing_Object_API__mdt limit 1].Object_API_Name__c;
+        String objectApiName = [Select Object_API_Name__c from Pricing_Object_API__mdt limit 1].Object_API_Name__c;
         return objectApiName;
     }
     
     @AuraEnabled(cacheable=true)
-    public static Object getApprovalDetails1(String agreementId){        
+    public static Object getApprovalDetails1(String agreementId,string approvalProduct){        
         List<ApprovalDetails> apprDetails = new List<ApprovalDetails>();
-        Set<Id> userIds = new Set<Id>();
-        List<Approval__c> apprObj = [SELECT Id, Approval_Owner__c FROM Approval__c WHERE Related_Agreement__c = :agreementId];
-        for(Approval__c obj : apprObj){
-            userIds.add(obj.Approval_Owner__c);
-        }
-        List<User> userObj = [SELECT Id, UserRole.Name, Name, Department, Email, Phone FROM User WHERE Id IN :userIds];
-        for(Approval__c obj1 : apprObj){
-            if(obj1.Approval_Owner__c != null){
-                for(User obj : userObj){
-                    ApprovalDetails adObj = new ApprovalDetails();
-                    if(obj.Name != null){
-                        adObj.Name = obj.Name;
-                    }
-                    if(obj.UserRole.Name != null){
-                        adObj.Role = obj.UserRole.Name;
-                    }
-                    if(obj.Email != null){
-                        adObj.Email = obj.Email;
-                    }
-                    if(obj.Department != null){
-                        adObj.Department = obj.Department;
-                    }
-                    if(obj.Phone != null){
-                        adObj.Phone = obj.Phone;
-                    }
-                    system.debug(adObj);
-                    apprDetails.add(adObj);
-                    system.debug(apprDetails);
-                }
-            }
-        }
-        return apprDetails;
+        ProcessInstance processInstances=[SELECT CompletedDate, ElapsedTimeInDays, ElapsedTimeInHours, ElapsedTimeInMinutes, 
+                                          Id, ProcessDefinitionId, Status, SubmittedById, TargetObjectId FROM ProcessInstance
+                                          WHERE TargetObjectId =:agreementId ];
+        list<ProcessInstanceStep> processInstanceSteps=[ SELECT Actor.Name,Actor.UserRoleId,Actor.Email,Actor.Phone, ActorId, Id, OriginalActorId, ProcessInstanceId,StepNodeId,StepStatus,
+                                                        SystemModstamp FROM ProcessInstanceStep where    ProcessInstanceId=:processInstances.Id];
+        /*  Set<Id> userIds = new Set<Id>();
+List<Approval__c> apprObj = [SELECT Id, Approval_Owner__c FROM Approval__c WHERE Related_Agreement__c = :agreementId];
+for(Approval__c obj : apprObj){
+userIds.add(obj.Approval_Owner__c);
+}
+List<User> userObj = [SELECT Id, UserRole.Name, Name, Department, Email, Phone FROM User WHERE Id IN :userIds];
+for(Approval__c obj1 : apprObj){
+if(obj1.Approval_Owner__c != null){
+for(User obj : userObj){
+ApprovalDetails adObj = new ApprovalDetails();
+if(obj.Name != null){
+adObj.Name = obj.Name;
+}
+if(obj.UserRole.Name != null){
+adObj.Role = obj.UserRole.Name;
+}
+if(obj.Email != null){
+adObj.Email = obj.Email;
+}
+if(obj.Department != null){
+adObj.Department = obj.Department;
+}
+if(obj.Phone != null){
+adObj.Phone = obj.Phone;
+}
+system.debug(adObj);
+apprDetails.add(adObj);
+system.debug(apprDetails);
+}
+}
+}*/
+        return processInstanceSteps;
     }
-        
+    
     
     public Object updateAgreementData(String recordId, List<Object> agreementData) {
         Aggrement__c agrObj;
@@ -649,7 +892,7 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
         String priceListName;
         Account accObj;
         Price_List__c plObj;
-
+        
         try {
             // Determine the type of record for the given recordId
             String recordType = '';
@@ -662,7 +905,7 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
             } else {
                 system.debug('Invalid recordId provided. Record does not belong to Account, Opportunity, or Agreement.');
             }
-
+            
             // If record belongs to Agreement, fetch it; otherwise, create a new agreement
             if (recordType == 'Agreement') {
                 agrObj = [SELECT Id FROM Aggrement__c WHERE Id = :recordId LIMIT 1];
@@ -674,13 +917,14 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
                     agrObj.Opportunity__c = recordId;
                 }
             }
-
+            
             // Process agreementData to populate fields
             for (Object item : agreementData) {
+                System.debug(item+' item');
                 Map<String, Object> fieldMap = (Map<String, Object>)item;
                 String fieldName = (String)fieldMap.get('fieldName');
                 Object value = fieldMap.get('value'); // Use Object to handle any type
-
+                
                 if (String.isNotBlank(fieldName) && !fieldName.equals('Account__c') && !fieldName.equals('Price_List__c') && !fieldName.equals('Name')) {
                     if (fieldName.equals('Agreement_Start_Date__c') && value instanceof String) {
                         Date startDate = Date.valueOf((String)value);
@@ -689,28 +933,31 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
                         Date endDate = Date.valueOf((String)value);
                         agrObj.put(fieldName, endDate);
                     } else if (fieldName.equals('Active__c') && value instanceof Boolean) {
-                        agrObj.put(fieldName, value); // Directly use Boolean value
+                        system.debug('active value is :'+value);
+                        if(value == 'true'){
+                            agrObj.Active__c = True; 
+                        }else{
+                            agrObj.Active__c = False;
+                        }                       
                     } else {
                         agrObj.put(fieldName, value != null ? String.valueOf(value) : null); // Convert to string if needed
                     }
                 }
-                if (fieldName.equals('Account__c')) {
-                    accName = (String)value;
+                if (fieldName.equals('Account__c')) {                    
+                    system.debug('Account__c value is :'+value);
+                    agrObj.Account__c = (String)value;
                 }
                 if (fieldName.equals('Price_List__c')) {
-                    priceListName = (String)value;
+                    agrObj.Price_List__c = (String)value;
+                }
+                if(fieldName.equals('Billing_Preferences__c')){
+                    agrObj.Billing_Preferences__c='Monthly';
+                }
+                if(fieldName.equals('Description__c')){
+                    agrObj.Description__c=(String)value;
                 }
             }
-
-            // Handle Account reference
-            if (accName != null && !accName.startsWith('001')) {
-                System.debug('jj accName is :' + accName);
-                accObj = [SELECT Id FROM Account WHERE Name = :accName LIMIT 1];
-                if (accObj != null) {
-                    agrObj.Account__c = accObj.Id;
-                }
-            }
-
+            
             // Handle Price List reference
             if (priceListName != null && !priceListName.startsWith('a0F')) {
                 System.debug('jj priceListName is :' + priceListName);
@@ -719,7 +966,7 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
                     agrObj.Price_List__c = plObj.Id;
                 }
             }
-
+            
             // Insert or update the agreement record
             if (recordType == 'Agreement') {
                 update agrObj;
@@ -727,18 +974,24 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
                 agrObj.Agreement_Name__c = 'Agreement Created';
                 insert agrObj;
             }
-
+            
+            List<SCF_Agreement_JSON_Data__c> jsonsToDelete = [SELECT Id FROM SCF_Agreement_JSON_Data__c WHERE Agreement_ID__c = :agrObj.Id];
+            if(!jsonsToDelete.isEmpty()){
+                delete jsonsToDelete;
+            }
+            
             // Prepare success response
             AgreementUpdateResponse agrResponse = new AgreementUpdateResponse(true, 'Agreement processed successfully.', agrObj);
+            system.debug(agrResponse +'agrResponse');
             return JSON.serialize(agrResponse);
-
+            
         } catch (Exception e) {
             // Handle errors
             AgreementUpdateResponse agrResponse = new AgreementUpdateResponse(false, 'Error processing Agreement: ' + e.getMessage(), null);
             return JSON.serialize(agrResponse);
         }
     }
-  
+    
     
     public class AgreementLineItemData {
         public Decimal listPrice;
@@ -760,17 +1013,17 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
     }
     
     public List<Account> getCompanyLocations(String agrID){
-       Aggrement__c agrObj = [SELECT Id, Account__r.Name from Aggrement__c WHERE Id =:agrID];  
-       if(agrObj.Account__r.Name != null){
-        String str = agrObj.Account__r.Name + '%';
-        return [SELECT Id, Name, BillingStreet, BillingCity, BillingState, BillingPostalCode, BillingCountry 
-               FROM Account 
-               WHERE Name LIKE :str];
+        Aggrement__c agrObj = [SELECT Id, Account__r.Name from Aggrement__c WHERE Id =:agrID];  
+        if(agrObj.Account__r.Name != null){
+            String str = agrObj.Account__r.Name + '%';
+            return [SELECT Id, Name, BillingStreet, BillingCity, BillingState, BillingPostalCode, BillingCountry 
+                    FROM Account 
+                    WHERE Name LIKE :str];
         }else{
             return null;
         }       
-   }
-
+    }
+    
     
     public Object updateAgreementLineItemData(String recordId, List<Object> agreementLineItemData) {
         List<Agreement_Line_Item__c > itemsToDelete = [SELECT Id FROM Agreement_Line_Item__c WHERE Aggreement__c= :recordId];
@@ -795,6 +1048,16 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
                 }
                 if (scopeMap.containsKey('productId') && scopeMap.get('productId') != null) {
                     agrLI.Product__c = String.valueOf(scopeMap.get('productId'));      
+                }
+                if (scopeMap.containsKey('discount') && scopeMap.get('discount') != null) {
+                    agrLI.Discount__c = Decimal.valueOf(String.valueOf(scopeMap.get('discount')));
+                    if(agrLI.Discount__c >= 20){
+                        if(agrLI.Discount__c >= 30){
+                            agrLI.Needs_Level_2_Approval__c = True;
+                        }else{
+                            agrLI.Needs_Approval__c = True;
+                        }
+                    }
                 }
                 agrLI.Aggreement__c = recordId;
                 system.debug('jj the agreement is :'+agrLI);
@@ -875,17 +1138,17 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
     @AuraEnabled(cacheable=true)
     public static List<Object> getAgreementCatalogData(String recId, String fieldsData, string objApi){
         
-       List<String> filterproducts = getFilterProducts(recId);
-      
+        List<String> filterproducts = getFilterProducts(recId);
+        
         system.debug('Selected fieldsData catalog ::: '+fieldsData);
         system.debug('Selected recId catalog ::: '+recId);
-         system.debug('Selected objApi catalog ::: '+objApi);
+        system.debug('Selected objApi catalog ::: '+objApi);
         String selectedPriceList = '';
         Id priceListId;
         Integer i=1;
         Id selectedAgrId = recId;
         //System.debug('Size of lstEntryFormWrap 797 : ' + (Aggrement__c)JSON.deserialize(fieldsData, Aggrement__c.class));
-		//Aggrement__c lstEntryFormWrap = (Aggrement__c)JSON.deserialize(fieldsData, Aggrement__c.class);
+        //Aggrement__c lstEntryFormWrap = (Aggrement__c)JSON.deserialize(fieldsData, Aggrement__c.class);
         List<Object> fieldList = (List<Object>) JSON.deserializeUntyped(fieldsData);
         Aggrement__c lstEntryFormWrap = new Aggrement__c();
         
@@ -907,23 +1170,23 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
         }
         System.debug('Deserialized Aggrement__c: ' + lstEntryFormWrap);
         if(lstEntryFormWrap.Price_List__c != Null){
-                selectedPriceList = lstEntryFormWrap.Price_List__c;
-         }
+            selectedPriceList = lstEntryFormWrap.Price_List__c;
+        }
         system.debug('Selected Price catalog ::: '+selectedPriceList);
         
         List<AgreementProductWrapper> agreProductWrapper = new List<AgreementProductWrapper>();
         List<Price_List_Item__c> pricelist = new List<Price_List_Item__c>();
         if (selectedPriceList != null) {
             try {
-                 Pattern idPattern = Pattern.compile('^[a-zA-Z0-9]{15,18}$'); 
-           		 Matcher idMatcher = idPattern.matcher(selectedPriceList);
+                Pattern idPattern = Pattern.compile('^[a-zA-Z0-9]{15,18}$'); 
+                Matcher idMatcher = idPattern.matcher(selectedPriceList);
                 if (idMatcher.matches() && selectedPriceList.toUpperCase() == selectedPriceList) {
-                   
+                    
                     String query = 'SELECT Id, Name FROM ' + objApi + ' WHERE Id = :selectedPriceList';
                     system.debug('Selected Price catalog query by ID ::: ' + query);
                     List<SObject> results = Database.query(query);
                     system.debug('Selected Price catalog results by ID ::: ' + results);
-    
+                    
                     if (!results.isEmpty()) {
                         priceListId = (Id) results[0].get('Id');
                     }
@@ -938,15 +1201,15 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
                         priceListId = (Id) results[0].get('Id');
                     }
                 }
-               /* String query = 'SELECT Id,Name FROM ' + objApi + ' WHERE Id = \'' + selectedPriceList + '\'';
-				// String query = 'SELECT Id FROM ' + objApi + ' WHERE Name = :selectedPriceList';
-                system.debug('Selected Price catalog query 613 ::: '+query);
-				List<SObject> results = Database.query(query);	
-                system.debug('Selected Price catalog 614 ::: '+results);
-                priceListId = (Id) results[0].get('Id');
-                 system.debug('Selected Price catalog pricelistId ::: '+pricelistId);
-               // Price_List__c pricList = [SELECT Id FROM Price_List__c WHERE Name = :selectedPriceList];
-               // priceListId = pricList.Id;*/
+                /* String query = 'SELECT Id,Name FROM ' + objApi + ' WHERE Id = \'' + selectedPriceList + '\'';
+// String query = 'SELECT Id FROM ' + objApi + ' WHERE Name = :selectedPriceList';
+system.debug('Selected Price catalog query 613 ::: '+query);
+List<SObject> results = Database.query(query);	
+system.debug('Selected Price catalog 614 ::: '+results);
+priceListId = (Id) results[0].get('Id');
+system.debug('Selected Price catalog pricelistId ::: '+pricelistId);
+// Price_List__c pricList = [SELECT Id FROM Price_List__c WHERE Name = :selectedPriceList];
+// priceListId = pricList.Id;*/
             } catch (QueryException e) {
                 priceListId = selectedPriceList;
             }
@@ -954,18 +1217,18 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
         system.debug('PriceList catalog ::: '+priceListId);
         if(priceListId != null){
             if(!filterproducts.isEmpty()){
-               pricelist=[Select Product_Name__r.Name,Product_Name__r.Family,Product_Name__r.ProductCode,Price_List__c,Product_Name__c,List_Price__c
-                                            from Price_List_Item__c
-                                            where  Price_List__c =:priceListId and Product_Name__r.Name NOT IN :filterProducts ]; 
+                pricelist=[Select Product_Name__r.Name,Product_Name__r.Family,Product_Name__r.ProductCode,Price_List__c,Product_Name__c,List_Price__c
+                           from Price_List_Item__c
+                           where  Price_List__c =:priceListId and Product_Name__r.Name NOT IN :filterProducts ]; 
             }else{
                 pricelist=[Select Id,Product_Name__r.Name,Product_Name__r.Family,Product_Name__r.ProductCode,Price_List__c,Product_Name__c,List_Price__c
-                                            from Price_List_Item__c
-                                            where  Price_List__c =:priceListId];
+                           from Price_List_Item__c
+                           where  Price_List__c =:priceListId];
             }
-             
+            
         }
         Set<String> uniqueProductNames = new Set<String>();
-		List<Price_List_Item__c> uniquePricelist = new List<Price_List_Item__c>();
+        List<Price_List_Item__c> uniquePricelist = new List<Price_List_Item__c>();
         for (Price_List_Item__c item : pricelist) {
             // Check uniqueness based on a field, e.g., Product_Name__r.Name
             if (!uniqueProductNames.contains(item.Product_Name__r.Name)) {
@@ -973,8 +1236,8 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
                 uniquePricelist.add(item);
             }
         }
-         system.debug('Pricelist products ::: '+pricelist);
-         system.debug('Pricelist count ::: '+pricelist.size());
+        system.debug('Pricelist products ::: '+pricelist);
+        system.debug('Pricelist count ::: '+pricelist.size());
         for(Price_List_Item__c pr :uniquePricelist){
             Product2 prod = pr.Product_Name__r;
             AgreementProductWrapper agr = new AgreementProductWrapper();
@@ -985,7 +1248,7 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
             agr.productFamily = prod.Family;
             agr.listPrice = pr.List_Price__c;
             agreProductWrapper.add(agr);
-         }        
+        }        
         return agreProductWrapper;
     }
     
@@ -995,7 +1258,7 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
             throw new IllegalArgumentException('Invalid record ID');
         }
         String prefix = recId.substring(0, 3);
-
+        
         String effCountry = '';
         switch on prefix {
             when 'a02' { // Agreement
@@ -1013,31 +1276,31 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
                 ].Account.Effective_Country__c;
             }
         }
-
-       // String effCountry = [Select Id,Account__c,Account__r.Effective_Country__c from Aggrement__c where Id =: recId].Account__r.Effective_Country__c;
+        
+        // String effCountry = [Select Id,Account__c,Account__r.Effective_Country__c from Aggrement__c where Id =: recId].Account__r.Effective_Country__c;
         system.debug('Effective COuntry ::: '+ effCountry);
         List<Product2> productList;
         if(effCountry == 'AUSTRIA'){
-           productList =[Select Id , Name From Product2 Where Name Like '%SLA%'];
-           for(Product2 pr :productList){
+            productList =[Select Id , Name From Product2 Where Name Like '%SLA%'];
+            for(Product2 pr :productList){
                 objectList.add(pr.Name);
             }
         }
         system.debug('Effective productList::: '+ productList);
-       
+        
         return objectList ;
     }
     
-     @AuraEnabled(cacheable=true)
-     public static List<Object> getAgreementFastData(String recId,String productId, String fieldsData,string objApi){
-      	List<String> filterproducts = getFilterProducts(recId);
+    @AuraEnabled(cacheable=true)
+    public static List<Object> getAgreementFastData(String recId,String productId, String fieldsData,string objApi){
+        List<String> filterproducts = getFilterProducts(recId);
         System.debug('Fast filter prodcts 713 ::: ' + filterproducts);
         String selectedPriceList = '';
         Id priceListId;
         Id selectedAgrId = recId;
         Integer i=1;
-		//Aggrement__c lstEntryFormWrap = (Aggrement__c)JSON.deserialize(fieldsData, Aggrement__c.class);
-		 List<Object> fieldList = (List<Object>) JSON.deserializeUntyped(fieldsData);
+        //Aggrement__c lstEntryFormWrap = (Aggrement__c)JSON.deserialize(fieldsData, Aggrement__c.class);
+        List<Object> fieldList = (List<Object>) JSON.deserializeUntyped(fieldsData);
         Aggrement__c lstEntryFormWrap = new Aggrement__c();
         
         for (Object fieldObj : fieldList) {
@@ -1056,7 +1319,7 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
                 lstEntryFormWrap.Account__c = (String) value;
             }
         }
-       	System.debug('Size of lstEntryFormWrap: ' + lstEntryFormWrap);
+        System.debug('Size of lstEntryFormWrap: ' + lstEntryFormWrap);
         if(lstEntryFormWrap.Price_List__c != Null){
             selectedPriceList = lstEntryFormWrap.Price_List__c;
         }
@@ -1064,15 +1327,15 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
         List<Price_List_Item__c> pricelist = new List<Price_List_Item__c>();
         if (selectedPriceList != null) {
             try {
-                 Pattern idPattern = Pattern.compile('^[a-zA-Z0-9]{15,18}$'); 
-           		 Matcher idMatcher = idPattern.matcher(selectedPriceList);
+                Pattern idPattern = Pattern.compile('^[a-zA-Z0-9]{15,18}$'); 
+                Matcher idMatcher = idPattern.matcher(selectedPriceList);
                 if (idMatcher.matches() && selectedPriceList.toUpperCase() == selectedPriceList) {
-                   
+                    
                     String query = 'SELECT Id, Name FROM ' + objApi + ' WHERE Id = :selectedPriceList';
                     system.debug('Selected Price fast query by ID ::: ' + query);
                     List<SObject> results = Database.query(query);
                     system.debug('Selected Price fast results by ID ::: ' + results);
-    
+                    
                     if (!results.isEmpty()) {
                         priceListId = (Id) results[0].get('Id');
                     }
@@ -1087,36 +1350,36 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
                         priceListId = (Id) results[0].get('Id');
                     }
                 }
-              /*  String query = 'SELECT Id,Name FROM ' + objApi + ' WHERE Name = \'' + selectedPriceList + '\'';
-                List<SObject> results = Database.query(query);	
-                system.debug('Selected Price fast 667 ::: '+results);
-                priceListId = (Id) results[0].get('Id');
-                system.debug('Selected priceListId fast 669 ::: '+priceListId);*/
-               // Price_List__c pricList = [SELECT Id FROM Price_List__c WHERE Name = :selectedPriceList];
-               // priceListId = pricList.Id;
+                /*  String query = 'SELECT Id,Name FROM ' + objApi + ' WHERE Name = \'' + selectedPriceList + '\'';
+List<SObject> results = Database.query(query);	
+system.debug('Selected Price fast 667 ::: '+results);
+priceListId = (Id) results[0].get('Id');
+system.debug('Selected priceListId fast 669 ::: '+priceListId);*/
+                // Price_List__c pricList = [SELECT Id FROM Price_List__c WHERE Name = :selectedPriceList];
+                // priceListId = pricList.Id;
             } catch (QueryException e) {
                 priceListId = selectedPriceList;
-                 system.debug('Selected Price fast priceListId 688 ::: '+priceListId);
+                system.debug('Selected Price fast priceListId 688 ::: '+priceListId);
             }
         }
         system.debug('PriceList catalog ::: '+priceListId);
         if(priceListId != null){
             if(!filterproducts.isEmpty()){
-                 pricelist=[Select Id,Product_Name__r.Name,Product_Name__r.Family,Product_Name__r.ProductCode,Price_List__c,Product_Name__c,List_Price__c
-                                            from Price_List_Item__c
-                                            where  Price_List__c =:priceListId And  Product_Name__r.Name NOT IN :filterProducts And Product_Name__c =:productId]; 
+                pricelist=[Select Id,Product_Name__r.Name,Product_Name__r.Family,Product_Name__r.ProductCode,Price_List__c,Product_Name__c,List_Price__c
+                           from Price_List_Item__c
+                           where  Price_List__c =:priceListId And  Product_Name__r.Name NOT IN :filterProducts And Product_Name__c =:productId]; 
                 system.debug(' Price list iem with filterprods 767 ::: '+pricelist);
             }else{
-            pricelist=[Select Id,Product_Name__r.Name,Product_Name__r.Family,Product_Name__r.ProductCode,Price_List__c,Product_Name__c,List_Price__c
-                                            from Price_List_Item__c
-                                            where  Price_List__c =:priceListId and Product_Name__c =:productId]; 
+                pricelist=[Select Id,Product_Name__r.Name,Product_Name__r.Family,Product_Name__r.ProductCode,Price_List__c,Product_Name__c,List_Price__c
+                           from Price_List_Item__c
+                           where  Price_List__c =:priceListId and Product_Name__c =:productId]; 
                 system.debug(' Price list iem without filterprods773 ::: '+pricelist);
             }
         }
-       /*	List<AgreementProductWrapper> agreProductWrapper = new List<AgreementProductWrapper>();
-        List<Price_List_Item__c> pricelist=[Select Id,Product_Name__r.Name,Product_Name__r.Family,Product_Name__r.ProductCode,Price_List__c,Product_Name__c,List_Price__c
-                                            from Price_List_Item__c
-                                            where  Price_List__c =:selectedPriceList and Product_Name__c =:productId ];*/
+        /*	List<AgreementProductWrapper> agreProductWrapper = new List<AgreementProductWrapper>();
+List<Price_List_Item__c> pricelist=[Select Id,Product_Name__r.Name,Product_Name__r.Family,Product_Name__r.ProductCode,Price_List__c,Product_Name__c,List_Price__c
+from Price_List_Item__c
+where  Price_List__c =:selectedPriceList and Product_Name__c =:productId ];*/
         for(Price_List_Item__c pr :pricelist){
             Product2 prod = pr.Product_Name__r;
             AgreementProductWrapper agr = new AgreementProductWrapper();
@@ -1127,32 +1390,32 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
             agr.productFamily = prod.Family;
             agr.listPrice = pr.List_Price__c;
             agreProductWrapper.add(agr);
-         }
-        /*Id pricelistId;
-        List<Aggrement__c> agrRec =[select id,Price_List__c from Aggrement__c where id=:recId limit 1];
-        for(Aggrement__c ag:agrRec){
-            pricelistId=ag.Price_List__c;
         }
-        List<Product2> prodList = [SELECT Id, ProductCode, Name, Family, (SELECT Id, List_Price__c,Price_List__c FROM Price_List_Item__r where Price_List__c =:pricelistId) FROM Product2 where Id =:productId]; 
-       if(selectedvalue == 'Name' || selectedvalue == 'Code'){
-             prodList = [SELECT Id, ProductCode, Name, Family, (SELECT Id, List_Price__c FROM Price_List_Item__r) FROM Product2 where Id =:productId];
-         }else if(selectedvalue == 'Family'){
-             prodList = [SELECT Id, ProductCode, Name, Family, (SELECT Id, List_Price__c FROM Price_List_Item__r) FROM Product2 where Id =:productId];
-         }
-       
-        for (Product2 prod : prodList) {
-            for (Price_List_Item__c priceListItem : prod.Price_List_Item__r) {
-                AgreementProductWrapper agr = new AgreementProductWrapper();
-                agr.productName = prod.Name;
-                agr.productId = prod.Id;
-                agr.productCode = prod.ProductCode;
-                agr.productFamily = prod.Family;
-                agr.listPrice = priceListItem.List_Price__c;
-                agreProductWrapper.add(agr);
-            }
-        }*/
-         return agreProductWrapper;
-     }
+        /*Id pricelistId;
+List<Aggrement__c> agrRec =[select id,Price_List__c from Aggrement__c where id=:recId limit 1];
+for(Aggrement__c ag:agrRec){
+pricelistId=ag.Price_List__c;
+}
+List<Product2> prodList = [SELECT Id, ProductCode, Name, Family, (SELECT Id, List_Price__c,Price_List__c FROM Price_List_Item__r where Price_List__c =:pricelistId) FROM Product2 where Id =:productId]; 
+if(selectedvalue == 'Name' || selectedvalue == 'Code'){
+prodList = [SELECT Id, ProductCode, Name, Family, (SELECT Id, List_Price__c FROM Price_List_Item__r) FROM Product2 where Id =:productId];
+}else if(selectedvalue == 'Family'){
+prodList = [SELECT Id, ProductCode, Name, Family, (SELECT Id, List_Price__c FROM Price_List_Item__r) FROM Product2 where Id =:productId];
+}
+
+for (Product2 prod : prodList) {
+for (Price_List_Item__c priceListItem : prod.Price_List_Item__r) {
+AgreementProductWrapper agr = new AgreementProductWrapper();
+agr.productName = prod.Name;
+agr.productId = prod.Id;
+agr.productCode = prod.ProductCode;
+agr.productFamily = prod.Family;
+agr.listPrice = priceListItem.List_Price__c;
+agreProductWrapper.add(agr);
+}
+}*/
+        return agreProductWrapper;
+    }
     
     public static object getAgreementFamilyProducts(String selectedValue) {
         AgreementProductWrapper agr = new AgreementProductWrapper();
@@ -1171,27 +1434,27 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
             agr.productFamily = prod.Family;
             agr.listPrice = (priceListItem != null) ? priceListItem.List_Price__c : null;
         }
-         return agr;
+        return agr;
     }
     
     
     public List<Object> fileUpload(String recId, String base64Data, String fieldsData){
         String data = JSON.deserializeUntyped(base64Data).toString();
-		list<String> lstCSVLines = data.split('\n');
-		for(Integer i = 1; i < lstCSVLines.size(); i++){
+        list<String> lstCSVLines = data.split('\n');
+        for(Integer i = 1; i < lstCSVLines.size(); i++){
             String csvLine = lstCSVLines[i];
             String prevLine = csvLine;
             List<String> csvRowData = new List<String>();
-			for(String column : csvLine.split(',')){
-				column = column.replaceAll(':quotes:', '').replaceAll(':comma:', ',');
-				csvRowData.add(column);
-			}
+            for(String column : csvLine.split(',')){
+                column = column.replaceAll(':quotes:', '').replaceAll(':comma:', ',');
+                csvRowData.add(column);
+            }
             System.debug(csvRowData);
-		}
-         List<Object> objlst = new List<Object>();
-         return objlst;
-     }
-   
+        }
+        List<Object> objlst = new List<Object>();
+        return objlst;
+    }
+    
     public static List<Object> getAgreementProducts(String recordId){
         List<AggrementPricingWrapper> lstAggrementPricingWrapper = new List<AggrementPricingWrapper>();
         for(Aggrement_Info__c agrInfo : [SELECT Id,Aggreement__c,Aggreement__r.Name,Aggreement__r.Agreement_Code__c,Quantity__c,Price__c,Product__r.name,Product__c,Product__r.ProductCode,Discount__c,Range__c,Agreement_Line_Item__c,Agreement_Line_Item__r.Name FROM Aggrement_Info__c where Aggreement__c =: recordId]){
@@ -1215,211 +1478,261 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
         return [Select id,Button_Label__c,Component_Name__c,Hide_Button__c from Agreement_Button_Configuration__mdt where Component_Name__c =: compName  WITH SECURITY_ENFORCED];
     }
     
-     public List<Object> getSignatureSection(String compName){
+    public List<Object> getSignatureSection(String compName){
         return [Select id,Section_Name__c,Component_Name__c,Hide_Section__c,Label  from Agreement_Signature_Configuration__mdt where Component_Name__c =: compName  WITH SECURITY_ENFORCED];
     }
-
-
-    public List<Object> getSignatoryMetaDatas(String devName){
-        return [Select id,objectApiName__c,fieldApiNames__c,filterFieldApiName__c,Label  from Agreement_Signatory_Detail__mdt where Label =: devName  WITH SECURITY_ENFORCED]; 
-    }
-
-    public List<Object> getAuthorizeSignerMetaData(String devName){
-        return [Select id,objectApiName__c,fieldApiNames__c,filterFieldApiName__c,Label  from Agreement_Signatory_Detail__mdt where Label =: devName  WITH SECURITY_ENFORCED]; 
-    }
-
-    /* public List<SObjectQueryResult> getSignatoryDetails(String objectName,
-                                                String fieldAPINames,
-                                                String filterFieldAPIName,
-                                                String strInput,String recId){
-        // List<Agreement_Contacts__c> signatoryList =[SELECT Id,Name,Aggreement__c,Contact__r.Name FROM Agreement_Contacts__c where Aggreement__c =: recId];
-        // return signatoryList;
-
-         
-        List<SObjectQueryResult> lstReturnResult = new List<SObjectQueryResult>();
-        if(strInput.equals('*')){
-            strInput = '';
-        }
-        String str = strInput + '%';
-        String strQueryField = '';
-        List<String> fieldList = fieldAPINames.split(',');
-        
-        //check if Id is already been passed
-        if(!fieldList.contains('Id')){
-            fieldList.add('Id');
-            strQueryField = String.join(fieldList, ',');
-        }else {
-            strQueryField = fieldAPINames;
-        }
-        
-       String strQuery = 'SELECT ' + String.escapeSingleQuotes(strQueryField) 
-                        + ' FROM ' 
-                        + String.escapeSingleQuotes(objectName) 
-                        + ' WHERE Aggreement__c = :recId AND ' + filterFieldAPIName + ' LIKE :str'
-                        + ' ORDER BY ' + filterFieldAPIName
-                        + ' LIMIT 50';
-        
-        System.debug('strQuery=' + strQuery);
-        
-        List<SObject> lstResult = database.query(strQuery);
-        //create list of records that can be easily be parsable at js controller.
-        for(String strField:fieldList){
-            for(SObject sobj:lstResult){                
-                if(strField != 'Id'){
-                    SObjectQueryResult result = new SObjectQueryResult();
-                    result.recordId = (String) sobj.get('Id');
-                    result.recordName = (String) sobj.get(strField);
-                    //result.conName = (String) sobj.get(filterFieldAPIName);
-                    lstReturnResult.add(result);
-                }                
+    
+    
+    @AuraEnabled
+    public static Map<String, Object> getNavigationSettings() {
+        Map<String, Object> result = new Map<String, Object>();
+        try {
+            List<Agreement_Request_Setting__mdt> metadataList = [
+                SELECT Navigate_to_Agreement_After_Creation__c, Home_Page_Object_Name__c
+                FROM Agreement_Request_Setting__mdt
+                WHERE Navigate_to_Agreement_After_Creation__c != NULL
+                AND Home_Page_Object_Name__c != NULL
+                LIMIT 1
+            ];
+            if (!metadataList.isEmpty()) {
+                Agreement_Request_Setting__mdt metadata = metadataList[0];
+                result.put('NavigateToAgreement', metadata.Navigate_to_Agreement_After_Creation__c);
+                result.put('HomePageObjectName', metadata.Home_Page_Object_Name__c);
             }
+        } catch (Exception ex) {
+            System.debug('Error fetching navigation settings: ' + ex.getMessage());
+            throw new AuraHandledException('An error occurred while retrieving navigation settings.');
         }
-         System.debug('lstReturnResult = :: ' + lstReturnResult);
-        return lstReturnResult;
-     }
-    */
+        return result;
+    }
+    
+    
+    
+    public static List<SObjectQueryResult> retrieveSignatoryRecords(String recId) {
+        List<SObjectQueryResult> result = new List<SObjectQueryResult>();
+        for (Agreement_Contacts__c record : [
+            SELECT Id, Name, Aggreement__c, Contact__r.Name
+            FROM Agreement_Contacts__c
+            WHERE Aggreement__c = :recId
+            WITH SECURITY_ENFORCED
+        ]) {
+            SObjectQueryResult obj = new SObjectQueryResult();
+            obj.recordId = record.Id;
+            obj.recordName = record.Contact__r.Name;
+            result.add(obj);
+        }
+        return result;
+    }
+    
     public List<SObjectQueryResult> getSignatoryDetails(String objectName,
-                                                    String fieldAPINames,
-                                                    String filterFieldAPIName,
-                                                    String strInput,
-                                                    String recId) {
-
-    System.debug('getSignatoryDetails called with: objectName=' + objectName +
-                 ', fieldAPINames=' + fieldAPINames +
-                 ', filterFieldAPIName=' + filterFieldAPIName +
-                 ', strInput=' + strInput +
-                 ', recId=' + recId);
-
-    List<SObjectQueryResult> lstReturnResult = new List<SObjectQueryResult>();
-    Set<String> processedIds = new Set<String>(); 
+                                                        String fieldAPINames,
+                                                        String filterFieldAPIName,
+                                                        String strInput,
+                                                        String recId) {
+                                                            
+                                                            System.debug('getSignatoryDetails called with: objectName=' + objectName +
+                                                                         ', fieldAPINames=' + fieldAPINames +
+                                                                         ', filterFieldAPIName=' + filterFieldAPIName +
+                                                                         ', strInput=' + strInput +
+                                                                         ', recId=' + recId);
+                                                            
+                                                            List<SObjectQueryResult> lstReturnResult = new List<SObjectQueryResult>();
+                                                            Set<String> processedIds = new Set<String>(); 
+                                                            
+                                                            if (strInput.equals('*')) {
+                                                                strInput = '';
+                                                            }
+                                                            String str = strInput + '%';
+                                                            String strQueryField = '';
+                                                            List<String> fieldList = fieldAPINames.split(',');
+                                                            
+                                                            if (!fieldList.contains('Id')) {
+                                                                fieldList.add('Id');
+                                                                strQueryField = String.join(fieldList, ',');
+                                                            } else {
+                                                                strQueryField = fieldAPINames;
+                                                            }
+                                                            
+                                                            if (!fieldList.contains(filterFieldAPIName)) {
+                                                                fieldList.add(filterFieldAPIName);
+                                                            }
+                                                            
+                                                            String strQuery = 'SELECT ' + String.escapeSingleQuotes(strQueryField) 
+                                                                + ' FROM ' 
+                                                                + String.escapeSingleQuotes(objectName) 
+                                                                + ' WHERE Aggreement__c = :recId AND ' + filterFieldAPIName + ' LIKE :str'
+                                                                + ' ORDER BY ' + filterFieldAPIName
+                                                                + ' LIMIT 50';
+                                                            
+                                                            System.debug('Generated Query: ' + strQuery);
+                                                            
+                                                            List<SObject> lstResult = Database.query(strQuery);
+                                                            System.debug('Number of records returned: ' + lstResult);
+                                                            
+                                                            for (SObject sobj : lstResult) {
+                                                                String recordId = (String) sobj.get('Id');
+                                                                System.debug('recordId inside : ' + recordId);
+                                                                
+                                                                if (!processedIds.contains(recordId)) {
+                                                                    processedIds.add(recordId);
+                                                                    System.debug('recordId inside if con : ' + recordId);
+                                                                    SObjectQueryResult result = new SObjectQueryResult();
+                                                                    result.recordId = recordId;
+                                                                    if (sobj.getSObject('Contact__r') != null) {
+                                                                        result.recordName = (String) sobj.getSObject('Contact__r').get('Name');
+                                                                    } else {
+                                                                        result.recordName = 'No Contact Name'; // Fallback value
+                                                                    }
+                                                                    System.debug('result.recordName inside if con : ' + recordId);
+                                                                    lstReturnResult.add(result);
+                                                                }
+                                                            }
+                                                            
+                                                            System.debug('Final lstReturnResult: ' + lstReturnResult);
+                                                            return lstReturnResult;
+                                                        }
     
-    if (strInput.equals('*')) {
-        strInput = '';
-    }
-    String str = strInput + '%';
-    String strQueryField = '';
-    List<String> fieldList = fieldAPINames.split(',');
     
-    if (!fieldList.contains('Id')) {
-        fieldList.add('Id');
-        strQueryField = String.join(fieldList, ',');
-    } else {
-        strQueryField = fieldAPINames;
-    }
-
-    if (!fieldList.contains(filterFieldAPIName)) {
-        fieldList.add(filterFieldAPIName);
-    }
     
-    String strQuery = 'SELECT ' + String.escapeSingleQuotes(strQueryField) 
-                    + ' FROM ' 
-                    + String.escapeSingleQuotes(objectName) 
-                    + ' WHERE Aggreement__c = :recId AND ' + filterFieldAPIName + ' LIKE :str'
-                    + ' ORDER BY ' + filterFieldAPIName
-                    + ' LIMIT 50';
-    
-    System.debug('Generated Query: ' + strQuery);
-    
-    List<SObject> lstResult = Database.query(strQuery);
-    System.debug('Number of records returned: ' + lstResult);
-    
-    for (SObject sobj : lstResult) {
-        String recordId = (String) sobj.get('Id');
-         System.debug('recordId inside : ' + recordId);
-    
-        if (!processedIds.contains(recordId)) {
-            processedIds.add(recordId);
-             System.debug('recordId inside if con : ' + recordId);
-            SObjectQueryResult result = new SObjectQueryResult();
-            result.recordId = recordId;
-            if (sobj.getSObject('Contact__r') != null) {
-                result.recordName = (String) sobj.getSObject('Contact__r').get('Name');
-            } else {
-                result.recordName = 'No Contact Name'; // Fallback value
-            }
-            System.debug('result.recordName inside if con : ' + recordId);
-            lstReturnResult.add(result);
-        }
-    }
-    
-    System.debug('Final lstReturnResult: ' + lstReturnResult);
-    return lstReturnResult;
-}
-
-
-
-     @AuraEnabled
-    public static List<ResultWrapper> fetchLookupRecords(String objectApiName, String fieldApiName,
-       	String otherFieldApiName, String searchString, String selectedRecordId, String pricelistId,String recId) {
-        String pluginName = [SELECT Plugin__c,DeveloperName FROM Agreement_Request_Setting__mdt where DeveloperName ='AgreementRequest'].Plugin__c;
-               
-		List<String> filterproducts = getFilterProducts(recId);
-        List<ResultWrapper> returnWrapperList = new List<ResultWrapper>();
-            if(pricelistId != null){
-                Object_Query__mdt objQuery = [select id, Label, DeveloperName,Query__c from Object_Query__mdt where DeveloperName ='PriceListQuery' WITH SECURITY_ENFORCED];
-       			system.debug(String.escapeSingleQuotes(pricelistId));
-               	Order_Request_Setting__mdt priceListField =[Select id,Plugin__c from Order_Request_Setting__mdt where DeveloperName ='ProductlistId'  WITH SECURITY_ENFORCED limit 1];
-                String fieldsToQuery = 'SELECT Id, ';
-                if(string.isNotBlank(fieldApiName)){
-                    fieldsToQuery = fieldsToQuery + fieldApiName;
-                }
-                if(string.isNotBlank(otherFieldApiName)){
-                    fieldsToQuery = fieldsToQuery + ', ' + otherFieldApiName;
-                }
-                String query = fieldsToQuery + ' FROM '+ objectApiName;
-		        String filterCriteria ='(' + fieldApiName + ' LIKE \'%' + String.escapeSingleQuotes(searchString.trim()) + '%\' ' +
-                       						 'OR ' + otherFieldApiName + ' LIKE \'%' + String.escapeSingleQuotes(searchString.trim()) + '%\')';
-               // String filterCriteria = fieldApiName + ' LIKE ' + '\'' + String.escapeSingleQuotes(searchString.trim()) + '%\' LIMIT 10';
-                String whereCriteria = ' WHERE Id != null ';
-
-                if(!Test.isRunningTest()){
-                    String queryPriceListItem;
-                    if(!filterproducts.isEmpty()){
-                        system.debug('reusuable filterproducts : '+filterproducts);
-                      	queryPriceListItem = String.escapeSingleQuotes(objQuery.Query__c) +' = \'' + String.escapeSingleQuotes(pricelistId) + '\'';
-                        queryPriceListItem = queryPriceListItem + ' AND Product_Name__r.Name NOT IN :filterProducts';
-                         system.debug('reusuable queryPriceListItem : '+queryPriceListItem);
-                    }else{
-                    	queryPriceListItem = String.escapeSingleQuotes(objQuery.Query__c) +' = \'' + String.escapeSingleQuotes(pricelistId) + '\'';
-                    }
-                    set<Id> productIds = new set<Id>();
-                    for(SObject s : Database.query(queryPriceListItem)) {
-                        productIds.add((String)s.get(priceListField.Plugin__c));
-                        //productIds.add((String)s.get('Apttus_Config2__ProductId__c'));
-                    }
-                	whereCriteria = ' WHERE Id IN : productIds ';
-                }
-                if(String.isNotBlank(fieldApiName)){
-                    query += whereCriteria ;
-                    query += ' AND ' + filterCriteria;
-                    system.debug('Query data :::'+query);
-                }
-                
-                for(SObject s : Database.query(query)) {
-                    ResultWrapper wrap = new ResultWrapper(); 
-                    wrap.mainField = (String)s.get(fieldApiName);
-                    wrap.subField = (String)s.get(otherFieldApiName);
-                    wrap.id = (String)s.get('id');
-                    returnWrapperList.add(wrap);
-                }
-            }
-        return returnWrapperList;
+    @AuraEnabled
+    public static Id generatePDFAndSave(Id recordId,Id templateId) {
         
+        Aggrement__c agreement = [SELECT Id, Name FROM Aggrement__c WHERE Id = :recordId LIMIT 1];
+        PageReference pdfPage = Page.DocumentTemplate;
+        pdfPage.getParameters().put('Id', recordId);
+        pdfPage.getParameters().put('templateId', templateId);
+        
+        system.debug('templateId'+templateId+'recordId'+recordId);
+        Blob pdfBlob = pdfPage.getContentAsPDF();
+        
+        ContentVersion contentVersion = new ContentVersion();
+        contentVersion.Title = 'Contract PDF';
+        contentVersion.PathOnClient = 'Contract.pdf';
+        contentVersion.VersionData = pdfBlob;
+        contentVersion.FirstPublishLocationId = recordId;
+        insert contentVersion;
+        return contentVersion.Id;
     }
-
+    
+    
+    @AuraEnabled
+    public static String previewPDF(Id recordId,Id templateId) {
+        
+        Aggrement__c agreement = [SELECT Id, Name FROM Aggrement__c WHERE Id = :recordId LIMIT 1];
+        PageReference pdfPage = Page.DocumentTemplate;
+        pdfPage.getParameters().put('Id', recordId);
+        pdfPage.getParameters().put('templateId', templateId);
+        
+        system.debug('templateId'+templateId+'recordId'+recordId);
+        // Blob pdfBlob = pdfPage.getContentAsPDF();
+        return pdfPage.getUrl();
+    }
+    
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, String>> getTemplateOptions() {
+        
+        List<Template__c> templates = [SELECT Id, Name FROM Template__c];
+        List<Map<String, String>> options = new List<Map<String, String>>();
+        for (Template__c template : templates) {
+            Map<String, String> option = new Map<String, String>();
+            option.put('label', template.Name);  
+            option.put('value', template.Id);  
+            options.add(option);
+        }
+        
+        return options;
+    }
+    
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, String>> getClausesOptions() {
+        
+        List<Clause__c> clauses = [SELECT Id, Name FROM Clause__c];
+        List<Map<String, String>> options = new List<Map<String, String>>();
+        for (Clause__c clause : clauses) {
+            Map<String, String> option = new Map<String, String>();
+            option.put('label', clause.Name);  
+            option.put('value', clause.Id);  
+            options.add(option);
+        }
+        
+        return options;
+    }
+    
+    
+    
+    
+    @AuraEnabled
+    public static List<ResultWrapper> fetchLookupRecords(String objectApiName, String fieldApiName,
+                                                         String otherFieldApiName, String searchString, String selectedRecordId, String pricelistId,String recId) {
+                                                             String pluginName = [SELECT Plugin__c,DeveloperName FROM Agreement_Request_Setting__mdt where DeveloperName ='AgreementRequest'].Plugin__c;
+                                                             
+                                                             List<String> filterproducts = getFilterProducts(recId);
+                                                             List<ResultWrapper> returnWrapperList = new List<ResultWrapper>();
+                                                             if(pricelistId != null){
+                                                                 Object_Query__mdt objQuery = [select id, Label, DeveloperName,Query__c from Object_Query__mdt where DeveloperName ='PriceListQuery' WITH SECURITY_ENFORCED];
+                                                                 system.debug(String.escapeSingleQuotes(pricelistId));
+                                                                 Agreement_Request_Setting__mdt priceListField =[Select id,Plugin__c from Agreement_Request_Setting__mdt where DeveloperName ='ProductlistId'  WITH SECURITY_ENFORCED limit 1];
+                                                                 String fieldsToQuery = 'SELECT Id, ';
+                                                                 if(string.isNotBlank(fieldApiName)){
+                                                                     fieldsToQuery = fieldsToQuery + fieldApiName;
+                                                                 }
+                                                                 if(string.isNotBlank(otherFieldApiName)){
+                                                                     fieldsToQuery = fieldsToQuery + ', ' + otherFieldApiName;
+                                                                 }
+                                                                 String query = fieldsToQuery + ' FROM '+ objectApiName;
+                                                                 String filterCriteria ='(' + fieldApiName + ' LIKE \'%' + String.escapeSingleQuotes(searchString.trim()) + '%\' ' +
+                                                                     'OR ' + otherFieldApiName + ' LIKE \'%' + String.escapeSingleQuotes(searchString.trim()) + '%\')';
+                                                                 // String filterCriteria = fieldApiName + ' LIKE ' + '\'' + String.escapeSingleQuotes(searchString.trim()) + '%\' LIMIT 10';
+                                                                 String whereCriteria = ' WHERE Id != null ';
+                                                                 
+                                                                 if(!Test.isRunningTest()){
+                                                                     String queryPriceListItem;
+                                                                     if(!filterproducts.isEmpty()){
+                                                                         system.debug('reusuable filterproducts : '+filterproducts);
+                                                                         queryPriceListItem = String.escapeSingleQuotes(objQuery.Query__c) +' = \'' + String.escapeSingleQuotes(pricelistId) + '\'';
+                                                                         queryPriceListItem = queryPriceListItem + ' AND Product_Name__r.Name NOT IN :filterProducts';
+                                                                         system.debug('reusuable queryPriceListItem : '+queryPriceListItem);
+                                                                     }else{
+                                                                         queryPriceListItem = String.escapeSingleQuotes(objQuery.Query__c) +' = \'' + String.escapeSingleQuotes(pricelistId) + '\'';
+                                                                     }
+                                                                     set<Id> productIds = new set<Id>();
+                                                                     for(SObject s : Database.query(queryPriceListItem)) {
+                                                                         productIds.add((String)s.get(priceListField.Plugin__c));
+                                                                         //productIds.add((String)s.get('Apttus_Config2__ProductId__c'));
+                                                                     }
+                                                                     whereCriteria = ' WHERE Id IN : productIds ';
+                                                                 }
+                                                                 if(String.isNotBlank(fieldApiName)){
+                                                                     query += whereCriteria ;
+                                                                     query += ' AND ' + filterCriteria;
+                                                                     system.debug('Query data :::'+query);
+                                                                 }
+                                                                 
+                                                                 for(SObject s : Database.query(query)) {
+                                                                     ResultWrapper wrap = new ResultWrapper(); 
+                                                                     wrap.mainField = (String)s.get(fieldApiName);
+                                                                     wrap.subField = (String)s.get(otherFieldApiName);
+                                                                     wrap.id = (String)s.get('id');
+                                                                     returnWrapperList.add(wrap);
+                                                                 }
+                                                             }
+                                                             return returnWrapperList;
+                                                             
+                                                         }
+    
     public class ResultWrapper{
         @AuraEnabled public String mainField{get;set;}
         @AuraEnabled public String subField{get;set;}
         @AuraEnabled public String id{get;set;}
     }
-
+    
     public class SObjectQueryResult {
         @AuraEnabled
         public String recordId;
         
         @AuraEnabled
         public String recordName;
-
+        
         @AuraEnabled
         public String conName;
     }
@@ -1438,35 +1751,37 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
     public class AgreementProductWrapper {
         @AuraEnabled
         public String productName { get; set; }
-
+        
         @AuraEnabled
         public String productId { get; set; }
         
-         @AuraEnabled
+        @AuraEnabled
         public String recordId { get; set; }
-
+        
         @AuraEnabled
         public String productCode { get; set; }
-
+        
         @AuraEnabled
         public String productFamily { get; set; }
-
+        
         @AuraEnabled
         public Decimal discount { get; set; }
-
+        
         @AuraEnabled
         public Decimal netPrice { get; set; }
-
+        
         @AuraEnabled
         public Decimal listPrice { get; set; }
     }
-
+    
     public class AggrementPricingWrapper {
         @AuraEnabled
         public String Id { get; set; }
         
         @AuraEnabled
         public String productName { get; set; }
+        @AuraEnabled
+        public String recordIndex { get; set; }
         
         @AuraEnabled
         public String productId { get; set; }
@@ -1493,7 +1808,50 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
         public Decimal range { get; set; }
     }
     
-     public class EntryFormWrapper{
+    public class aggrementItems {
+        @AuraEnabled
+        public String Id { get; set; }
+        
+        @AuraEnabled
+        public String productFamily;
+        
+        @AuraEnabled
+        public String productName { get; set; }
+        @AuraEnabled
+        public String recordIndex { get; set; }
+        
+        @AuraEnabled
+        public String productId { get; set; }
+        
+        @AuraEnabled
+        public String productCode { get; set; }
+        
+        @AuraEnabled
+        public String nationalId { get; set; }
+        
+        @AuraEnabled
+        public Decimal price { get; set; }
+        
+        @AuraEnabled
+        public Decimal discount { get; set; }
+        
+        @AuraEnabled
+        public Decimal EndRange { get; set; }
+        
+        @AuraEnabled
+        public string selectedDropdownValue { get; set; }
+        
+        @AuraEnabled
+        public string discountoption { get; set; }
+        
+        @AuraEnabled
+        public Decimal netPrice { get; set; }
+        
+        @AuraEnabled
+        public Decimal listPrice { get; set; }
+    }
+    
+    public class EntryFormWrapper{
         @AuraEnabled
         public String fieldName {get; set;}
         
@@ -1511,13 +1869,13 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
         
         @AuraEnabled
         public String objName {get; set;}
-         
+        
         @AuraEnabled
         public Boolean isPriceList {get; set;}
-         
+        
         @AuraEnabled
         public String priceListId {get; set;}
-     }
+    }
     
     public class FieldInfo {
         public String fieldName;
@@ -1530,7 +1888,7 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
             this.isReadOnly = isReadOnly;
         }
     }
-      public class AggrementlineitemWrapper {
+    public class AggrementlineitemWrapper {
         @AuraEnabled
         public String Id { get; set; }
         
@@ -1540,7 +1898,7 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
         @AuraEnabled
         public String productId { get; set; }
         
-          @AuraEnabled
+        @AuraEnabled
         public String agreement { get; set; }
         
         @AuraEnabled
@@ -1548,16 +1906,30 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
         
         @AuraEnabled
         public String productCode { get; set; }
-       
-         @AuraEnabled
+        
+        @AuraEnabled
         public Decimal listPrice { get; set; }
-         
-          @AuraEnabled  
+        
+        @AuraEnabled  
         public Boolean discountApplied {get; set;}
-    
+        
+         @AuraEnabled
+        public String selectedDropdownValue { get; set; }
+        
+        @AuraEnabled
+        public String discountoption { get; set; }
+        
+        @AuraEnabled  
+        public decimal discount {get; set;}
+        
+         @AuraEnabled  
+        public decimal netPrice {get; set;}
+        
+        
+        
     }
     
-     public class ApprovalDetails{
+    public class ApprovalDetails{
         @AuraEnabled
         public String Name {get; set;}
         
@@ -1575,5 +1947,5 @@ public static List<Map<String, Object>> getAgreementHomePageFieldSet(String obje
         
         @AuraEnabled
         public String Phone {get; set;}
-     }
+    }
 }

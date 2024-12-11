@@ -1,11 +1,12 @@
 import { LightningElement, api, wire,track } from 'lwc';
 import getCompanyLocations from '@salesforce/apex/AgreementController.getCompanyLocations';
-import generatePDFAndSave from '@salesforce/apex/DocumentGenerationController.generatePDFAndSave';
-import previewPDF from '@salesforce/apex/DocumentGenerationController.previewPDF';
-import getTemplateOptions from '@salesforce/apex/DocumentGenerationController.getTemplateOptions';
-import getClausesOptions from '@salesforce/apex/DocumentGenerationController.getClausesOptions';
+import generatePDFAndSave from '@salesforce/apex/AgreementController.generatePDFAndSave';
+import previewPDF from '@salesforce/apex/AgreementController.previewPDF';
+import getTemplateOptions from '@salesforce/apex/AgreementController.getTemplateOptions';
+import getClausesOptions from '@salesforce/apex/AgreementController.getClausesOptions';
 import getButtonsInfo from "@salesforce/apex/AgreementController.getButtonsInfo";
-import getSignatureSectionInfo from "@salesforce/apex/AgreementController.getSignatureSectionInfo"
+import getSignatureSectionInfo from "@salesforce/apex/AgreementController.getSignatureSectionInfo";
+import retrieveSignatoryRecords from '@salesforce/apex/AgreementController.retrieveSignatoryRecords';
 import { NavigationMixin } from 'lightning/navigation';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
@@ -34,10 +35,24 @@ export default class Agreementsummary extends NavigationMixin(LightningElement) 
     @track clauseOptions =[];
     @track allClausesValues=[];
 
+    @track signatoryOptions =[];
+    @track selectedSignatorys =[];
+    @track allSignatoryValues =[];
+
     @track selectedItemsToDisplay = []; 
     @track values = [];
     @api signatoryList;
     @api globalSelectedItems=[];
+
+    @track labelItems =[];
+
+    @track signatoryObjeApi;
+    @track signatoryFieldsApiNames;
+    @track signatoryFilterFields;
+
+    @track signerObjeApi;
+    @track signerFieldsApiNames;
+    @track signerFilterFields;
     /*@track newoptions = [
         { label: 'Template 1', value: 'Template 1' },
         { label: 'Template 2', value: 'Template 2' }
@@ -74,48 +89,30 @@ export default class Agreementsummary extends NavigationMixin(LightningElement) 
     }*/
 
     connectedCallback() {
-    console.log('Connected callback, Record ID:', this.recordId);
-    this.loadButtons();
-    this.loadSections();
-   // this.loadSignatorydata();
+        console.log('Connected callback, Record ID:', this.recordId);
+        this.loadButtons();
+        this.loadSections();
+        if(this.recordId != '' && this.recordId != null){
+            console.log('Connected callback, Record ID 2:', this.recordId);
+            this.loadsignatoryPilldata();
+        }
+       
+       // this.loadSignatorydata();
+        //this.loadAuthorizeSignerdata();
     }
 
-    /*loadSignatorydata(){
-        getSignatoryDetails({recId :this.recordId})
-        .then((result) => {
-            this.signatorydata =result;
-            console.log('signatorydata Data ::: '+JSON.stringify(this.signatorydata));
-        })
-        .catch((error) => {
-                this.error = error;
-        });
-    }*/
-
-    selectItemEventHandler(event){
-        let args = event.detail.arrItems;
-        this.displayItem(args); 
-    }
-
-    deleteItemEventHandler(event){
-        let args = event.detail.arrItems;
-        this.displayItem(args);
-    }
-
-    displayItem(args){
-        this.values = []; 
-        args.map(element=>{
-            this.values.push(element.value);
-        });
-      
-        this.selectedItemsToDisplay = this.values.join(', ');
-        this.signatoryList = this.selectedItemsToDisplay.split(',').map(item => item.trim());
-        console.log('Selected signatory list ::: '+ JSON.stringify(this.signatoryList));
-    //    const evtCustomEvent = new CustomEvent('taglistevent', {
-    //     detail:  this.signatoryList
-
-    //     });
-    //      this.dispatchEvent(evtCustomEvent);
-  
+    loadsignatoryPilldata(){
+        retrieveSignatoryRecords({ recId: this.recordId })
+            .then((data) => {
+                this.signatoryOptions = data.map((item) => ({
+                    label: item.recordName,
+                    value: item.recordId,
+                }));
+                console.log('pill container list :: '+JSON.stringify(this.labelItems));
+            })
+            .catch((error) => {
+                console.error('Error fetching signatory records:', error);
+            });
     }
 
     loadButtons() {
@@ -152,42 +149,9 @@ export default class Agreementsummary extends NavigationMixin(LightningElement) 
       });
     }
 
-    @wire(getCompanyLocations, { agrID: '$recordId'})
-    wiredOfficeLocations({ error, data }) {
-        if (data) {            
-            data.forEach(dataItem => {
-                this.mapMarkers = [...this.mapMarkers ,
-                    {
-                        location: {
-                            City: dataItem.BillingCity,
-                            Country: dataItem.BillingCountry,
-                        },
-        
-                        icon: 'custom:custom26',
-                        title: 'Account Name: '+dataItem.Name,
-                        description:'Account Location: '+dataItem.BillingCity+','+dataItem.BillingCountry,
-                    }                                    
-                ];
-                this.accountName = dataItem.Name;
-                this.accountStreet = dataItem.BillingStreet;
-                this.accountCity = dataItem.BillingCity;
-                this.accountState = dataItem.BillingState;
-                this.postalcode = dataItem.BillingPostalCode;
-                this.accountCountry =dataItem.BillingCountry;
-              });            
-            this.error = undefined;
-        } else if (error) {
-            this.error = error;
-        }
-    }
-
     handleNewTemplateChange(event) {
     this.selectedTemplate = event.detail.value; 
     console.log('Template selected KK::', this.selectedTemplate);
-    }
-
-    handleSearch(event) {
-        
     }
     
     /*handleNewTemplateChange(event){
@@ -212,16 +176,40 @@ export default class Agreementsummary extends NavigationMixin(LightningElement) 
         console.log('Clause to remove :: ' + valueRemoved);
         this.allClausesValues = this.allClausesValues.filter(option => option.value !== valueRemoved);
         console.log('All clauses after removal :: ' + JSON.stringify(this.allClausesValues));
+         this.selectedClauses =[];
+         
     }
 
-    modifyOptions()
-    {
-        this.clauseOptions =this.clauseOptions.filter(elem=>{
-        if(!this.allClausesValues.includes(elem.value)){
-            return elem;
-        }    
-        })
+    handleSignatoryChange(event) {
+        const selectedValue = event.target.value;
+        const selectedOption = this.signatoryOptions.find(option => option.value === selectedValue);
+        console.log('Selected SignatoryValues :: ' + JSON.stringify(selectedOption));
+        if (!this.allSignatoryValues.some(option => option.value === selectedOption.value)) {
+            this.allSignatoryValues.push(selectedOption);
+        }
+        this.selectedSignatorys = selectedValue;
+        console.log('All selected allSignatoryValues :: ' + JSON.stringify(this.allSignatoryValues));
     }
+
+    handleSignatoryRemove(event) {
+        const valueRemoved = event.target.name;
+        console.log('Clause to remove :: ' + valueRemoved);
+        this.allSignatoryValues = this.allSignatoryValues.filter(option => option.value !== valueRemoved);
+        console.log('All allSignatoryValues after removal :: ' + JSON.stringify(this.allSignatoryValues));
+         this.selectedSignatorys =[];
+         console.log('after removal selectedSignatorys :: ' + JSON.stringify(this.selectedSignatorys));
+
+    }
+
+    /*passSignatoryDataToVFPage(jsonString) {
+            passJsonData({ jsonData: jsonString })
+            .then(result => {
+                console.log('Data sent to Apex successfully:', result);
+            })
+            .catch(error => {
+                console.error('Error sending data to Apex:', error);
+            });
+    }*/
 
     handleSave(){
         this[NavigationMixin.Navigate]({

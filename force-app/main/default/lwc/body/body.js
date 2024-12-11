@@ -17,7 +17,7 @@ export default class Body extends LightningElement {
     @api cartCount;
     @api deleteRecordData;
     @api orderid;
-     @api priceList;
+    @api priceList;
     @api cerApi;
     
     @track orderReduestLoaded = false;
@@ -28,6 +28,10 @@ export default class Body extends LightningElement {
     @api preSelectedRows = [];
     @api preFastSelectedRows = [];
     @track preSelectedFast;
+    @track oldstep='';
+    @track displayerror='';
+    @track checkingvalue=false;
+    @track newlineitems=[];
 
     step = 1;
     currentStep = "1";
@@ -58,6 +62,15 @@ export default class Body extends LightningElement {
     }
 
     handleSetUpSteps() {
+        if (this.displayerror == true && this.oldstep < this.step) {
+            const event = new ShowToastEvent({
+                title: "Error",
+                message: "There are error in cuurent You cant got to nxt page",
+                variant: "error",
+                mode: "dismissable"
+            });
+            this.dispatchEvent(event);
+        } else {
         var hasError = false;
         if (this.step != 1) {
             for (var i = 0; i < this.fields.length; i++) {
@@ -75,33 +88,53 @@ export default class Body extends LightningElement {
                 }),
             );
         } else {
-            if (!this.orderReduestLoaded && this.step == 2) {
-                this.orderReduestLoaded = true;
-            } else if (this.orderReduestLoaded && this.step == 1) {
-                this.orderReduestLoaded = false;
+                if (!this.orderReduestLoaded && this.step == 2) {
+                    this.orderReduestLoaded = true;
+                } else if (this.orderReduestLoaded && this.step == 1) {
+                    this.orderReduestLoaded = false;
+                }
+            /* if(this.orderid != null){
+                    // this.firstPageClass = this.step == 1 ? 'show-div' : 'hide-div';
+                    // this.secondPageClass = this.step == 2 ? 'show-div' : 'hide-div';
+                    this.thirdPageClass = this.step == 3 ? 'show-div' : 'hide-div';
+                    this.fourthPageClass = this.step == 4 ? 'show-div' : 'hide-div';
+                    this.currentStep = "" + this.step;
+                }else{*/
+                if (this.checkingvalue == true && this.step > 3) {
+                const event = new ShowToastEvent({
+                    title: "Error",
+                    message: "PLS click on validate pricing button once",
+                    variant: "error",
+                    mode: "dismissable"
+                });
+                this.dispatchEvent(event);
+                } else {
+                        this.firstPageClass = this.step == 1 ? 'show-div' : 'hide-div';
+                        this.secondPageClass = this.step == 2 ? 'show-div' : 'hide-div';
+                        this.thirdPageClass = this.step == 3 ? 'show-div' : 'hide-div';
+                        this.fourthPageClass = this.step == 4 ? 'show-div' : 'hide-div';
+                        this.currentStep = "" + this.step;
+                        this.oldstep=this.currentStep;
+                }
             }
-           /* if(this.orderid != null){
-                // this.firstPageClass = this.step == 1 ? 'show-div' : 'hide-div';
-                // this.secondPageClass = this.step == 2 ? 'show-div' : 'hide-div';
-                this.thirdPageClass = this.step == 3 ? 'show-div' : 'hide-div';
-                this.fourthPageClass = this.step == 4 ? 'show-div' : 'hide-div';
-                this.currentStep = "" + this.step;
-            }else{*/
-                this.firstPageClass = this.step == 1 ? 'show-div' : 'hide-div';
-                this.secondPageClass = this.step == 2 ? 'show-div' : 'hide-div';
-                this.thirdPageClass = this.step == 3 ? 'show-div' : 'hide-div';
-                this.fourthPageClass = this.step == 4 ? 'show-div' : 'hide-div';
-                this.currentStep = "" + this.step;
-           // }
-           
         }
+    }
+    handleEntrySaved(event){
+        const { fieldData, fieldAttributes } = event.detail;
+        const selectedEvent = new CustomEvent('valuerecieved', {
+                detail: fieldData, bubbles: true, composed: true
+        });
+        this.dispatchEvent(selectedEvent);
+        this.fields=fieldAttributes;
+        this.step++;
+        this.handleSetUpSteps();
     }
 
     handleDatafromOrderReq(event) {
         this.orderproductdata = event.detail.selectedrows;
         this.preSelectedFast = event.detail.fastpreSelect;
         this.preSelecteCatelog = event.detail.preselected;
-         let orderdata = {orderproductdata : this.orderproductdata , preselected :this.preSelecteCatelog,fastpreSelect :this.preSelectedFast} 
+        let orderdata = {orderproductdata : this.orderproductdata , preselected :this.preSelecteCatelog,fastpreSelect :this.preSelectedFast} 
         if (this.orderproductdata) {
             const selectCount = new CustomEvent("getrecorddata", {
                 detail: orderdata,
@@ -143,6 +176,8 @@ export default class Body extends LightningElement {
                 }
             }
             productDataWithIndex = dataArray;
+         
+        this.checkingvalue = true ;
             if(this.discountdataprod != null){
                 this.productData = productDataWithIndex.concat(this.discountdataprod);
                 this.initialData = this.initialData? this.initialData.concat(productDataWithIndex):productDataWithIndex;
@@ -154,7 +189,6 @@ export default class Body extends LightningElement {
                 this.initialRecords = this.productData;
                 this.discountdataprod = productDataWithIndex;
             }
-            console.log(JSON.stringify(this.productData)+'Productdata');
             this.totalNetPrice = 0;
             for (var i = 0; i < this.productData.length; i++) {
                 if (this.productData[i].netPrice) {
@@ -178,10 +212,10 @@ export default class Body extends LightningElement {
         fetchOrderLineItems({ orderId: this.orderid })
         .then((result) => {
             if(result){
-                console.log(JSON.stringify(result)+' bodyresult');
+                console.log(JSON.stringify( result)+'  result body');
+                this.checkingvalue=false;
                 let selectedids=[];
                 for(var i = 0; i < result.length; i++){
-                    console.log(JSON.stringify(result[i])+' bodyresult[i]');
                     if(result[i].productName != ''){
                         let obj = { ...result[i] };
                         obj.orderdate = this.orderdate?this.orderdate:'';
@@ -194,13 +228,10 @@ export default class Body extends LightningElement {
                     this.preSelectedRows=selectedids?selectedids:'';
                 }
                 this.productData = dataArray;
-                console.log(JSON.stringify(dataArray)+' dataArray');
-                console.log(JSON.stringify(this.productData)+' this.productData');
                 this.discountdataprod = dataArray;
                 this.initialData = dataArray;
                 this.initialRecords = dataArray;
                 this.index = dataArray.length;
-                console.log(this.preSelectedRows);
                 this.totalNetPrice = 0;
                 for (var i = 0; i < this.productData.length; i++) {
                     if (this.productData[i].netPrice) {
@@ -215,6 +246,7 @@ export default class Body extends LightningElement {
                 });
                 this.dispatchEvent(netPriceEvent);
                 }
+                console.log(JSON.stringify( this.productData)+'  this.productData body');
         })
         .catch((error) => {
             this.error = error;
@@ -238,22 +270,13 @@ export default class Body extends LightningElement {
                 this.preFastSelectedRows = this.preSelectedFast.filter(item => !deletedIds.includes(item));
                 this.preSelectedFast = this.preFastSelectedRows;
             }
-        }   
+            this.checkingvalue = true ;  
+        } 
     }
 
     discountdata(event) {
         this.discountdataprod = event.detail.productdata;
         this.index=event.detail.index;
-    }
-
-    handlevalueselected(event) {
-        const { fieldName, value, label } = event.detail;
-         console.log('Selected field body cmp ::: '+ JSON.stringify(event.detail));
-        let selectedData = { fieldName: fieldName, value: value, label: label };
-        const selectedEvent = new CustomEvent('valuerecieved', {
-            detail: selectedData, bubbles: true, composed: true
-        });
-        this.dispatchEvent(selectedEvent);
     }
 
     handletotalnetprice(event) {
@@ -269,5 +292,21 @@ export default class Body extends LightningElement {
             detail: event.detail, bubbles: true, composed: true
         });
         this.dispatchEvent(selectedEvent);
+    }
+    errormsg(event) {
+        this.oldstep = this.currentStep;
+        const errormsg=event.detail.errormsg ? event.detail.errormsg : '';
+        this.displayerror = event.detail.displayerror ? event.detail.displayerror : '';
+        this.checkingvalue = event.detail.checkingvalue ? event.detail.checkingvalue : '';
+      
+        if (this.displayerror == true) {
+            const event = new ShowToastEvent({
+                title: "Error",
+                message: errormsg,
+                variant: "error",
+                mode: "dismissable"
+            });
+            this.dispatchEvent(event);
+        }
     }
 }

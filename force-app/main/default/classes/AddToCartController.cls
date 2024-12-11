@@ -15,6 +15,50 @@ public with sharing class AddToCartController implements IGenerateReqestOrder {
         public Boolean isAgreement;
         public Boolean isDisabled;
     }
+ 
+  @AuraEnabled
+    public static List<Object> customPriceCalculation(String orderdata) {
+        // Check for null or blank input
+        if (String.isBlank(orderdata)) {
+            throw new IllegalArgumentException('Input orderdata is null, empty, or invalid');
+        }
+
+        System.debug('Input orderdata: ' + orderdata);
+
+        List<Object> lineitems = new List<Object>();
+        List<ProductWrapper> lstProductData;
+
+        try {
+            // Deserialize the input JSON string
+            lstProductData = (List<ProductWrapper>)JSON.deserialize(orderdata, List<ProductWrapper>.class);
+            System.debug('Deserialized lstProductData: ' + lstProductData);
+        } catch (Exception e) {
+            throw new IllegalArgumentException('Failed to parse input JSON: ' + e.getMessage());
+        }
+
+        // Process the data
+        for (ProductWrapper lineitem : lstProductData) {
+            if (lineitem.netPrice != null) {
+                if (lineitem.Rebate != null) {
+                    lineitem.netPrice -= (lineitem.netPrice * lineitem.Rebate) / 100;
+                }
+                if (lineitem.Rebate2 != null) {
+                    lineitem.netPrice -= (lineitem.netPrice * lineitem.Rebate2) / 100;
+                }
+                if (lineitem.Rebate3 != null) {
+                    lineitem.netPrice -= (lineitem.netPrice * lineitem.Rebate3) / 100;
+                }
+            }
+        }
+
+        System.debug('Processed lstProductData: ' + lstProductData);
+
+        // Return the processed data
+        return lstProductData;
+    }
+
+
+
     public Object fastOrderAddToCart(List<Object> orderData, String orderId){
         List<OrderField> orderFields = new List<OrderField>();
         Order orderObj = new Order();        
@@ -150,13 +194,14 @@ return orderObj;*/
             jsonDataObj.Order_Header_Data__c = orderDataJson;
             jsonDataObj.Order_Line_Items_Data__c = productDataJson;
             insert jsonDataObj;
-            ConfigurationCreationResponse configCreateResponse = new ConfigurationCreationResponse(true, 'Configuration data saved successfully.', jsonDataObj.Id);
+            //ConfigurationCreationResponse configCreateResponse = new ConfigurationCreationResponse(true, 'Configuration data saved successfully.', jsonDataObj.Id);
+            ConfigurationCreationResponse configCreateResponse = new ConfigurationCreationResponse(true, 'Configuration data saved successfully.', jsonDataObj.Data_Object_Id__c,'Order');
             system.debug('jj ConfigurationCreationResponse is :'+configCreateResponse);
             String jsonResponse = JSON.serialize(configCreateResponse);
             return jsonResponse;
         } catch (DmlException e) {
             System.debug('Error creating configuration: ' + e.getMessage());
-            ConfigurationCreationResponse configCreateResponse = new ConfigurationCreationResponse(false, 'Error while saving data: '+e.getMessage(), null);
+            ConfigurationCreationResponse configCreateResponse = new ConfigurationCreationResponse(false, 'Error while saving data: '+e.getMessage(), null,null);
             system.debug('jj failed ConfigurationCreationResponse is :'+configCreateResponse);
             String jsonResponse = JSON.serialize(configCreateResponse);
             return jsonResponse;
@@ -171,13 +216,13 @@ return orderObj;*/
             approvalObj.Approval_Description__c = 'This is an approval request created';
             approvalObj.Approval_Owner__c = orderObj.Owner.Id;
             insert approvalObj;
-            ConfigurationCreationResponse configCreateResponse = new ConfigurationCreationResponse(true, 'Approvals generated successfully.', approvalObj.Id);
+            ConfigurationCreationResponse configCreateResponse = new ConfigurationCreationResponse(true, 'Approvals generated successfully.', approvalObj.Id,null);
             system.debug('jj ConfigurationCreationResponse is :'+configCreateResponse);
             String jsonResponse = JSON.serialize(configCreateResponse);
             return jsonResponse;
         } catch (DmlException e) {
             System.debug('Error creating configuration: ' + e.getMessage());
-            ConfigurationCreationResponse configCreateResponse = new ConfigurationCreationResponse(false, 'Error while generating approvals: '+e.getMessage(), null);
+            ConfigurationCreationResponse configCreateResponse = new ConfigurationCreationResponse(false, 'Error while generating approvals: '+e.getMessage(), null,null);
             system.debug('jj failed ConfigurationCreationResponse is :'+configCreateResponse);
             String jsonResponse = JSON.serialize(configCreateResponse);
             return jsonResponse;
@@ -197,13 +242,13 @@ return orderObj;*/
             System.debug('Configuration created, id is: ' + cartID);
             String configEnd = System.now().format('yyyy-MM-dd HH:mm:ss.SSS');
             System.debug('config end time is :'+configEnd);
-            ConfigurationCreationResponse configCreateResponse = new ConfigurationCreationResponse(true, 'Configuration created successfully.', cartID);
+            ConfigurationCreationResponse configCreateResponse = new ConfigurationCreationResponse(true, 'Configuration created successfully.', cartID,null);
             system.debug('jj ConfigurationCreationResponse is :'+configCreateResponse);
             String jsonResponse = JSON.serialize(configCreateResponse);
             return jsonResponse;
         } catch (DmlException e) {
             System.debug('Error creating configuration: ' + e.getMessage());
-            ConfigurationCreationResponse configCreateResponse = new ConfigurationCreationResponse(false, 'Error creating configuration: '+e.getMessage(), null);
+            ConfigurationCreationResponse configCreateResponse = new ConfigurationCreationResponse(false, 'Error creating configuration: '+e.getMessage(), null,null);
             system.debug('jj failed ConfigurationCreationResponse is :'+configCreateResponse);
             String jsonResponse = JSON.serialize(configCreateResponse);
             return jsonResponse;
@@ -335,10 +380,24 @@ return orderObj;*/
         }
         if(jsonData.Order_Line_Items_Data__c != null){
             lstProductData = (List<ProductWrapper>)JSON.deserialize(jsonData.Order_Line_Items_Data__c, List<ProductWrapper>.class);
+            for (ProductWrapper pw :lstProductData) {
+                pw.discountApplied = false;
+            }
+        }else{
+            for(Order_Line_Item__c ali:[Select Id,Product_Name__c,Product__c,Product__r.Family,Product_Code__c,List_Price_c__c,Order__c from Order_Line_Item__c where Order__c =:orderid])
+            {
+                ProductWrapper alw =new ProductWrapper();
+                alw.productName=ali.Product_Name__c;
+                alw.productId=ali.Product__c;
+                alw.productFamily=ali.Product__r.Family;
+                alw.productCode=ali.Product_Code__c;
+                alw.listPrice=ali.List_Price_c__c;
+                alw.orderId=ali.Order__c;
+                alw.Id=ali.Id;
+                lstProductData.add(alw);     
+            }
         }
-        for (productwrapper pw :lstProductData) {
-            pw.discountApplied = false;
-        }
+        System.debug('getOrderLineItems :: 355  :: '+ lstProductData);
         return lstProductData;
     }
     
@@ -696,7 +755,6 @@ efw.value = typename == 'DirectOrder' ? 'Standard' : 'Mixed';
                 FormField f = new FormField(fsm);
                 fields.add(f);
             }
-            
             JSON_Data__c jsonData = new JSON_Data__c();
             for(JSON_Data__c jd : [SELECT Id,Data_Object_Id__c,Order_Header_Data__c,Order_Line_Items_Data__c FROM JSON_Data__c WHERE Data_Object_Id__c = :orderId]){
                 jsonData = jd;
@@ -705,12 +763,10 @@ efw.value = typename == 'DirectOrder' ? 'Standard' : 'Mixed';
             if(jsonData.Order_Header_Data__c != null){
                 lstJSONEntryFormWrapper = (List<EntryFormWrapper>)JSON.deserialize(jsonData.Order_Header_Data__c, List<EntryFormWrapper>.class);
             }
-            
             map<String,EntryFormWrapper> mapEntryFormWrapper = new map<String,EntryFormWrapper>();
             for(EntryFormWrapper efw : lstJSONEntryFormWrapper){
                 mapEntryFormWrapper.put(efw.fieldName , efw);
             }
-            
             for(FormField f : fields){
                 EntryFormWrapper efw = new EntryFormWrapper();
                 efw.fieldName = mapEntryFormWrapper.get(f.APIName).fieldName;
@@ -730,8 +786,8 @@ efw.value = typename == 'DirectOrder' ? 'Standard' : 'Mixed';
                     efw.value = fieldSetName == 'DirectOrder' ? 'Direct' : 'Transfer';
                 }
                 /*if(f.APIName == 'SCT_Sub_type__c'){
-efw.value = fieldSetName == 'DirectOrder' ? 'Standard' : 'Mixed';
-}*/
+                efw.value = fieldSetName == 'DirectOrder' ? 'Standard' : 'Mixed';
+                }*/
                 
                 lstEntryFormWrapper.add(efw);
             }
@@ -1517,6 +1573,12 @@ pw.opportunityName = mapOpportunity.get(''+obj.get('Opportunity__c')).Name;
         System.debug('Order_Pricing_Object_API__mdt map: ' + objectApiName);
         return objectApiName;
     }
+
+     public static Boolean checkIsCongaUsed(String devName) {
+        Boolean isCongaused =[Select Id,DeveloperName,Is_Conga_CPQ_Used__c from Order_Request_Setting__mdt where DeveloperName =: devName].Is_Conga_CPQ_Used__c;
+        return isCongaused;
+    }
+
     @AuraEnabled
      public static List<Object>  orderPricevalidate(string orderLineItemData){  
          System.debug( 'apw.discount'+orderLineItemData);
@@ -1536,19 +1598,22 @@ pw.opportunityName = mapOpportunity.get(''+obj.get('Opportunity__c')).Name;
     }
     
      @AuraEnabled
-     public static boolean orderlineitemsvalidate(string orderLineItemData){ 
+     public static string orderlineitemsvalidate(string orderLineItemData){ 
          boolean error;
+          String errorMessage = '';
           List<ProductWrapper> lstProductData = (List<ProductWrapper>)JSON.deserialize(orderLineItemData, List<ProductWrapper>.class);
         System.debug(lstProductData+'lstProductData');
          for(ProductWrapper apw:lstProductData){
              System.debug('lstProductData.apw.productId'+apw.Id);
              if(apw.Id=='01tao0000000l0aAAA'&&apw.discount>10){
                  error=true;
+                   errorMessage += 'Row ' + apw.recordIndex + ': Discount exceeds 10% for ' + apw.productName;
              }
              
          }
-    	System.debug(error+'error');
-            return error;
+    	System.debug(errorMessage+'error');
+            return errorMessage;
+        
     }
     
    
@@ -1610,6 +1675,120 @@ pw.opportunityName = mapOpportunity.get(''+obj.get('Opportunity__c')).Name;
             }
         return returnWrapperList;
         
+    }
+    
+     @AuraEnabled
+    public static List<ValidationResult> validateData(Map<String, String> fieldValues) {
+        List<ValidationResult> validationResults = new List<ValidationResult>();
+    
+        for (String field : fieldValues.keySet()) {
+            System.debug('Validating field: ' + field);
+            String fieldValue = fieldValues.get(field);
+    
+            // Example validation logic
+            if (field == 'Internal_Notes__c' && fieldValue == 'test') {
+                validationResults.add(
+                    new ValidationResult(false, field, 'Please update the right Internal Notes.')
+                );
+            }
+        }
+        // If no validation errors, return an empty list
+        return validationResults;
+    }
+
+    public static Object createOrderLineItemsForNonConga(String orderId, List<Object> productData) {
+    List<Order_Line_Item__c> oliToUpdate = new List<Order_Line_Item__c>();
+       // try {
+            String productDataJSON = JSON.serialize(productData);
+            String priceListIdName;
+            List<Object> scopeObjectsData = (List<Object>) JSON.deserializeUntyped(productDataJSON);
+
+            for (Object scopeObject : scopeObjectsData) {
+                Map<String, Object> scopeMap = (Map<String, Object>) scopeObject;
+                Order_Line_Item__c agrLI = new Order_Line_Item__c();
+
+                if (scopeMap.containsKey('listPrice') && scopeMap.get('listPrice') != null) {
+                    agrLI.List_Price_c__c = Decimal.valueOf(String.valueOf(scopeMap.get('listPrice')));
+                }
+                if (scopeMap.containsKey('productName') && scopeMap.get('productName') != null) {
+                    agrLI.Product_Name__c = String.valueOf(scopeMap.get('productName'));
+                }
+                if (scopeMap.containsKey('priceListName') && scopeMap.get('priceListName') != null) {
+                    agrLI.Price_List_Name__c = String.valueOf(scopeMap.get('priceListName'));
+                    priceListIdName = String.valueOf(scopeMap.get('priceListName'));
+                    agrLI.Price_List_Id__c =[Select Id, Name from Price_List__c where Name =: priceListIdName].Id;
+                }
+                if (scopeMap.containsKey('Id') || scopeMap.containsKey('Id') != null) {
+                    agrLI.Product__c = String.valueOf(scopeMap.get('Id'));
+                }
+                if (scopeMap.containsKey('netPrice') && scopeMap.get('netPrice') != null) {
+                    agrLI.Price__c = Decimal.valueOf(String.valueOf(scopeMap.get('netPrice')));
+                }
+                if (scopeMap.containsKey('discount') && scopeMap.get('discount') != null) {
+                    agrLI.Discount__c = Decimal.valueOf(String.valueOf(scopeMap.get('discount')));
+                }
+                if (scopeMap.containsKey('quantity') && scopeMap.get('quantity') != null) {
+                    agrLI.Quantity__c = Decimal.valueOf(String.valueOf(scopeMap.get('quantity')));
+                }
+                if (scopeMap.containsKey('selectedDropdownValue') && scopeMap.get('selectedDropdownValue') != null) {
+                    try {
+                        if (scopeMap.get('selectedDropdownValue') != Null) {
+                            agrLI.Adjustment_Type__c = String.valueOf(scopeMap.get('selectedDropdownValue'));
+                        }
+                        if (scopeMap.get('selectedDropdownValue') == 'Percent') {
+                            agrLI.Adjustment_Percent__c = Decimal.valueOf(String.valueOf(scopeMap.get('discount')));
+                        }
+                        if (scopeMap.get('selectedDropdownValue') == 'Amount') {
+                            agrLI.Adjustment_Amount__c = Decimal.valueOf(String.valueOf(scopeMap.get('discount')));
+                        }
+                    } catch (Exception e) {
+                        System.debug('Error parsing price: ' + e.getMessage());
+                    }
+                }
+                //Id pricelstId = [Select Id, Name from Price_List__c where Name =: priceListIdName].Id;
+               // System.debug('pricelstId :: 1711 :: '+pricelstId);
+                //agrLI.Price_List__c=pricelstId;
+                agrLI.Order__c = orderId;
+                oliToUpdate.add(agrLI);
+            }
+
+             if(!oliToUpdate.isEmpty()){
+                insert oliToUpdate;
+                BooleanResponses boolResponse = new BooleanResponses(true, 'Order Line Items created successfully', 'Order');
+                String jsonResponse = JSON.serialize(boolResponse);
+                return jsonResponse;
+            }else{
+                BooleanResponses boolResponse = new BooleanResponses(false, 'Order Line Items creation failed', null);
+                String jsonResponse = JSON.serialize(boolResponse);
+                return jsonResponse;
+            }
+       /* }catch(Exception e){
+            BooleanResponses boolResponse = new BooleanResponses(false, 'Error creating order line items: ' + e.getMessage(), null);
+            String jsonResponse = JSON.serialize(boolResponse);
+            return jsonResponse;            
+        }*/
+    }
+
+    
+    public Object generateApprovalRequestsForNonConga(String orderId){        
+        try {
+            Order orderObj = [SELECT Id, Owner.Id FROM Order WHERE Id = :orderId];
+            Approval__c approvalObj = new Approval__c();
+            approvalObj.Related_Order__c = orderId;
+            approvalObj.Approval_Description__c = 'This is an approval request created';
+            approvalObj.Approval_Owner__c = orderObj.Owner.Id;
+            insert approvalObj;
+            ConfigurationCreationResponse configCreateResponse = new ConfigurationCreationResponse(true, 'Approvals generated successfully.', approvalObj.Id,null);
+            system.debug('jj ConfigurationCreationResponse is :'+configCreateResponse);
+            String jsonResponse = JSON.serialize(configCreateResponse);
+            return jsonResponse;
+        } catch (DmlException e) {
+            System.debug('Error creating configuration: ' + e.getMessage());
+            ConfigurationCreationResponse configCreateResponse = new ConfigurationCreationResponse(false, 'Error while generating approvals: '+e.getMessage(), null,null);
+            system.debug('jj failed ConfigurationCreationResponse is :'+configCreateResponse);
+            String jsonResponse = JSON.serialize(configCreateResponse);
+            return jsonResponse;
+        }
     }
 
     public class ResultWrapper{
@@ -1722,6 +1901,33 @@ pw.opportunityName = mapOpportunity.get(''+obj.get('Opportunity__c')).Name;
         
         @AuraEnabled
         public Boolean isDisabled {get; set;}
+
+         @AuraEnabled
+        public string orderId { get; set; }
+
+         @AuraEnabled
+        public String productFamily { get; set; }
+
+        @AuraEnabled
+        public Decimal Rebate { get; set; }
+
+        @AuraEnabled
+        public Decimal Rebate2 { get; set; }
+
+        @AuraEnabled
+        public Decimal Rebate3 { get; set; }
+
+        @AuraEnabled
+        public String selectedDropdownValue { get; set; }
+
+        @AuraEnabled
+        public Boolean customdiscount { get; set; }
+
+        @AuraEnabled
+        public Boolean hasValue { get; set; }
+
+        @AuraEnabled
+        public Decimal adddiscount { get; set; }
    
         public ProductWrapper(){
         this.discountApplied = false;
@@ -1804,6 +2010,9 @@ pw.opportunityName = mapOpportunity.get(''+obj.get('Opportunity__c')).Name;
 
         @AuraEnabled
         public Decimal listPrice { get; set; }
+
+        @AuraEnabled
+        public string orderId { get; set; }
     }
     
     public class EntryFormWrapper{
@@ -1916,6 +2125,15 @@ pw.opportunityName = mapOpportunity.get(''+obj.get('Opportunity__c')).Name;
         
         @AuraEnabled
         public Decimal discount {get; set;}
+        
+         @AuraEnabled
+        public string selectedDropdownValue {get; set;}
+        
+        @AuraEnabled
+        public Decimal adddiscount {get; set;}
+        
+        @AuraEnabled
+        public Decimal netPrice {get; set;}
     }
     
     public class OrderCreationResponse {
@@ -1934,11 +2152,13 @@ pw.opportunityName = mapOpportunity.get(''+obj.get('Opportunity__c')).Name;
         @AuraEnabled public Boolean success;
         @AuraEnabled public String message;
         @AuraEnabled public Id configId;
+        @AuraEnabled public String objectName;
         
-        public ConfigurationCreationResponse(Boolean success, String message, Id configId) {
+        public ConfigurationCreationResponse(Boolean success, String message, Id configId,String objectName) {
             this.success = success;
             this.message = message;
             this.configId = configId;
+            this.objectName = objectName;
         }
     }
     
@@ -1954,6 +2174,20 @@ pw.opportunityName = mapOpportunity.get(''+obj.get('Opportunity__c')).Name;
             this.objectName = objectName;           
         }
     }
+    public class ValidationResult {
+        @AuraEnabled
+        public Boolean isValid;
+        @AuraEnabled
+        public String fieldName;
+        @AuraEnabled
+        public String errorMessage;
     
+        public ValidationResult(Boolean isValid, String fieldName, String errorMessage) {
+            this.isValid = isValid;
+            this.fieldName = fieldName;
+            this.errorMessage = errorMessage;
+        }
+    }
     
+      
 }

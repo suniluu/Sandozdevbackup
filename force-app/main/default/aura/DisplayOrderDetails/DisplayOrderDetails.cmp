@@ -2,5 +2,7 @@
 	<lightning:navigation aura:id="navService"/>
     <aura:attribute name="pageReference" type="Object"/>
     <aura:attribute name="recordId" type="String"/>
+    <aura:attribute name="cerApi" type="String"/>
+    <aura:attribute name="priceList" type="String"/>
     <aura:handler name="init" action="{!c.doInit}" value="{!this}" />
 </aura:component>

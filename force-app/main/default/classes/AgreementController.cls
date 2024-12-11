@@ -13,6 +13,21 @@ public with sharing class AgreementController {
         }
         return accList;
     }
+    
+    @AuraEnabled(cacheable=true)
+    public static Map<String, Object> getNavigationSettings(){
+        Map<String, Object> result = new Map<String, Object>();
+        IGenerateAgreementController customPlugin = AgreementRequestController.getCerPluginInstance('AgreementRequest');
+        if(customPlugin != null){
+            try{
+                result = customPlugin.getNavigationSettings();
+            } catch(Exception e){
+                system.debug('Error encountered');
+            }
+        }
+        return result;
+    }
+    
 
     @AuraEnabled(cacheable=true)
     public static List<String> getApprovalsRelatedData(){
@@ -41,6 +56,21 @@ public with sharing class AgreementController {
         }
         return accList;
     }
+    
+    @AuraEnabled(cacheable=true)
+    public static List<Object> getApprovalObjMetadata( ) {
+        List<Object> accList = new List<Object>();
+        IGenerateAgreementController customPlugin = AgreementRequestController.getCerPluginInstance('AgreementRequest');
+        if(customPlugin != null){
+            try{
+            	accList = customPlugin.getApprovalObjMetadata( );
+            } catch(Exception e){
+              system.debug('Error encountered');
+            }
+        }
+        return accList;
+    }
+
 
 	@AuraEnabled(cacheable=true)
     public static List<Map<String, Object>> populateDefaultAgreementData(List<Map<String, Object>> fields, Id recordId){
@@ -149,9 +179,7 @@ public with sharing class AgreementController {
     public static Object updateAgreementData(String recordId, String agreementData){
         Object lstrecord;
         IGenerateAgreementController customPlugin = AgreementRequestController.getCerPluginInstance('AgreementRequest');
-        System.debug(agreementData);
         List<Object> lstOrderData = (List<Object>) JSON.deserializeUntyped(agreementData);
-        System.debug(lstOrderData);
         if(customPlugin != null){
             try{
                 lstrecord = customPlugin.updateAgreementData(recordId, lstOrderData);
@@ -178,12 +206,12 @@ public with sharing class AgreementController {
     }
 
     @AuraEnabled
-    public static Object getApprovalDetails1(String agreementId){
+    public static Object getApprovalDetails1(String agreementId,string approvalProduct){
         Object lstrecord;
         IGenerateAgreementController customPlugin = AgreementRequestController.getCerPluginInstance('AgreementRequest');
         if(customPlugin != null){
             try{
-                lstrecord = customPlugin.getApprovalDetails1(agreementId);
+                lstrecord = customPlugin.getApprovalDetails1(agreementId,approvalProduct);
             } catch(Exception e){
                 system.debug('Error in generating approvals');
             }
@@ -195,7 +223,6 @@ public with sharing class AgreementController {
     public static Object saveAgreementDetails(String recordId, List<Object> agreementData, List<Object> agreementLineItemData){
         Object lstrecord;
         IGenerateAgreementController customPlugin = AgreementRequestController.getCerPluginInstance('AgreementRequest');
-        System.debug(agreementData);
         if(customPlugin != null){
             try{
                 lstrecord = customPlugin.saveAgreementDetails(recordId, agreementData, agreementLineItemData);
@@ -222,8 +249,8 @@ public with sharing class AgreementController {
     }
     
         @AuraEnabled
-    public static boolean Agreementlineitemsvalidate(string agreementLineItemData){
-        boolean lstrecord;
+    public static string Agreementlineitemsvalidate(string agreementLineItemData){
+        string lstrecord;
         IGenerateAgreementController customPlugin = AgreementRequestController.getCerPluginInstance('AgreementRequest');
  
         if(customPlugin != null){
@@ -241,9 +268,7 @@ public with sharing class AgreementController {
     public static Object updateAgreementLineItemData(String recordId, String agreementLineItemData){
         Object lstrecord;
         IGenerateAgreementController customPlugin = AgreementRequestController.getCerPluginInstance('AgreementRequest');
-        System.debug(agreementLineItemData);
         List<Object> lstOrderData = (List<Object>) JSON.deserializeUntyped(agreementLineItemData);
-        System.debug(lstOrderData);
         if(customPlugin != null){
             try{
                 lstrecord = customPlugin.updateAgreementLineItemData(recordId, lstOrderData);
@@ -498,12 +523,12 @@ public with sharing class AgreementController {
     }
 
     @AuraEnabled(cacheable=true)
-    public static List<Object> getSignatoryMetaDatas(String devName){
+    public static List<Object> getAgreementRequestSettingMetadata(String devName){
         List<Object> lstButtonInfo = new List<Object>();
         IGenerateAgreementController customPlugin = AgreementRequestController.getCerPluginInstance('AgreementRequest');
         if(customPlugin != null){
             try{
-            	lstButtonInfo = customPlugin.getSignatoryMetaDatas(devName);
+            	lstButtonInfo = customPlugin.getAgreementRequestSettingMetadata(devName);
             } catch(Exception e){
                 customPlugin.errorHandleling('',e);
             }
@@ -511,19 +536,22 @@ public with sharing class AgreementController {
         return lstButtonInfo;
     }
 
+  
+
     @AuraEnabled(cacheable=true)
-    public static List<Object> getAuthorizeSignerMetaData(String devName){
+    public static List<Object> retrieveSignatoryRecords(String recId){
         List<Object> lstButtonInfo = new List<Object>();
         IGenerateAgreementController customPlugin = AgreementRequestController.getCerPluginInstance('AgreementRequest');
         if(customPlugin != null){
             try{
-            	lstButtonInfo = customPlugin.getAuthorizeSignerMetaData(devName);
+            	lstButtonInfo = customPlugin.retrieveSignatoryRecords(recId);
             } catch(Exception e){
                 customPlugin.errorHandleling('',e);
             }
         }
         return lstButtonInfo;
     }
+
 
     @AuraEnabled(cacheable=true)
     public static List<Object> getSignatoryDetails(String objectName,
@@ -553,6 +581,66 @@ public with sharing class AgreementController {
             	lineitems = customPlugin.fetchLookupRecords(objectApiName,fieldApiName,otherFieldApiName,searchString,selectedRecordId,pricelistId,recId);
             } catch(Exception e){
                 customPlugin.errorHandleling(recId,e);
+            }
+        }
+        return lineitems;
+    }
+    
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, String>> getTemplateOptions() 
+    {
+        List<Map<String, String>> lineitems ;
+        IGenerateAgreementController customPlugin = AgreementRequestController.getCerPluginInstance('AgreementRequest');
+        if(customPlugin != null){
+            try{
+            	lineitems = customPlugin.getTemplateOptions();
+            } catch(Exception e){
+                customPlugin.errorHandleling('',e);
+            }
+        }
+        return lineitems;
+    }
+    
+     @AuraEnabled(cacheable=true)
+    public static List<Map<String, String>> getClausesOptions() 
+    {
+        List<Map<String, String>> lineitems ;
+        IGenerateAgreementController customPlugin = AgreementRequestController.getCerPluginInstance('AgreementRequest');
+        if(customPlugin != null){
+            try{
+            	lineitems = customPlugin.getClausesOptions();
+            } catch(Exception e){
+                customPlugin.errorHandleling('',e);
+            }
+        }
+        return lineitems;
+    }
+    
+    @AuraEnabled(cacheable=true)
+    public static Id generatePDFAndSave(Id recordId,Id templateId) 
+    {
+        Id lineitems ;
+        IGenerateAgreementController customPlugin = AgreementRequestController.getCerPluginInstance('AgreementRequest');
+        if(customPlugin != null){
+            try{
+            	lineitems = customPlugin.generatePDFAndSave(recordId,templateId);
+            } catch(Exception e){
+                customPlugin.errorHandleling('',e);
+            }
+        }
+        return lineitems;
+    }
+    
+     @AuraEnabled(cacheable=true)
+    public static String previewPDF(Id recordId,Id templateId) 
+    {
+        String lineitems ;
+        IGenerateAgreementController customPlugin = AgreementRequestController.getCerPluginInstance('AgreementRequest');
+        if(customPlugin != null){
+            try{
+            	lineitems = customPlugin.previewPDF(recordId,templateId);
+            } catch(Exception e){
+                customPlugin.errorHandleling('',e);
             }
         }
         return lineitems;

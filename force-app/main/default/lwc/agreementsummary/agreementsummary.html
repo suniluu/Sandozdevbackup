@@ -5,103 +5,32 @@
                 <div class="slds-grid slds-wrap">
                     <template if:true={isClauseTemplate}>
                         <div class="slds-col slds-size_1-of-2 custom2">
-                             <h4><b>Generate Document</b></h4>
-                            <section class="slds-m-around_medium">
+                            <h4><b>Generate Document</b></h4>
+                            <section class="slds-m-around_small">
                                 <h2><b>Select Contract Template</b></h2>
-                                 <lightning-combobox
-                                                    name="New"
-                                                    label="New Template"
-                                                    value={selectedTemplate}
-                                                    variant="label-hidden" 
-                                                    placeholder="Select Template"
-                                                    options={newoptions}
-                                                    onchange={handleNewTemplateChange} style=" width: 250px; padding: 10px;"
-                                            ></lightning-combobox>
-                                 
-                                <!-- <lightning-checkbox-group name="ClauseOptions" options={clauseOptions}
-                                    value={selectedClauses} onchange={handleClauseChange}>
-                                </lightning-checkbox-group> -->
+                                <lightning-combobox name="New" label="New Template" value={selectedTemplate}
+                                    variant="label-hidden" placeholder="Select Template" options={newoptions}
+                                    onchange={handleNewTemplateChange} style=" width: 250px;  padding-left: 5px; padding-top: 5px;">
+                                </lightning-combobox>
                             </section>
-                            <section class="slds-m-around_medium">
+                            <section class="slds-m-around_small">
                                 <h2><b>Select Clause Inclusion</b></h2>
-                               <!-- <br/>
-                                <div class="slds-grid slds-wrap">
-                                    <div class="slds-col slds-size_1-of-2">
-                                        <div class="custom">
-                                            <h4><b>New</b></h4>-->
-                                            <lightning-combobox
-                                                    name="New"
-                                                    label="New Clause"
-                                                    value={selectedClauses}
-                                                    variant="label-hidden" 
-                                                    placeholder="Select Clauses"
-                                                    options={clauseOptions}
-                                                    onchange={handleClauseChange} style=" width: 250px; padding: 10px;"
-                                            ></lightning-combobox>
 
-                                            <div class="slds-p-around_xx-small">   
-                                                <template for:each={allClausesValues} for:item="val">
-                                                    <lightning-pill key={val.value} name={val.value} label={val.label} onremove={handleRemove}></lightning-pill>
-                                                </template>
-                                            </div>
-                                            <!-- <fieldset class="slds-form-element new-contract-design">
-                                                <div class="slds-form-element__control">
-                                                    <div class="slds-checkbox">
-                                                        <input type="checkbox" name="options" id="checkbox-unique-id-88" value="checkbox-unique-id-88" checked="" />
-                                                        <label class="slds-checkbox__label" for="checkbox-unique-id-88">
-                                                        <span class="slds-checkbox_faux"></span>
-                                                        <span class="slds-form-element__label">Template 1</span>
-                                                    </label>
-                                                    </div>
-                                                    <div class="slds-checkbox">
-                                                        <input type="checkbox" name="options" id="checkbox-unique-id-89" value="checkbox-unique-id-89" />
-                                                        <label class="slds-checkbox__label" for="checkbox-unique-id-89">
-                                                        <span class="slds-checkbox_faux"></span>
-                                                        <span class="slds-form-element__label">Template 2</span>
-                                                    </label>
-                                                    </div>
-                                                    <div class="slds-checkbox">
-                                                        <input type="checkbox" name="options" id="checkbox-unique-id-90" value="checkbox-unique-id-90" />
-                                                        <label class="slds-checkbox__label" for="checkbox-unique-id-90">
-                                                        <span class="slds-checkbox_faux"></span>
-                                                        <span class="slds-form-element__label">Template 3</span>
-                                                    </label>
-                                                    </div>
-                                                </div>
-                                            </fieldset> 
-                                       </div> 
-                                    </div>-->
-                                   <!-- <div class="slds-col slds-size_1-of-2 amend-contract-design">
-                                        <div class="custom">
-                                            <h4 class="custom1"><b>Amend</b></h4>
-                                            <fieldset class="slds-form-element amend-contract-form">
-                                                <div class="slds-form-element__control">
-                                                    <div class="slds-checkbox">
-                                                        <input type="checkbox" name="options" id="checkbox-unique-id-91" value="checkbox-unique-id-91" checked="" />
-                                                        <label class="slds-checkbox__label" for="checkbox-unique-id-91">
-                                                        <span class="slds-checkbox_faux"></span>
-                                                        <span class="slds-form-element__label">Template 1</span>
-                                                    </label>
-                                                    </div>
-                                                    <div class="slds-checkbox">
-                                                        <input type="checkbox" name="options" id="checkbox-unique-id-92" value="checkbox-unique-id-92" />
-                                                        <label class="slds-checkbox__label" for="checkbox-unique-id-92">
-                                                        <span class="slds-checkbox_faux"></span>
-                                                        <span class="slds-form-element__label">Template 2</span>
-                                                    </label>
-                                                    </div>
-                                                    <div class="slds-checkbox">
-                                                        <input type="checkbox" name="options" id="checkbox-unique-id-93" value="checkbox-unique-id-93" />
-                                                        <label class="slds-checkbox__label" for="checkbox-unique-id-93">
-                                                        <span class="slds-checkbox_faux"></span>
-                                                        <span class="slds-form-element__label">Template 3</span>
-                                                    </label>
-                                                    </div>
-                                                </div>
-                                            </fieldset>
-                                        </div>
-                                    </div>
-                                </div>-->
+                                <lightning-combobox name="New" label="New Clause" value={selectedClauses}
+                                    variant="label-hidden" placeholder="Select Clauses" options={clauseOptions}
+                                    onchange={handleClauseChange} style=" width: 250px;  padding-left: 5px; padding-top: 5px;">
+                                </lightning-combobox>
+
+                                <div class="slds-p-around_xx-small">
+                                    <template for:each={allClausesValues} for:item="val">
+                                        <lightning-pill key={val.value} name={val.value} label={val.label}
+                                            onremove={handleRemove}>
+                                            <lightning-icon icon-name='standard:article' alternative-text='article'>
+                                            </lightning-icon>
+                                        </lightning-pill>
+                                    </template>
+                                </div>
+
                             </section>
                         </div>
                     </template>
@@ -109,75 +38,64 @@
                         <div class="slds-col slds-size_1-of-2 custom">
                             <h3><b>Signatory</b></h3>
                             <div class=" column-design">
-                            Authorized Signer:
-                            <div class="slds-pill_container">
-                                <ul class="slds-listbox slds-listbox_horizontal" aria-label="Selected Options:"
-                                    aria-describedby="listbox-pill-with-icon">
-                                    <li class="slds-listbox-item">
-                                        <span class="slds-pill">
+                                <b>Authorized Signer:</b>
+                                <div class="slds-pill_container">
+                                    <ul class="slds-listbox slds-listbox_horizontal" aria-label="Selected Options:"
+                                        aria-describedby="listbox-pill-with-icon">
+                                        <li class="slds-listbox-item">
+                                            <span class="slds-pill">
                                         <span class="slds-icon_container slds-icon-standard-user slds-pill__icon_container" title="Signatory">
                                             <svg class="slds-icon" aria-hidden="true">
                                                 <use xlink:href="/assets/icons/standard-sprite/svg/symbols.svg#user"></use>
                                             </svg>
                                             <span class="slds-assistive-text">Roger Federer</span>
-                                        </span>
-                                        <span class="slds-pill__label" title="Full pill label verbiage mirrored here">Roger Federer</span>
-                                        <span class="slds-icon_container slds-pill__remove" title="Remove">
+                                            </span>
+                                            <span class="slds-pill__label" title="Full pill label verbiage mirrored here">Roger Federer</span>
+                                            <span class="slds-icon_container slds-pill__remove" title="Remove">
                                                 <button class="slds-button slds-button_icon slds-button_icon slds-pill__remove" title="Remove">
                                                     <svg class="slds-button__icon" aria-hidden="true">
                                                         <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"></use>
                                                     </svg>
                                                     <span class="slds-assistive-text">Remove</span>
-                                        </button>
-                                        </span>
-                                        </span>
-                                    </li>
-                                </ul>
-                            </div>
-                            <br/>
-                            <br/>
-                            Signatory:
-                            <div class="multisearch">
-                                <c-agreement-multi-select-look-up label-name="Search Signatory" object-api-name="Agreement_Contacts__c"
-                                 globalselecteditems={globalSelectedItems}  field-api-names="Id,Name,Aggreement__c,Contact__r.Name" 
-                                 filter-field-api-name="Contact__r.Name" icon-name="action:add_contact" rec-id={recordId}
-                                onretrieve={selectItemEventHandler} onremove={deleteItemEventHandler} >
-                        </c-agreement-multi-select-look-up >
-                                <!-- class="slds-pill_container" <ul class="slds-listbox slds-listbox_horizontal" aria-label="Selected Options:"
-                                    aria-describedby="listbox-pill-with-icon">
-                                    <li class="slds-listbox-item">
-                                        <span class="slds-pill">
-                                        <span class="slds-icon_container slds-icon-standard-contact slds-pill__icon_container" title="Signatory">
-                                            <svg class="slds-icon" aria-hidden="true">
-                                                <use xlink:href="/assets/icons/standard-sprite/svg/symbols.svg#contact"></use>
-                                            </svg>
-                                            <span class="slds-assistive-text">Lionel Messi</span>
-                                        </span>
-                                        <span class="slds-pill__label" title="Full pill label verbiage mirrored here">Lionel Messi</span>
-                                        <span class="slds-icon_container slds-pill__remove" title="Remove">
-                                                <button class="slds-button slds-button_icon slds-button_icon slds-pill__remove" title="Remove">
-                                                    <svg class="slds-button__icon" aria-hidden="true">
-                                                        <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"></use>
-                                                    </svg>
-                                                    <span class="slds-assistive-text">Remove</span>
-                                        </button>
-                                        </span>
-                                        </span>
-                                    </li>
-                                </ul> -->
-                            </div>
-                            <br/>
-                            <div class="slds-grid slds-wrap" >
-                                <div class="slds-col slds-size_1-of-3" style="padding-top:1.5rem;">
-                                    <lightning-button label="Peview Output" variant="brand" onclick={handlePreview} class="slds-m-left_xx-small">
-                                    </lightning-button>
+                                            </button>
+                                            </span>
+                                            </span>
+                                        </li>
+                                    </ul>
                                 </div>
-                                <div class="slds-col slds-size_2-of-3">
-                                    <lightning-file-upload label="Select Brochure" name="fileUploader" accept={acceptedFormats} multiple>
-                                    </lightning-file-upload>
+                                <br/>
+                                <br/>
+                                <b> Signatory:</b>
+                                <div class="multisearch">
+                                    <lightning-combobox name="New" label="New Signatory" value={selectedSignatorys}
+                                        variant="label-hidden" placeholder="Select Signatory.."
+                                        options={signatoryOptions} onchange={handleSignatoryChange}
+                                        style=" width: 250px; padding-left: 5px; padding-top: 5px;"></lightning-combobox>
+
+                                    <div class="slds-p-around_xx-small">
+                                        <template for:each={allSignatoryValues} for:item="val">
+                                            <lightning-pill key={val.value} name={val.value} label={val.label}
+                                                onremove={handleSignatoryRemove}>
+                                                <lightning-icon icon-name="standard:avatar" alternative-text="Account">
+                                                </lightning-icon>
+                                            </lightning-pill>
+                                        </template>
+                                    </div>
+                                </div>
+                                <br/>
+                                <div class="slds-grid slds-wrap">
+                                    <div class="slds-col slds-size_1-of-3" style="padding-top:1.5rem;">
+                                        <lightning-button label="Preview Output" variant="brand" onclick={handlePreview}
+                                            class="slds-m-left_xx-small">
+                                        </lightning-button>
+                                    </div>
+                                    <div class="slds-col slds-size_2-of-3">
+                                        <lightning-file-upload label="Select Brochure" name="fileUploader"
+                                            accept={acceptedFormats} multiple>
+                                        </lightning-file-upload>
+                                    </div>
                                 </div>
                             </div>
-                            </div>    
                         </div>
                     </template>
                 </div>
@@ -193,42 +111,6 @@
                         <!-- &ensp; -->
                     </template>
                 </template>
-                <!-- <lightning-button label="Sign" variant="brand"  onclick={handleSign} class="slds-m-left_x-small slds-float_right brand design-right"></lightning-button>
-                <lightning-button label="Generate" variant="brand" onclick={handleGenerate} class="slds-m-left_x-small slds-float_right brand design-right"></lightning-button>-->
-                <!--<lightning-button label="Send for Approvals" variant="brand" onclick={handleGenerate} class="slds-m-left_x-small slds-float_right brand design-right"></lightning-button> -->
-                <!-- <section class="slds-m-around_medium design-top">
-                    <lightning-card icon-name="standard:location" title="Account Location" variant="base">
-                            <lightning-map map-markers={mapMarkers} markers-title="Account Location" zoom-level={zoomLevel} class="design-map">
-                            </lightning-map> 
-                    </lightning-card>   
-                </section>
-                <div class="slds-grid slds-wrap design-more-padding-left">
-                    <div class="slds-col slds-small-size_1-of-12 slds-medium-size_1-of-12 slds-large-size_1-of-12">
-                        <div class="slds-col slds-size_1-of-2">
-                            <lightning-icon 
-                                icon-name="standard:account" 
-                                alternative-text="Account" 
-                                size="medium" 
-                                title="large size"
-                                variant="inverse"
-                            ></lightning-icon>
-                        </div>                            
-                    </div>
-                    <div class="slds-col slds-small-size_11-of-12 slds-medium-size_11-of-12 slds-large-size_11-of-12 -less-padding-left">
-                        <div class="demo-only design-width">
-                            <article class="slds-tile">
-                                <h3 class="slds-tile__title slds-truncate">
-                                    <b>{accountName}</b>
-                                </h3>
-                                <div class="slds-tile__detail">
-                                    <dl class="slds-list_horizontal slds-wrap">
-                                        <dd class="slds-item_detail slds-truncate" title="City Information">Address: {accountStreet}, {accountCity}, {accountState} - {postalcode}, {accountCountry}</dd>
-                                    </dl>
-                                </div>
-                            </article>
-                        </div>
-                    </div>
-                </div>                       -->
             </div>
         </div>
     </lightning-card>

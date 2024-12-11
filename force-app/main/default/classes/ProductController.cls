@@ -21,6 +21,28 @@ public with sharing class ProductController {
         return lstProductData;
     }
     
+     /**
+     * @description customPriceCalculation on line items
+     * @return: return type list of sobject.
+     */    
+
+     @AuraEnabled
+    public static List<Object> customPriceCalculation(String orderdata) {
+        List<Object> lstProductData = new List<Object>();
+        IGenerateReqestOrder customPlugin = OrderRequestAddToCart.getCerPluginInstance('OrderEntry');
+        if(customPlugin != null){
+            try{
+            	lstProductData = customPlugin.customPriceCalculation(orderdata);
+            } catch(Exception e){
+                customPlugin.errorHandleling(orderdata,e);
+            }
+        }
+        return lstProductData;
+    }
+    
+    
+    
+    
     /**
      * @description getQuickOrderRecords to get all the related products for the selected order
      * @return: return type list of sobject.
@@ -485,8 +507,8 @@ public with sharing class ProductController {
     }
     
      @AuraEnabled(cacheable=true)
-     public static Boolean orderlineitemsvalidate(string orderLineItemData){
-       boolean lstrecord;
+     public static String orderlineitemsvalidate(string orderLineItemData){
+       String lstrecord;
         IGenerateReqestOrder customPlugin = OrderRequestAddToCart.getCerPluginInstance('OrderEntry');
  
         if(customPlugin != null){
@@ -511,6 +533,51 @@ public with sharing class ProductController {
             }
         }
         return lstrecord;   
+    }
+
+     @AuraEnabled(cacheable=true)
+     public static Boolean checkIsCongaUsed(string devName){
+       Boolean lstrecord ;
+        IGenerateReqestOrder customPlugin = OrderRequestAddToCart.getCerPluginInstance('OrderEntry');
+ 
+        if(customPlugin != null){
+            try{
+                lstrecord = customPlugin.checkIsCongaUsed(devName);
+            } catch(Exception e){
+                system.debug('Error in checkIsCongaUsed');
+            }
+        }
+        return lstrecord;   
+    }
+
+    @AuraEnabled
+    public static Object createOrderLineItemsForNonConga(String orderId, String productData){
+        Object lstrecord;
+        IGenerateReqestOrder customPlugin = OrderRequestAddToCart.getCerPluginInstance('OrderEntry');
+        List<Object> lstProductData = (List<Object>) JSON.deserializeUntyped(productData);
+        System.debug(lstProductData);
+        if(customPlugin != null){
+            try{
+                lstrecord = customPlugin.createOrderLineItemsForNonConga(orderId,lstProductData);
+            } catch(Exception e){
+                system.debug('Error in adding products to cart');
+            }
+        }
+        return lstrecord;        
+    } 
+
+    @AuraEnabled
+    public static Object generateApprovalRequestsForNonConga(String orderId){
+        Object lstrecord;
+        IGenerateReqestOrder customPlugin = OrderRequestAddToCart.getCerPluginInstance('OrderEntry');
+        if(customPlugin != null){
+            try{
+               lstrecord = customPlugin.generateApprovalRequestsForNonConga(orderId);
+            } catch(Exception e){
+                system.debug('Error in generating approvals');
+            }
+        }
+        return lstrecord;       
     }
     
      

@@ -23,13 +23,14 @@
                     </div>
                 </div>
                 <br />
-                <template if:true={approvalDetails}>
+              
+                <div if:true={approvaldata}>
                         <lightning-tabset variant="scoped">
                             <template for:each={approvalDetails} for:item="approver" for:index="index">
                                 <lightning-tab key={approver.Id} label='Approver'>
                                     <div class="approver-details">
                                         <h3 class="slds-text-title_caps">Name: {approver.Name}</h3>
-                                        <p>Role: {approver.Role}</p>
+                                        <p>Role: {approver.UserRoleId}</p>
                                         <p>Department: {approver.Department}</p>
                                         <p>Email: {approver.Email}</p>
                                         <p>Phone: {approver.Phone}</p>
@@ -37,7 +38,7 @@
                                 </lightning-tab>
                             </template>
                         </lightning-tabset>
-                </template>
+                </div>
                 <template if:true={error}>
                     <p class="slds-text-color_error">{error}</p>
                 </template>

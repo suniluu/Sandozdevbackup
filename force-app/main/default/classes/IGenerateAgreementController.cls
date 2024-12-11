@@ -5,6 +5,8 @@ global Interface IGenerateAgreementController {
     * @param Map<Id Object> scopeObjectLst 
     * @param ; 
     **/
+    
+    Map<String, Object> getNavigationSettings();
 
     List<String> getApprovalsRelatedData();
 
@@ -50,7 +52,7 @@ global Interface IGenerateAgreementController {
 
     Object generateApprovalRequests(String agreementId);
     
-    Object getApprovalDetails1(String agreementId);
+    Object getApprovalDetails1(String agreementId,string approvalProduct);
     
      List<Object> getRecordTypeData();
     
@@ -64,15 +66,17 @@ global Interface IGenerateAgreementController {
     
     List<Object> AgreementPricevalidate(string agreementLineItemData);
     
-    boolean Agreementlineitemsvalidate(string agreementLineItemData);  
+    String Agreementlineitemsvalidate(string agreementLineItemData);  
 
     List<Object> getButtonData(String compName); 
 	
     List<Object> getSignatureSection(String compName); 
 
-    List<Object> getSignatoryMetaDatas(String devName);
+    List<Object> retrieveSignatoryRecords(String recId);
 
-    List<Object> getAuthorizeSignerMetaData(String devName); 
+    List<Object> getAgreementRequestSettingMetadata(String devName);
+    
+    list<Object> getApprovalObjMetadata();
 
      List<Object> getSignatoryDetails(String objectName,
                                                 String fieldAPINames,
@@ -80,4 +84,11 @@ global Interface IGenerateAgreementController {
                                                 String strInput,String recId); 
     
     List<Object> fetchLookupRecords(String objectApiName, String fieldApiName,String otherFieldApiName, String searchString, String selectedRecordId, String pricelistId,String recId);
+    
+    List<Map<String, String>> getTemplateOptions();
+    List<Map<String, String>> getClausesOptions();
+    Id generatePDFAndSave(Id recordId,Id templateId);
+    String previewPDF(Id recordId,Id templateId);
+    
+    
 }

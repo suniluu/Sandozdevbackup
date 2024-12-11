@@ -35,6 +35,22 @@
         <value xsi:nil="true"/>
     </values>
     <values>
+        <field>Is_Agreement_Accelerator__c</field>
+        <value xsi:type="xsd:boolean">false</value>
+    </values>
+    <values>
+        <field>Is_Approval_Detail__c</field>
+        <value xsi:type="xsd:boolean">false</value>
+    </values>
+    <values>
+        <field>Is_Signature__c</field>
+        <value xsi:type="xsd:boolean">false</value>
+    </values>
+    <values>
+        <field>Navigate_to_Agreement_After_Creation__c</field>
+        <value xsi:type="xsd:boolean">false</value>
+    </values>
+    <values>
         <field>Object_Api_Name__c</field>
         <value xsi:nil="true"/>
     </values>

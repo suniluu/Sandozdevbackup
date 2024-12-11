@@ -6,5 +6,6 @@
         component.set("v.recname",component.get("v.pageReference").state.c__refName);
         component.set("v.objname",component.get("v.pageReference").state.c__refobjName);
         component.set("v.objicon",component.get("v.pageReference").state.c__refobjIcon);
+        component.set("v.objectApiName",component.get("v.pageReference").state.c__refobjectApiName);
     }
 })

@@ -3,6 +3,10 @@
     <label>QuickOrder Header</label>
     <protected>false</protected>
     <values>
+        <field>Is_Conga_CPQ_Used__c</field>
+        <value xsi:type="xsd:boolean">false</value>
+    </values>
+    <values>
         <field>Plugin__c</field>
         <value xsi:type="xsd:string">Account__c,Payment_Terms__c,Order_Type__c,Wholesaler__c,Delivery_Date__c</value>
     </values>

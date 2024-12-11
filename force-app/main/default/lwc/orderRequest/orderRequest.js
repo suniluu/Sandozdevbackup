@@ -84,7 +84,6 @@ export default class OrderRequest extends LightningElement {
             this.pricingProds = this.pricingProds.filter(row => this.preSelectedRows.includes(row.recordId));
         }
         this.tabName = 'Quick_Order';
-        console.log('add fast button ::: '+JSON.stringify(this.fastSelection));
         this.count = this.fastSelection.length;
         if (this.count > 0) {
             this.disableButton = false;
@@ -124,7 +123,6 @@ export default class OrderRequest extends LightningElement {
 
     connectedCallback() {
         this.loadTabData();
-        console.log('selected price list order req ::; '+ JSON.stringify(this.fields));
     }
 
     renderedCallback() {

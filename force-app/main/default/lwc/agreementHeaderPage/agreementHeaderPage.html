@@ -1,6 +1,7 @@
 <template>
     <lightning-card>
         <div class="slds-col slds-size_6-of-12 icon-class">
+            <div if:true={isAgreement}>
             <lightning-icon
                 icon-name="standard:contract_line_item"
                 alternative-text="Agreement Information"
@@ -9,6 +10,18 @@
                 variant="inverse">
             </lightning-icon>
             <b class="icon-name">Agreement Information</b>
+            </div>
+            <div if:true={notAgreement}>
+            <lightning-icon
+                icon-name="standard:contract_line_item"
+                alternative-text="Price Request Change Information"
+                size="xx-medium"
+                title="Price Request Change Information"
+                variant="inverse">
+            </lightning-icon>
+            <b class="icon-name">Price Request Change Information</b>
+            </div>
+            
         </div>
         <template if:true={fieldSetFields}>
             <lightning-record-edit-form object-api-name={objectName} onsuccess={handleSuccess}>

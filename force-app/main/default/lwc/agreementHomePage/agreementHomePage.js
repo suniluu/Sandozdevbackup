@@ -3,6 +3,10 @@ import Scalefluidly from "@salesforce/resourceUrl/Scalefluidly";
 import getexistinglineitems from '@salesforce/apex/AgreementController.getexistinglineitems';
 import getFieldDataFromMetadata from '@salesforce/apex/AgreementController.getFieldDataFromMetadata';
 import getLookupFieldNames from '@salesforce/apex/AgreementController.getLookupFieldNames';
+import getApprovalDetails1 from '@salesforce/apex/AgreementController.getApprovalDetails1';
+import getApprovalObjMetadata from '@salesforce/apex/AgreementController.getApprovalObjMetadata';
+import getAgreementRequestSettingMetadata from '@salesforce/apex/AgreementController.getAgreementRequestSettingMetadata';
+
 import { ShowToastEvent } from "lightning/platformShowToastEvent";
 
 export default class AgreementHomePage extends LightningElement {
@@ -19,8 +23,7 @@ export default class AgreementHomePage extends LightningElement {
     @api deleteRecordData;
     @api currentStep = '1';
     @track displayerror = false;
-    @track checkingvalue = true;
-    @track newlineitems = [];
+    @track checkingvalue = false;
 
     @track cartCount = 0;
     @api index = 1;
@@ -36,6 +39,14 @@ export default class AgreementHomePage extends LightningElement {
     @track preFastSelectedRows;
     @track preSelectedFast;
     @track oldstep = '';
+    @track agreementId = '';
+    @track approvalDetails = [];
+    @track approvaldata;
+    @track isAgreementPath = [];
+    @track isAgreement = '';
+    @track notAgreement = '';
+    @track approvalDetailPath;
+    @track signaturePath;
 
     firstPageClass = 'show-div';
     secondPageClass = 'hide-div';
@@ -82,20 +93,20 @@ export default class AgreementHomePage extends LightningElement {
                     this.handleSetUpSteps();
                 }
             }
-               if (parseInt(selectedStep) > parseInt(this.currentStep)) {
-            const canNavigate = this.validateCurrentStep();
-            if (canNavigate) {
+            if (parseInt(selectedStep) > parseInt(this.currentStep)) {
+                const canNavigate = this.validateCurrentStep();
+                if (canNavigate) {
+                    this.currentStep = selectedStep;
+                    this.handleSetUpSteps();
+                } else {
+                    this.showToast('Error', 'Please complete all required fields before proceeding.', 'error');
+                }
+            } else {
                 this.currentStep = selectedStep;
                 this.handleSetUpSteps();
-            } else {
-                this.showToast('Error', 'Please complete all required fields before proceeding.', 'error');
             }
-        } else {
-        this.currentStep = selectedStep;
-        this.handleSetUpSteps();
         }
-        }
-     
+
     }
     discount(event) {
         this.discountdataprod = event.detail.productdata;
@@ -127,8 +138,8 @@ export default class AgreementHomePage extends LightningElement {
         }));
         // Store the merged field attributes in rawFieldSetData
         this.rawFieldSetData = [...mergedFieldAttributes];
-        
-         console.log('JJ Filtered rawFieldSetData (Before Lookup):', JSON.stringify(this.rawFieldSetData));
+
+        console.log('JJ Filtered rawFieldSetData (Before Lookup):', JSON.stringify(this.rawFieldSetData));
         const metadataFieldNames = this.fieldDataWithLabels.map(field => field.fieldName);
 
         const filteredFieldSet = metadataFieldNames.map(fieldName => {
@@ -160,7 +171,7 @@ export default class AgreementHomePage extends LightningElement {
                     });
 
                     this.fieldDataWithLabels = filteredFieldSet;
-                    console.log('jj fieldDataWithLabels 147 :: '+JSON.stringify(this.fieldDataWithLabels));
+                    console.log('jj fieldDataWithLabels 147 :: ' + JSON.stringify(this.fieldDataWithLabels));
                     this.navigateNext();
                 })
                 .catch(error => {
@@ -193,8 +204,48 @@ export default class AgreementHomePage extends LightningElement {
 
 
     handleGenerateApprovalRequests(event) {
-        const approvalsResponse = event.detail;
+        const approvalsResponse = event.detail.approvalsResponse;
+        this.agreementId = event.detail.agreementId;
         if (approvalsResponse.success) {
+            getApprovalObjMetadata({})
+                .then((data) => {
+                    const productToUsed = data[0].Approval_Product_To_Be_Used__c;
+                    console.log('agreement home page Product to used ::: ' + productToUsed);
+                    getApprovalDetails1({ agreementId: this.agreementId, approvalProduct: productToUsed })
+                        .then((data) => {
+                            if (data && Array.isArray(data)) {
+                                this.approvalDetails = data.map(item => item.Actor);
+                                console.log('agreement home page jj approvals data is :', JSON.stringify(this.approvalDetails));
+                                this.approvaldata = true;
+
+
+                                console.log('agreement home page jj approvals data is :', this.approvalDetails);
+                            }
+                            this.error = undefined;
+                        })
+                        .catch((error) => {
+                            this.error = error;
+                            this.approvalDetails = [];
+                            this.dispatchEvent(
+                                new ShowToastEvent({
+                                    title: 'Error loading approval details',
+                                    message: error.body.message,
+                                    variant: 'error',
+                                })
+                            );
+                        });
+                })
+                .catch((error) => {
+                    this.error = error;
+                    this.approvalDetails = [];
+                    this.dispatchEvent(
+                        new ShowToastEvent({
+                            title: 'Error loading approval details',
+                            message: error.body.message,
+                            variant: 'error',
+                        })
+                    );
+                });
             this.refreshApprovals = true;
             setTimeout(() => {
                 this.refreshApprovals = false;
@@ -241,6 +292,31 @@ export default class AgreementHomePage extends LightningElement {
     }
 
     connectedCallback() {
+        getAgreementRequestSettingMetadata({ devName: 'Agreement_Settings' })
+            .then(result => {
+                let conditionMet = result.some(obj =>
+                    obj.DeveloperName === 'Agreement_Settings' && obj.Is_Agreement_Accelerator__c === true);
+                let approvaldetail = result.some(obj =>
+                    obj.DeveloperName === 'Agreement_Settings' && obj.Is_Approval_Detail__c === true);
+                let signature = result.some(obj =>
+                    obj.DeveloperName === 'Agreement_Settings' && obj.Is_Signature__c === true);
+                console.log('condition :: ' + conditionMet);
+                console.log('approvaldetail :: ' + approvaldetail);
+                console.log('signature :: ' + signature);
+                if (conditionMet) {
+                    this.isAgreement = true;
+                    this.notAgreement = false;
+                }else {
+                    this.isAgreement = false;
+                    this.notAgreement = true;
+                }
+                this.approvalDetailPath = approvaldetail ? true : false;
+                this.signaturePath = signature ? true : false;
+
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
         console.log('JJ Connected callback parent Filtered rawFieldSetData (Before Lookup):', JSON.stringify(this.rawFieldSetData));
         console.log('JJ Filtered objectapiname :', JSON.stringify(this.objectapiname));
         getFieldDataFromMetadata({ recordId: this.recordId, objectName: this.objectName })
@@ -305,7 +381,6 @@ export default class AgreementHomePage extends LightningElement {
                     dataArray.push(obj);
                 }
                 productDataWithIndex = dataArray;
-                this.checkingvalue = false;
                 if (this.discountdataprod.length > 0) {
                     this.productdata = productDataWithIndex.concat(this.discountdataprod);
                     this.initialData = this.initialData ? this.initialData.concat(productDataWithIndex) : productDataWithIndex;
@@ -322,7 +397,15 @@ export default class AgreementHomePage extends LightningElement {
                 this.error = error;
                 console.log(JSON.stringify(error) + 'error');
             })
+        console.log('getAgreementRequestSettingMetadata');
+
+
+
+
+
     }
+
+
 
     handleHeaderLoaded(event) {
         this.rawFieldSetData = event.detail.fieldAttributes;
@@ -356,18 +439,11 @@ export default class AgreementHomePage extends LightningElement {
                 this.preFastSelectedRows = this.preSelectedFast.filter(item => !deletedIds.includes(item));
                 this.preSelectedFast = this.preFastSelectedRows;
             }
+             this.checkingvalue = true ;
         }
-        const deleteids = event.detail.map((item) => item.recordIndex);
-        console.log(JSON.stringify(event.detail) + ' event.detail');
-        console.log(this.newlineitems + ' this.newlineitems');
-        console.log(deleteids + ' delete');
-        if (this.newlineitems.length > 1) {
-            this.newlineitems = this.newlineitems.filter((record) => { return !deleteids.some((rec) => rec == record) });
-        }
-        console.log(this.newlineitems + ' this.newlineitems');
-        this.checkingvalue = this.newlineitems.length >= 1 || !this.discountdataprod == this.initialData ? true : false;
-        console.log(this.checkingvalue + '  this.checkingvalue');
-        console.log(this.discountdataprod == this.initialData + ' boolean');
+        
+       
+   
 
     }
 
@@ -408,11 +484,7 @@ export default class AgreementHomePage extends LightningElement {
 
         }
         productDataWithIndex = dataArray;
-        let lineitemsnew = dataArray.map((item) => item.recordIndex);
-        this.newlineitems = this.newlineitems.concat(lineitemsnew);
-        console.log(this.newlineitems + 'this.newlineitemscon');
-        console.log(JSON.stringify(this.newlineitems) + 'this.newlineitems');
-        this.checkingvalue = this.newlineitems.length >= 1 ? true : false;
+        this.checkingvalue = true;
         console.log(this.checkingvalue + 'this.checkingvalue');
         if (this.discountdataprod.length > 0) {
             this.productdata = this.discountdataprod.concat(productDataWithIndex);
@@ -431,23 +503,22 @@ export default class AgreementHomePage extends LightningElement {
     errormsg(event) {
         this.oldstep = this.currentStep;
 
-        console.log('hevent.detail.checkingvalue  ' + event.detail.checkingvalue);
-        console.log('hevent.detail.newlineitems  ' + event.detail.newlineitems);
+
+        const errormsg = event.detail.errormsg ? event.detail.errormsg : '';
+        console.log('home this.errormsg  ' + event.detail.errormsg);
         this.displayerror = event.detail.displayerror ? event.detail.displayerror : '';
+        console.log(' this.displayerror  ' + event.detail.displayerror);
         this.checkingvalue = event.detail.checkingvalue ? event.detail.checkingvalue : '';
         console.log(' this.checkingvalue' + this.checkingvalue);
-        this.newlineitems = event.detail.newlineitems ? event.detail.newlineitems : '';
-        if (this.checkingvalue == false) {
-            this.checkingvalue = this.newlineitems.length >= 1 ? true : false;
-            console.log(' this.checkingvalue' + this.checkingvalue);
-        }
+       
         if (this.displayerror == true) {
             const event = new ShowToastEvent({
                 title: "Error",
-                message: "Discount  should less than 10% for this product",
+                message: errormsg,
                 variant: "error",
                 mode: "dismissable"
             });
+            console.log('event' + JSON.stringify(event));
             this.dispatchEvent(event);
         }
     }

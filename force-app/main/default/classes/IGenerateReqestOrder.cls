@@ -84,6 +84,15 @@ global Interface IGenerateReqestOrder {
     
     List<Object> orderPricevalidate(string agreementLineItemData);
     
-    boolean orderlineitemsvalidate(string agreementLineItemData);   
+    String orderlineitemsvalidate(string agreementLineItemData); 
+    
+    List<Object> validateData(Map<string,string> fieldValues);
 
+    Boolean checkIsCongaUsed(String devName);
+
+    Object createOrderLineItemsForNonConga(String orderId, List<Object> productData);
+
+    Object generateApprovalRequestsForNonConga(String orderId);
+    
+      List<Object> customPriceCalculation(string orderdata);
 }

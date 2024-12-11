@@ -69,7 +69,31 @@ public with sharing class PromotionController {
 
         return products;
     }
-               
-           
-           
+
+    public class FieldInfo {
+        @AuraEnabled public String label { get; set; }
+        @AuraEnabled public String fieldName { get; set; }
+        @AuraEnabled public String fieldtype { get; set; }
+        
+        public FieldInfo(String label, String fieldName, String fieldtype) {
+            this.label = label;
+            this.fieldName = fieldName;
+            this.fieldtype = fieldtype;
+        }
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static List<FieldInfo> getAgreementLineItemFields() {
+        Map<String, Schema.SObjectField> fieldMap = Schema.SObjectType.Agreement_Line_Item__c.fields.getMap();
+        List<FieldInfo> fieldDetails = new List<FieldInfo>();
+        
+        for (String fieldName : fieldMap.keySet()) {
+            Schema.SObjectField field = fieldMap.get(fieldName);
+            String label = field.getDescribe().getLabel();
+            String fieldtype = field.getDescribe().getType().name(); 
+            fieldDetails.add(new FieldInfo(label, fieldName, fieldtype));
+        }
+        
+        return fieldDetails;
+    }  
 }

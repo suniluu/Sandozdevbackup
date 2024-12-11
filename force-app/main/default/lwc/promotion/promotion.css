@@ -1,3 +1,12 @@
-.dummy{
-	color : black;
+.table-header {
+    background-color: #F3F3F3;
+    font-weight: bold;    
+	font-size: medium;    
+    color: #333333;
+	border-top: 1px solid rgb(141, 130, 130);
+	border-bottom:  1px solid rgb(141, 130, 130);     
+}
+.adjustmentClass{
+	padding-top: 5%;
+
 }

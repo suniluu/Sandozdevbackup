@@ -1,5 +1,19 @@
 ({
 	getRecDetails : function(component, event, helper) {
+      /*  var action2 = component.get('c.getOrderPricingMeta');
+        action2.setCallback(this, function(response) {
+            if (response.getState() === "SUCCESS") {
+                var apiNames = response.getReturnValue();
+                console.log('Pricing API Name:', apiNames.PricingAPI);
+                console.log('CER API Name:', apiNames.CERAPI);
+                component.set('v.priceList', apiNames.PricingAPI);
+                component.set('v.cerApi', apiNames.CERAPI);
+            } else if (response.getState() === "ERROR") {
+                console.error('Error retrieving pricing metadata:', response.getError());
+            }
+        });
+        $A.enqueueAction(action2);
+        
         var action = component.get('c.getOrderDetails');
         action.setParams({ recId : component.get("v.recordId") });
         action.setCallback(this, function(response) {
@@ -18,7 +32,9 @@
                         c__refName: data.name,
                         c__refobjName: data.objName,
                         c__refobjIcon: data.iconName,
-                        c__refOrderId: component.get("v.recordId")
+                        c__refOrderId: component.get("v.recordId"),
+                        c__refpriceList: component.get('v.priceList'),
+                    	c__refcerApi: component.get('v.cerApi')
                     }
                 };
                 
@@ -35,6 +51,6 @@
                 navService.generateUrl(pageRef).then(handleUrl, handleError);
             } 
         });
-        $A.enqueueAction(action);
+        $A.enqueueAction(action); */
     }
 })
