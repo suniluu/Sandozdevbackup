@@ -3,12 +3,20 @@
         <div class="slds-p-around_medium">
 
             <lightning-input label="Name" onchange={handleFieldChange}></lightning-input>
-            <lightning-input type="checkbox" label="Active" checked={Active__c} onchange={handleFieldChange}>
-            </lightning-input>
-            <lightning-input type="checkbox" label="Include with other promotions" checked={IncludeOtherPromo}
-                onchange={handleFieldChange}></lightning-input>
-            <lightning-input type="date" label="Effective Date" onchange={handleFieldChange}></lightning-input>
-            <lightning-input type="date" label="Expiration Date" onchange={handleFieldChange}></lightning-input>
+    
+            <lightning-input type="checkbox" label="Active" checked={Active__c} onchange={handleFieldChange}></lightning-input>
+        
+            <lightning-input type="checkbox" label="Include with other promotions" checked={IncludeOtherPromo} onchange={handleFieldChange}></lightning-input>
+        
+            <div class="slds-grid slds-gutters">
+                <div class="slds-col slds-size_1-of-2">
+                    <lightning-input type="date" label="Effective Date" onchange={handleFieldChange}></lightning-input>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <lightning-input type="date" label="Expiration Date" onchange={handleFieldChange}></lightning-input>
+                </div>
+            </div>
+            
             <lightning-dual-listbox label="Select Products" source-label="Available Products"
                 selected-label="Selected Products" options={products} value={selectedProductsCodes}
                 onchange={handleFieldChange}>
@@ -32,6 +40,7 @@
                                         <lightning-combobox value={row.field} onchange={handleRowFieldChange}
                                             data-id={row.id} data-field="field" options={agreementFieldOptions}>
                                         </lightning-combobox>
+            
                                     </div>
                                     <div class="slds-col slds-size_3-of-12">
                                         <lightning-combobox value={row.operator} options={operatorOptions}
@@ -42,13 +51,16 @@
                                         <template if:false={row.isreferenced}> <lightning-input value={row.value} onchange={handleValueChange} data-id={row.id}
                                             data-field="value">
                                         </lightning-input> </template>
-                                        <template if:true={row.isreferenced}><lightning-record-picker
+                                        <template if:true={row.isreferenced}>
+                                            <lightning-record-picker
                                                 label="Search "
+                                                data-id={row.id}
                                                 onchange={handleChange} 
                                                 matching-info={matchingInfo} 
                                                 display-info={displayInfo} filter={filter}
                                                 object-api-name={row.objectApiName}
-                                            ></lightning-record-picker></template>
+                                            ></lightning-record-picker>
+                                        </template>
 
                                     </div>
                                     <div class="slds-col slds-size_3-of-12">
@@ -67,15 +79,22 @@
                 </div>
             </lightning-card>
 
-            <template if:true={picklistValues}>
-                <lightning-combobox label="Adjustment Type" value={picklistValue} options={picklistValues}
-                    onchange={handleFieldChange}></lightning-combobox>
-            </template>
-            <lightning-input label="Adjustment Amount" onchange={handleFieldChange}></lightning-input>
-
+            <div class="slds-grid slds-gutters">
+                <div class="slds-col slds-size_1-of-2">
+                    <template if:true={picklistValues}>
+                        <lightning-combobox label="Adjustment Type" value={picklistValue} options={picklistValues}
+                            onchange={handleFieldChange}></lightning-combobox>
+                    </template>
+                </div>
+                <div class="slds-col slds-size_1-of-2">
+                    <lightning-input label="Adjustment Amount" onchange={handleFieldChange}></lightning-input>
+                </div>
+            </div>
+            
             <div class="slds-m-top_medium">
                 <lightning-button label="Save" onclick={handleSave}></lightning-button>
             </div>
+            
         </div>
     </lightning-card>
 </template>

@@ -17,6 +17,7 @@ export default class CreatePromo extends NavigationMixin(LightningElement) {
     @track AdjustmentAmount = 0;
     @track selectedProductCodes = [];
     @track products = [];
+
     agreementFieldOptions = [];
 
     displayInfo = {
@@ -206,9 +207,14 @@ export default class CreatePromo extends NavigationMixin(LightningElement) {
 
     addRow(event) {
         const rowId = event.target.dataset.id;
-        if (this.rows.some(row => row.id === parseInt(rowId) && (row.field || row.operator || row.value))) {
-            const newRow = { id: this.rows.length + 1, field: '', operator: '', value: '' ,isreferenced: false,objectApiName:''};
-            this.rows = [...this.rows, newRow];
+        
+        let lastRow = this.rows[this.rows.length - 1];
+        if (lastRow && (lastRow.field || lastRow.operator || lastRow.value)) {
+            // If the row with rowId has field, operator, or value set
+            if (this.rows.some(row => row.id === parseInt(rowId) && (row.field || row.operator || row.value))) {
+                const newRow = { id: this.rows.length + 1, field: '', operator: '', value: '', isreferenced: false, objectApiName: '' };
+                this.rows = [...this.rows, newRow];
+            }
         }
     }
 

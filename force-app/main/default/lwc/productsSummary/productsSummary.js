@@ -525,7 +525,7 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
           var draftObj = {};
           for (var j = 0; j < this.inlineEditCol.length; j++) {
              console.log(this.inlineEditCol[j].inputValue+' this.inlineEditCol[j].inputValue 515');
-            if (this.inlineEditCol[j].inputValue) {
+            if (this.inlineEditCol[j].inputValue && this.inlineEditCol[j].valuechanged==false) {
                console.log(this.inlineEditCol[j].inputValue+' this.inlineEditCol[j].inputValue 517');
               valuenull = false;
               draftObj.recordIndex = obj.recordIndex;
@@ -591,25 +591,32 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
                
               }
             }
+            this.inlineEditCol[j].valuechanged=true;
           }
-          editedArray.push(draftObj);
-          this.discountmap[obj.recordIndex] = obj;
+          
             const isOnlyRecordIndex2 = Object.keys(draftObj).length === 1;
              console.log(JSON.stringify(draftObj) +' draftObj');
             console.log(isOnlyRecordIndex2 +' isOnlyRecordIndex2');
+            if (!isOnlyRecordIndex2) {
+            editedArray.push(draftObj);
+          this.discountmap[obj.recordIndex] = obj;
+              this.mapProductData[obj.recordIndex] = obj;
+        
+            }
+           
+
         }
-
-        this.mapProductData[obj.recordIndex] = obj;
-        dataArray.push(obj);
-
+         dataArray.push(obj);
+      
       }
-
-      this.productData = dataArray;
-      this.saveDraftValues =
+if(editedArray.length > 0){
+      this.productData = dataArray.length > 0 ? dataArray : this.productData;
+      this.saveDraftValues = editedArray.length > 0 ?
         this.saveDraftValues.length > 0
           ? this.saveDraftValues.concat(editedArray)
-          : editedArray;
+          : editedArray : [];
           console.log(JSON.stringify(this.saveDraftValues) +' this.saveDraftValues'); 
+}
       this.closeinlineEditPopup();
       this.selectedids = [];
       this.selectedrows=[];
@@ -630,7 +637,14 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
     this.productData = this.initialData;
     this.initialRecords = this.initialData;
     this.discountmap = new Map();
+    console.log(JSON.stringify(this.discountmap)+' discountmap');
+    this.discountmap.clear();
+     console.log(JSON.stringify(this.discountmap)+' discountmapclear');
+
+     this.mapProductData = new Map();
+    console.log(JSON.stringify(this.mapProductData)+' mapProductData');
     this.mapProductData.clear();
+     console.log(JSON.stringify(this.mapProductData)+' mapProductDataclear');
     let datawithindex = { productdata: this.initialData, index: this.index };
     const discountdata = new CustomEvent("productdiscount", {
       detail: datawithindex,
@@ -772,12 +786,14 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
             this.inlineEditCol[j].type == "customName"
               ? event.detail.recordId
               : event.detail.value;
+              this.inlineEditCol[j].valuechanged=false;
               console.log(this.inlineEditCol[j].inputValue+' this.inlineEditCol[j].inputValue');
         } else if (
           event.target.name == "DiscountType" &&
           this.inlineEditCol[j].reqDropdown == true
         ) {
           this.inlineEditCol[j].selectedDropdownValue = this.inlineEditCol[j].reqDropdown == true?event.detail.value:'';
+          this.inlineEditCol[j].valuechanged=false;
         }
       }
        console.log(JSON.stringify(this.inlineEditCol)+' this.inlineEditCol');
@@ -788,11 +804,13 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
             this.massColumnUpdates[j].type == "customName"
               ? event.detail.recordId
               : event.detail.value;
+              this.massColumnUpdates[j].valuechanged=false;
         } else if (
           event.target.name == "DiscountType" &&
           this.massColumnUpdates[j].reqDropdown == true
         ) {
           this.massColumnUpdates[j].selectedDropdownValue =  this.massColumnUpdates[j].reqDropdown == true?event.detail.value:'';
+          this.massColumnUpdates[j].valuechanged=false;
         }
       }
       console.log(JSON.stringify(this.massColumnUpdates)+' this.massColumnUpdates');
