@@ -222,6 +222,7 @@ export default class Body extends LightningElement {
                         obj.location = this.selectedLocation?this.selectedLocation:'';
                         obj.isDisabled = false;
                         obj.hasValue = this.selectedLocation ? true : false;
+                        obj.recordIndex=this.index++;
                         dataArray.push(obj);
                         selectedids.push(result[i].Id);
                     }
@@ -231,7 +232,7 @@ export default class Body extends LightningElement {
                 this.discountdataprod = dataArray;
                 this.initialData = dataArray;
                 this.initialRecords = dataArray;
-                this.index = dataArray.length;
+                //this.index = dataArray.length;
                 this.totalNetPrice = 0;
                 for (var i = 0; i < this.productData.length; i++) {
                     if (this.productData[i].netPrice) {

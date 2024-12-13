@@ -85,15 +85,19 @@ public with sharing class PromotionController {
     @AuraEnabled(cacheable=true)
     public static List<FieldInfo> getAgreementLineItemFields() {
         Map<String, Schema.SObjectField> fieldMap = Schema.SObjectType.Agreement_Line_Item__c.fields.getMap();
+        Map<String, Schema.SObjectField> customFieldMap = new Map<String, Schema.SObjectField>();
         List<FieldInfo> fieldDetails = new List<FieldInfo>();
         
         for (String fieldName : fieldMap.keySet()) {
-            Schema.SObjectField field = fieldMap.get(fieldName);
-            String label = field.getDescribe().getLabel();
-            String fieldtype = field.getDescribe().getType().name(); 
-            fieldDetails.add(new FieldInfo(label, fieldName, fieldtype));
+            if (fieldName.endsWith('__c') || fieldName == 'Name' || fieldName == 'Id' ) {
+                customFieldMap.put(fieldName, fieldMap.get(fieldName));
+                
+                Schema.SObjectField field = customFieldMap.get(fieldName);
+                String label = field.getDescribe().getLabel();
+                String fieldtype = field.getDescribe().getType().name(); 
+                fieldDetails.add(new FieldInfo(label, fieldName, fieldtype));
+            }
         }
-        
         return fieldDetails;
     }  
 }

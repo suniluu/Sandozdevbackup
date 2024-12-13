@@ -3,7 +3,7 @@ import { NavigationMixin } from 'lightning/navigation';
 import fetchHeaderData from '@salesforce/apex/ProductController.fetchHeaderData';
 import getRecord from '@salesforce/apex/ProductController.getRecord';
 import getRecordName from '@salesforce/apex/ProductController.getRecordName';
-import getCurrencySymbol from '@salesforce/apex/UtilityController.getCurrencySymbol';
+import getCurrencySymbol from '@salesforce/apex/ProductController.getCurrencySymbol';
 export default class QuickOrder extends NavigationMixin(LightningElement) {
     @api type;
     @api recId;

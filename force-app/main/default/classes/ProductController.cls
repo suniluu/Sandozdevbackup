@@ -565,7 +565,59 @@ public with sharing class ProductController {
         }
         return lstrecord;        
     } 
-
+	
+    @AuraEnabled
+    public static Id createPromoRecord(Map<String, Object> params){
+        Id lstrecord;
+        IGenerateReqestOrder customPlugin = OrderRequestAddToCart.getCerPluginInstance('OrderEntry');
+        if(customPlugin != null){
+            try{
+                lstrecord = customPlugin.createPromoRecord(params);
+            } catch(Exception e){
+                system.debug('Error in adding products to cart');
+            }
+        }
+        return lstrecord;        
+    } 
+    @AuraEnabled(cacheable=true)
+    public static List<object> getAgreementLineItemFields(){
+        List<object> lstrecord;
+        IGenerateReqestOrder customPlugin = OrderRequestAddToCart.getCerPluginInstance('OrderEntry');
+        if(customPlugin != null){
+            try{
+                lstrecord = customPlugin.getAgreementLineItemFields();
+            } catch(Exception e){
+                system.debug('Error in adding products to cart');
+            }
+        }
+        return lstrecord;        
+    } 
+    @AuraEnabled(cacheable=true)
+    public static List<object> getProducts(){
+        List<object> lstrecord;
+        IGenerateReqestOrder customPlugin = OrderRequestAddToCart.getCerPluginInstance('OrderEntry');
+        if(customPlugin != null){
+            try{
+                lstrecord = customPlugin.getProducts();
+            } catch(Exception e){
+                system.debug('Error in adding products to cart');
+            }
+        }
+        return lstrecord;        
+    } 
+    @AuraEnabled(cacheable=true)
+    public static List<String> getPicklistValues(String fieldApiName){
+        List<String> lstrecord;
+        IGenerateReqestOrder customPlugin = OrderRequestAddToCart.getCerPluginInstance('OrderEntry');
+        if(customPlugin != null){
+            try{
+                lstrecord = customPlugin.getPicklistValues(fieldApiName);
+            } catch(Exception e){
+                system.debug('Error in adding products to cart');
+            }
+        }
+        return lstrecord;        
+    } 
     @AuraEnabled
     public static Object generateApprovalRequestsForNonConga(String orderId){
         Object lstrecord;
@@ -580,5 +632,56 @@ public with sharing class ProductController {
         return lstrecord;       
     }
     
-     
+    @AuraEnabled
+    public static String getchartData(String compName){
+        String lstrecord;
+        IGenerateReqestOrder customPlugin = OrderRequestAddToCart.getCerPluginInstance('OrderEntry');
+        if(customPlugin != null){
+            try{
+               lstrecord = customPlugin.getchartData(compName);
+            } catch(Exception e){
+                system.debug('Error in generating approvals');
+            }
+        }
+        return lstrecord;       
+    }
+    
+     @AuraEnabled
+    public static String getCurrencySymbol(){
+        String lstrecord;
+        IGenerateReqestOrder customPlugin = OrderRequestAddToCart.getCerPluginInstance('OrderEntry');
+        if(customPlugin != null){
+            try{
+               lstrecord = customPlugin.getCurrencySymbol();
+            } catch(Exception e){
+                system.debug('Error in generating approvals');
+            }
+        }
+        return lstrecord;       
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, Object>> getObjectFields(String objectApiName) {
+        if (String.isBlank(objectApiName) || !Schema.getGlobalDescribe().containsKey(objectApiName)) {
+            throw new AuraHandledException('Invalid Object API Name');
+        }
+
+        Schema.SObjectType objectType = Schema.getGlobalDescribe().get(objectApiName);
+        Map<String, Schema.SObjectField> fieldsMap = objectType.getDescribe().fields.getMap();
+
+        List<Map<String, Object>> fieldList = new List<Map<String, Object>>();
+
+        for (String fieldName : fieldsMap.keySet()) {
+            Schema.DescribeFieldResult fieldDesc = fieldsMap.get(fieldName).getDescribe();
+            Map<String, Object> fieldDetails = new Map<String, Object>{
+                'label' => fieldDesc.getLabel(),
+                'apiName' => fieldName,
+                'dataType' => fieldDesc.getType(),
+                'isReference' => fieldDesc.getReferenceTo().size() > 0,
+                'referenceTo' => (fieldDesc.getReferenceTo().size() > 0 ? fieldDesc.getReferenceTo()[0] : null)
+            };
+            fieldList.add(fieldDetails);
+        }
+        return fieldList;
+    }
 }

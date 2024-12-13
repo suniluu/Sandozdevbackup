@@ -1,6 +1,6 @@
 import { LightningElement,track,wire,api } from 'lwc';
 import Scalefluidly from "@salesforce/resourceUrl/Scalefluidly";
-//import getCurrencySymbol from '@salesforce/apex/UtilityController.getCurrencySymbol';
+//import getCurrencySymbol from '@salesforce/apex/ProductController.getCurrencySymbol';
 export default class Header extends LightningElement {
     scalefluidlyLogo = Scalefluidly;
     @api cartCount;

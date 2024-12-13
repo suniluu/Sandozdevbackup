@@ -94,5 +94,17 @@ global Interface IGenerateReqestOrder {
 
     Object generateApprovalRequestsForNonConga(String orderId);
     
-      List<Object> customPriceCalculation(string orderdata);
+    List<Object> customPriceCalculation(string orderdata);
+    
+    Id createPromoRecord(Map<String, Object> params);
+    
+    List<object> getAgreementLineItemFields();
+    
+    List<object> getProducts();
+    
+    List<String> getPicklistValues(String fieldApiName);
+
+    String getchartData(String compName);
+
+	String getCurrencySymbol();
 }

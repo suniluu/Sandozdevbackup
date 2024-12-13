@@ -187,15 +187,14 @@ return orderObj;*/
     
     public Object saveConfiguration(String orderId, List<Object> orderData, List<Object> productData){        
         try {
-            JSON_Data__c jsonDataObj = new JSON_Data__c();
+            SCF_Order_JSON_Data__c jsonDataObj = new SCF_Order_JSON_Data__c();
             String orderDataJson = JSON.serialize(orderData);
             String productDataJson = JSON.serialize(productData);
-            jsonDataObj.Data_Object_Id__c = orderId;
-            jsonDataObj.Order_Header_Data__c = orderDataJson;
-            jsonDataObj.Order_Line_Items_Data__c = productDataJson;
+            jsonDataObj.Order_ID__c = orderId;
+            jsonDataObj.Order_Line_Item_Data__c = productDataJson;
             insert jsonDataObj;
             //ConfigurationCreationResponse configCreateResponse = new ConfigurationCreationResponse(true, 'Configuration data saved successfully.', jsonDataObj.Id);
-            ConfigurationCreationResponse configCreateResponse = new ConfigurationCreationResponse(true, 'Configuration data saved successfully.', jsonDataObj.Data_Object_Id__c,'Order');
+            ConfigurationCreationResponse configCreateResponse = new ConfigurationCreationResponse(true, 'Configuration data saved successfully.', jsonDataObj.Order_ID__c,'Order');
             system.debug('jj ConfigurationCreationResponse is :'+configCreateResponse);
             String jsonResponse = JSON.serialize(configCreateResponse);
             return jsonResponse;
@@ -373,6 +372,7 @@ return orderObj;*/
     }
     
     public List<Object> getOrderLineItems(Id orderid){
+        System.debug(orderid+ 'orderid' );
         List<ProductWrapper> lstProductData = new List<ProductWrapper>();
         JSON_Data__c jsonData = new JSON_Data__c();
         for(JSON_Data__c jd : [SELECT Id,Data_Object_Id__c,Order_Header_Data__c,Order_Line_Items_Data__c FROM JSON_Data__c WHERE Data_Object_Id__c = :orderid]){
@@ -384,18 +384,36 @@ return orderObj;*/
                 pw.discountApplied = false;
             }
         }else{
-            for(Order_Line_Item__c ali:[Select Id,Product_Name__c,Product__c,Product__r.Family,Product_Code__c,List_Price_c__c,Order__c from Order_Line_Item__c where Order__c =:orderid])
-            {
-                ProductWrapper alw =new ProductWrapper();
-                alw.productName=ali.Product_Name__c;
-                alw.productId=ali.Product__c;
-                alw.productFamily=ali.Product__r.Family;
-                alw.productCode=ali.Product_Code__c;
-                alw.listPrice=ali.List_Price_c__c;
-                alw.orderId=ali.Order__c;
-                alw.Id=ali.Id;
-                lstProductData.add(alw);     
-            }
+          for (Order_Line_Item__c ali : [SELECT Id, Product_Name__c, Quantity__c, Product__c, Product__r.Family, Product_Code__c, List_Price_c__c, Order__c, Adjustment_Amount__c, Adjustment_Percent__c, Adjustment_Type__c FROM Order_Line_Item__c WHERE Order__c = :orderid]) {
+    ProductWrapper alw = new ProductWrapper();
+    
+    alw.productName = (ali.Product_Name__c != null) ? ali.Product_Name__c : '';
+   // alw.productId = (ali.Product__c != null) ? ali.Product__c : '';
+    alw.productFamily = (ali.Product__r.Family != null) ? ali.Product__r.Family : '';
+    alw.productCode = (ali.Product_Code__c != null) ? ali.Product_Code__c : '';
+    alw.orderId = (ali.Order__c != null) ? ali.Order__c : '';
+    alw.Id = (ali.Id != null) ? ali.Id : '';
+    alw.selectedDropdownValue = (ali.Adjustment_Type__c != null) ? ali.Adjustment_Type__c : '';
+    
+    if (ali.Adjustment_Type__c != null) {
+        alw.adddiscount = (ali.Adjustment_Type__c == 'Percent') ? ali.Adjustment_Percent__c : ali.Adjustment_Amount__c;
+    } else {
+        alw.adddiscount = 0;
+    }
+    
+    alw.customdiscount = true;
+    alw.valuechanged = true;
+    
+    alw.quantity = (ali.Quantity__c != null) ? ali.Quantity__c : 0;
+    alw.price = (ali.List_Price_c__c != null) ? ali.List_Price_c__c : 0;
+    alw.listPrice = alw.quantity * alw.price;
+    alw.discount = alw.adddiscount;
+    alw.contractdiscount = 0;
+    alw.netPrice = alw.listPrice - ((alw.listPrice * alw.adddiscount) / 100);
+    alw.baseprice = alw.netPrice;
+    
+    lstProductData.add(alw);
+}
         }
         System.debug('getOrderLineItems :: 355  :: '+ lstProductData);
         return lstProductData;
@@ -1620,7 +1638,7 @@ pw.opportunityName = mapOpportunity.get(''+obj.get('Opportunity__c')).Name;
     @AuraEnabled
     public static List<ResultWrapper> fetchLookupRecords(String objectApiName, String fieldApiName,
        	String otherFieldApiName, String searchString, String selectedRecordId, String pricelistId,String recId) {
-        String pluginName = [SELECT Plugin__c,DeveloperName FROM Agreement_Request_Setting__mdt where DeveloperName ='AgreementRequest'].Plugin__c;
+        //String pluginName = [SELECT Plugin__c,DeveloperName FROM Agreement_Request_Setting__mdt where DeveloperName ='AgreementRequest'].Plugin__c;
         system.debug('pricelistId :: '+pricelistId);
         system.debug('recId :: '+recId);
 		List<String> filterproducts = getFilterProducts(recId);
@@ -1790,6 +1808,115 @@ pw.opportunityName = mapOpportunity.get(''+obj.get('Opportunity__c')).Name;
             return jsonResponse;
         }
     }
+    
+    
+    public static Id createPromoRecord(Map<String, Object> params) {
+        try{
+        system.debug('params'+params);
+        String Name = (String) params.get('Name');
+        Boolean Active = (Boolean)params.get('Active__c');
+        Boolean IncludeOtherPromo = (Boolean)params.get('Include_with_other_promotions__c');
+        Date effectiveDate = params.get('Effective_Date__c') != null ? Date.valueOf((String)params.get('Effective_Date__c')) : null;
+        Date expirationDate = params.get('Expiration_Date__c') != null ? Date.valueOf((String)params.get('Expiration_Date__c')) : null;
+        String AdjustmentType = (String)params.get('Adjustment_Type__c');
+        Decimal AdjustmentAmount = (Decimal)params.get('Adjustment_Amount__c');
+        String selectedProductsStr = (string)params.get('Products__c');
+        List<String> selectedProductCodes = selectedProductsStr != null ? selectedProductsStr.split(';') : new List<String>();
+
+            Promotions__c Promo = new Promotions__c(
+                Name = Name,
+                Active__c = Active,
+                Include_with_other_promotions__c = IncludeOtherPromo,
+                Effective_Date__c = EffectiveDate,
+                Expiration_Date__c = ExpirationDate,
+                Adjustment_Type__c = AdjustmentType,
+                Adjustment_Amount__c = AdjustmentAmount          
+            );
+
+            if (!selectedProductCodes.isEmpty()) {               
+                Promo.Products__c = String.join(selectedProductCodes, ';'); 
+            }
+
+            insert Promo;
+            return promo.Id;
+    }
+    Catch(exception e){
+        throw new AuraHandledException('Error creating Promotion: ' + e.getMessage());
+    }
+
+    }
+
+   
+    public static List<String> getPicklistValues(String fieldApiName) {
+        List<String> picklistValues = new List<String>();
+
+        try {
+            Schema.DescribeFieldResult fieldResult = Promotions__c.Adjustment_Type__c.getDescribe();
+            
+            if (fieldResult.getType() == Schema.DisplayType.Picklist) {
+                List<Schema.PicklistEntry> ple = fieldResult.getPicklistValues();
+                for (Schema.PicklistEntry entry : ple) {
+                    picklistValues.add(entry.getLabel());
+                }
+            }
+        } catch (Exception e) {
+            System.debug('Error fetching picklist values: ' + e.getMessage());
+        }
+        
+        return picklistValues;
+    }
+
+    
+    public static List<Object> getProducts() {
+        List<Product2> products = new List<Product2>();
+        try {
+            products = [SELECT Id, Name, ProductCode FROM Product2];
+        } catch (Exception e) {
+            System.debug('Error fetching Products: ' + e.getMessage());
+        }
+
+        return products;
+    }
+
+    public class FieldInfo {
+        @AuraEnabled public String label { get; set; }
+        @AuraEnabled public String fieldName { get; set; }
+        @AuraEnabled public String fieldtype { get; set; }
+        
+        public FieldInfo(String label, String fieldName, String fieldtype) {
+            this.label = label;
+            this.fieldName = fieldName;
+            this.fieldtype = fieldtype;
+        }
+    }
+
+    public static List<FieldInfo> getAgreementLineItemFields() {
+        Map<String, Schema.SObjectField> fieldMap = Schema.SObjectType.Agreement_Line_Item__c.fields.getMap();
+        Map<String, Schema.SObjectField> customFieldMap = new Map<String, Schema.SObjectField>();
+        List<FieldInfo> fieldDetails = new List<FieldInfo>();
+        
+        for (String fieldName : fieldMap.keySet()) {
+            if (fieldName.endsWith('__c') || fieldName == 'Name' || fieldName == 'Id' ) {
+                customFieldMap.put(fieldName, fieldMap.get(fieldName));
+                
+                Schema.SObjectField field = customFieldMap.get(fieldName);
+                String label = field.getDescribe().getLabel();
+                String fieldtype = field.getDescribe().getType().name(); 
+                fieldDetails.add(new FieldInfo(label, fieldName, fieldtype));
+            }
+        }
+        return fieldDetails;
+    } 
+    
+    public String getchartData(String compName){
+        String qoeMdt =[SELECT Id,Label,Graph_Values__c,DeveloperName  FROM QOEGraph__mdt  Where DeveloperName  =: compName].Graph_Values__c;
+		return qoeMdt;
+    }
+    
+    public static String getCurrencySymbol() {
+        ConnectApi.OrganizationSettings  orgSettings = ConnectApi.Organization.getSettings();
+        return orgSettings.UserSettings.currencySymbol != null ? orgSettings.UserSettings.currencySymbol : UserInfo.getDefaultCurrency();
+    }
 
     public class ResultWrapper{
         @AuraEnabled public String mainField{get;set;}
@@ -1924,10 +2051,15 @@ pw.opportunityName = mapOpportunity.get(''+obj.get('Opportunity__c')).Name;
         public Boolean customdiscount { get; set; }
 
         @AuraEnabled
+        public Boolean valuechanged { get; set; }
+
+        @AuraEnabled
         public Boolean hasValue { get; set; }
 
         @AuraEnabled
         public Decimal adddiscount { get; set; }
+
+        
    
         public ProductWrapper(){
         this.discountApplied = false;
@@ -2174,6 +2306,7 @@ pw.opportunityName = mapOpportunity.get(''+obj.get('Opportunity__c')).Name;
             this.objectName = objectName;           
         }
     }
+    
     public class ValidationResult {
         @AuraEnabled
         public Boolean isValid;
@@ -2188,6 +2321,6 @@ pw.opportunityName = mapOpportunity.get(''+obj.get('Opportunity__c')).Name;
             this.errorMessage = errorMessage;
         }
     }
-    
+     
       
 }

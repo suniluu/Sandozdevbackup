@@ -6,6 +6,7 @@ import { NavigationMixin } from "lightning/navigation";
 import getButtonsInfo from "@salesforce/apex/ProductController.getButtonsInfo";
 import LightningConfirm from "lightning/confirm";
 import getButtonsAction from "@salesforce/apex/ProductController.getButtonsAction";
+import getchartData from "@salesforce/apex/ProductController.getchartData";
 import fetchRangePricing from "@salesforce/apex/ProductController.fetchRangePricing";
 import contractpricing from "@salesforce/apex/ProductController.contractpricing";
 /**import getPromotionButtonsAction from "@salesforce/apex/ProductController.getPromotionButtonsAction";**/
@@ -64,7 +65,7 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
   @track searchKey = '';
   @track displayerror='';
   @api newlineitems=[];
-
+ @track metadatarecord=[];
   //added by K
   @track isModalOpen = false;
   @track Promodata = [];
@@ -99,19 +100,29 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
       });
   }
 
-  connectedCallback() {
-    this.loadButtons();
+  chartvalues(){
+     getchartData({ compName: "Graph_Values" })
+      .then((result) => {
+        this.metadatarecord = result;
+        console.log(JSON.stringify(result)+' Result');
+        console.log( JSON.stringify(this.metadatarecord)+' metadatarecord');
+      })
+      .catch((error) => {
+        this.error = error;
+      });
   }
 
-@wire(getRecord, { recordId: 'm0Iao000001gQNJEA2', fields: FIELDS})
-    metadatarecord;
+  connectedCallback() {
+    this.loadButtons();
+    this.chartvalues();
+  }
+
+
   
   @wire(getColumns, { columnData: "Price_Products" }) wiredColumns({
     data,
     error
   }) {
-      console.log(this.metadatarecord+'  metadatarecord');
-        console.log(JSON.stringify(this.metadatarecord)+'  metadatarecord');
       
     if (data) {
       this.columns = JSON.parse(data.Column_JSON__c);
@@ -594,9 +605,7 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
             this.inlineEditCol[j].valuechanged=true;
           }
           
-            const isOnlyRecordIndex2 = Object.keys(draftObj).length === 1;
-             console.log(JSON.stringify(draftObj) +' draftObj');
-            console.log(isOnlyRecordIndex2 +' isOnlyRecordIndex2');
+            const isOnlyRecordIndex2 = Object.keys(draftObj).length === 0;
             if (!isOnlyRecordIndex2) {
             editedArray.push(draftObj);
           this.discountmap[obj.recordIndex] = obj;
@@ -609,7 +618,8 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
          dataArray.push(obj);
       
       }
-if(editedArray.length > 0){
+if(editedArray.length > 0 && editedArray!=''){
+  console.log(editedArray.length > 0 +' editedArray.length > 0inside');
       this.productData = dataArray.length > 0 ? dataArray : this.productData;
       this.saveDraftValues = editedArray.length > 0 ?
         this.saveDraftValues.length > 0
@@ -1179,7 +1189,7 @@ const discontmap=this.discountmap[this.inlinerecordindex];
              console.log(  JSON.stringify(this.inlineEditCol[j])+'  1144');
           }
           if (this.inlineEditCol[j].customdiscount == true && obj.customdiscount == true) {
-              this.inlineEditCol[j].inputValue = obj[this.inlineEditCol[j].fieldName];
+                  this.inlineEditCol[j].inputValue = obj[this.inlineEditCol[j].fieldName]?obj[this.inlineEditCol[j].fieldName]:'';
           
 
 
@@ -1200,8 +1210,8 @@ const discontmap=this.discountmap[this.inlinerecordindex];
       }
       console.log(  JSON.stringify(this.inlineEditCol)+'  1152');
     } else {
-       console.log(JSON.stringify(this.metadatarecord.data.fields.Graph_Values__c.value)+'  Graph_Values__c');
-       const valuesArray =this.metadatarecord.data.fields.Graph_Values__c.value?this.metadatarecord.data.fields.Graph_Values__c.value.split("\r\n"):'';
+     
+       const valuesArray =this.metadatarecord.split("\r\n");
          console.log(JSON.stringify(valuesArray)+'  valuesArray');
          console.log(JSON.stringify(this.productData)+'  productData');
       let chartData = [];
@@ -1555,6 +1565,7 @@ console.log('productDataWithIndex '+JSON.stringify(productDataWithIndex));
     this.initialRecords = initrec;
     selectedRecords.forEach((record) => {
       this.mapProductData.delete(record.recordIndex);
+      this.discountmap.delete(record.recordIndex);
     });
 
     const arr = [];

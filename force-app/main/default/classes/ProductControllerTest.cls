@@ -12,7 +12,7 @@ private class ProductControllerTest {
         List<Object> productRecords = ProductController.getQuickOrderRecords(testContact.id);
         list<object> reorderRecords =ProductController.getReorderRecords(testContact.id);
         list<object> contractedRecords =ProductController.getContractedRecords(testContact.id);
-        list<object> pricingRecords =ProductController.getPricingRecords(testContact.id, '');
+        list<object> pricingRecords =ProductController.getPricingRecords(testContact.id, '','','');
         
         Data_Table_Column__mdt columnRecords =ProductController.getColumns('Contracted_Products_Table');
         string settingInfo = ProductController.getSettingsinfo('OrderEntry');
@@ -22,7 +22,7 @@ private class ProductControllerTest {
         //ProductController.getPricingInfo(testContact.id);
         ProductController.getRecordTypes();
         ProductController.getRecord(testContact.id,'',null);
-        ProductController.getRecordValuesCheckOutScreen(testContact.id,'');
+        ProductController.getRecordValuesCheckOutScreen(testContact.id,'',testContact.id);
         ProductController.getButtonsInfo('Pricing_Products');
         CustomMetadataService.buttonSetting('Pricing_Products');
         CustomMetadataService.contractSetting('Disable_Entry_Fields');
@@ -33,9 +33,11 @@ private class ProductControllerTest {
         ProductController.getPricingInfo(testContact.id,'');
         ProductController.fetchHeaderData(testContact.id,'',null);
         ProductController.fetchRangePricing('','','');
+        ProductController.getCurrencySymbol();
         sObject getRecordName = ProductController.getRecordName('Contact',testContact.Id,'Name','Email');
         map<String,map<String,sObject>> getUploadedRecordName = productController.getUploadedRecordNames('{"0":"Product2","1":"Product2"}','{"0":["GenWatt Diesel 10kW","SLA: Silver"],"1":["GenWatt Diesel 10kW","SLA: Silver"]}','{"0":"Name","1":"Name"}','{"0":"ProductCode"}');
-        OrderRequestAddToCart.addProductsToCart('[{"National_Id__c":"01tao0000000l0XAAQ","Product_Name__c":"01tao0000000l0XAAQ","Quantity__c":4,"Percent__c":42,"Price__c":35.8,"Id":"a00ao000000LMOwAAO","National_Id__r":{"Name":"GenWatt Diesel 200kW","Id":"01tao0000000l0XAAQ"},"Product_Name__r":{"Name":"GenWatt Diesel 200kW","Id":"01tao0000000l0XAAQ"}}]');        OrderRequestAddToCart.saveProductConfiguration('[{"National_Id__c":"01tao0000000l0XAAQ","Product_Name__c":"01tao0000000l0XAAQ","Quantity__c":4,"Percent__c":42,"Price__c":35.8,"Id":"a00ao000000LMOwAAO","National_Id__r":{"Name":"GenWatt Diesel 200kW","Id":"01tao0000000l0XAAQ"},"Product_Name__r":{"Name":"GenWatt Diesel 200kW","Id":"01tao0000000l0XAAQ"}}]','[{"National_Id__c":"01tao0000000l0XAAQ","Product_Name__c":"01tao0000000l0XAAQ","Quantity__c":4,"Percent__c":42,"Price__c":35.8,"Id":"a00ao000000LMOwAAO","National_Id__r":{"Name":"GenWatt Diesel 200kW","Id":"01tao0000000l0XAAQ"},"Product_Name__r":{"Name":"GenWatt Diesel 200kW","Id":"01tao0000000l0XAAQ"}}]');
+        OrderRequestAddToCart.addProductsToCart('[{"National_Id__c":"01tao0000000l0XAAQ","Product_Name__c":"01tao0000000l0XAAQ","Quantity__c":4,"Percent__c":42,"Price__c":35.8,"Id":"a00ao000000LMOwAAO","National_Id__r":{"Name":"GenWatt Diesel 200kW","Id":"01tao0000000l0XAAQ"},"Product_Name__r":{"Name":"GenWatt Diesel 200kW","Id":"01tao0000000l0XAAQ"}}]','');       
+        OrderRequestAddToCart.saveProductConfiguration('[{"National_Id__c":"01tao0000000l0XAAQ","Product_Name__c":"01tao0000000l0XAAQ","Quantity__c":4,"Percent__c":42,"Price__c":35.8,"Id":"a00ao000000LMOwAAO","National_Id__r":{"Name":"GenWatt Diesel 200kW","Id":"01tao0000000l0XAAQ"},"Product_Name__r":{"Name":"GenWatt Diesel 200kW","Id":"01tao0000000l0XAAQ"}}]','[{"National_Id__c":"01tao0000000l0XAAQ","Product_Name__c":"01tao0000000l0XAAQ","Quantity__c":4,"Percent__c":42,"Price__c":35.8,"Id":"a00ao000000LMOwAAO","National_Id__r":{"Name":"GenWatt Diesel 200kW","Id":"01tao0000000l0XAAQ"},"Product_Name__r":{"Name":"GenWatt Diesel 200kW","Id":"01tao0000000l0XAAQ"}}] ');
         OrderRequestAddToCart.contractedProductsAddToCart(testContact.id,'[{"National_Id__c":"01tao0000000l0XAAQ","Product_Name__c":"01tao0000000l0XAAQ","Quantity__c":4,"Percent__c":42,"Price__c":35.8,"Id":"a00ao000000LMOwAAO","National_Id__r":{"Name":"GenWatt Diesel 200kW","Id":"01tao0000000l0XAAQ"},"Product_Name__r":{"Name":"GenWatt Diesel 200kW","Id":"01tao0000000l0XAAQ"}}]');
         OrderRequestAddToCart.reorderAddToCart(testContact.id,'[{"National_Id__c":"01tao0000000l0XAAQ","Product_Name__c":"01tao0000000l0XAAQ","Quantity__c":4,"Percent__c":42,"Price__c":35.8,"Id":"a00ao000000LMOwAAO","National_Id__r":{"Name":"GenWatt Diesel 200kW","Id":"01tao0000000l0XAAQ"},"Product_Name__r":{"Name":"GenWatt Diesel 200kW","Id":"01tao0000000l0XAAQ"}}]');
         OrderRequestAddToCart.backToCart(testContact.id);
@@ -51,9 +53,4 @@ private class ProductControllerTest {
         Test.stopTest();
     }
     
-    @isTest(SeeAllData=true)
-    static void testGetCurrencySymbol() {
-        String symbol = UtilityController.getCurrencySymbol();
-        System.assertNotEquals(null, symbol, 'Symbol is not null');
-    }
 }

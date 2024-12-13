@@ -1,10 +1,13 @@
 import { LightningElement, track,wire,api } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { NavigationMixin } from 'lightning/navigation';
-import createPromoRecord from '@salesforce/apex/PromotionController.createPromoRecord';
-import getPicklistValues from '@salesforce/apex/PromotionController.getPicklistValues';
-import getProducts from '@salesforce/apex/PromotionController.getProducts';
-import getAgreementLineItemFields from '@salesforce/apex/PromotionController.getAgreementLineItemFields';
+import createPromoRecord from '@salesforce/apex/ProductController.createPromoRecord';
+import getPicklistValues from '@salesforce/apex/ProductController.getPicklistValues';
+import getProducts from '@salesforce/apex/ProductController.getProducts';
+import getAgreementLineItemFields from '@salesforce/apex/ProductController.getAgreementLineItemFields';
+import getObjectFields from '@salesforce/apex/ProductController.getObjectFields';
+
+
 
 export default class CreatePromo extends NavigationMixin(LightningElement) {
     @track Name = '';
@@ -17,8 +20,16 @@ export default class CreatePromo extends NavigationMixin(LightningElement) {
     @track AdjustmentAmount = 0;
     @track selectedProductCodes = [];
     @track products = [];
+    //@track fieldOptions = [];
+    //@track selectedField;
+    //@api objectApiName = 'Agreement_Line_Item__c';
 
     agreementFieldOptions = [];
+
+   /* connectedCallback() {
+        this.fetchFields();
+    }*/
+
 
     displayInfo = {
         primaryField: 'Name'
@@ -210,7 +221,6 @@ export default class CreatePromo extends NavigationMixin(LightningElement) {
         
         let lastRow = this.rows[this.rows.length - 1];
         if (lastRow && (lastRow.field || lastRow.operator || lastRow.value)) {
-            // If the row with rowId has field, operator, or value set
             if (this.rows.some(row => row.id === parseInt(rowId) && (row.field || row.operator || row.value))) {
                 const newRow = { id: this.rows.length + 1, field: '', operator: '', value: '', isreferenced: false, objectApiName: '' };
                 this.rows = [...this.rows, newRow];
@@ -225,4 +235,39 @@ export default class CreatePromo extends NavigationMixin(LightningElement) {
         }
     }
 
+    /*async fetchFields() {
+        try {
+            const fields = await getObjectFields({ objectApiName: this.objectApiName });
+            this.fieldOptions = this.buildHierarchy(fields);
+        } catch (error) {
+            console.error('Error fetching fields:', error);
+        }
+    }
+
+    buildHierarchy(fields) {
+        const fieldMap = fields.reduce((map, field) => {
+            if (field.isReference) {
+                // Add a placeholder for relationships
+                map[field.apiName] = {
+                    label: `${field.label} (Related Object)`,
+                    value: field.apiName,
+                    children: []
+                };
+            } else {
+                map[field.apiName] = {
+                    label: field.label,
+                    value: field.apiName
+                };
+            }
+            return map;
+        }, {});
+
+        // Dynamically fetch related fields if necessary (future enhancement)
+        return Object.values(fieldMap);
+    }
+
+    handleFieldChange(event) {
+        this.selectedField = event.target.value;
+        console.log('Selected Field:', this.selectedField);
+    }*/
 }
