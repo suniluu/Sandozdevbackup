@@ -3,7 +3,7 @@
         <div class="slds-grid slds-wrap">
             <div class="slds-col slds-size_5-of-8">
                 <div class="slds-grid slds-wrap">
-                    <template if:true={isClauseTemplate}>
+                    <!--<template if:true={isClauseTemplate}>
                         <div class="slds-col slds-size_1-of-2 custom2">
                             <h4><b>Generate Document</b></h4>
                             <section class="slds-m-around_small">
@@ -33,10 +33,11 @@
 
                             </section>
                         </div>
-                    </template>
+                    </template>-->
                     <template if:true={isSignature}>
                         <div class="slds-col slds-size_1-of-2 custom">
-                            <h3><b>Signatory</b></h3>
+                            <div class=" column-design">
+                            <!--<h3><b>Signatory</b></h3>
                             <div class=" column-design">
                                 <b>Authorized Signer:</b>
                                 <div class="slds-pill_container">
@@ -62,9 +63,10 @@
                                             </span>
                                         </li>
                                     </ul>
-                                </div>
+                                </div>-->
                                 <br/>
                                 <br/>
+                                <section class="slds-m-around_small">
                                 <b> Signatory:</b>
                                 <div class="multisearch">
                                     <lightning-combobox name="New" label="New Signatory" value={selectedSignatorys}
@@ -83,6 +85,7 @@
                                     </div>
                                 </div>
                                 <br/>
+                                </section>
                                 <div class="slds-grid slds-wrap">
                                     <div class="slds-col slds-size_1-of-3" style="padding-top:1.5rem;">
                                         <lightning-button label="Preview Output" variant="brand" onclick={handlePreview}
@@ -101,7 +104,7 @@
                 </div>
             </div>
             <div class="slds-col slds-size_3-of-8 button">
-                <button class="custom-button" onclick={handleSave}>Save and Exit</button>
+                <!--<button class="custom-button" onclick={handleSave}>Save and Exit</button>-->
                 <template for:each={buttondata} for:item="b">
                     <template if:false={b.Hide_Button__c}>
                         <lightning-button label={b.Button_Label__c} alternative-text={b.Button_Label__c}

@@ -21,6 +21,20 @@ public with sharing class ProductController {
         return lstProductData;
     }
     
+     @AuraEnabled(cacheable=true)
+    public static String validateAccountOrderType(string recId,String recordType) {
+      String lstProductData ;
+        IGenerateReqestOrder customPlugin = OrderRequestAddToCart.getCerPluginInstance('OrderEntry');
+        if(customPlugin != null){
+            try{
+            	lstProductData = customPlugin.validateAccountOrderType(recId,recordType);
+            } catch(Exception e){
+                customPlugin.errorHandleling(recId,e);
+            }
+        }
+        return lstProductData;
+    }
+    
      /**
      * @description customPriceCalculation on line items
      * @return: return type list of sobject.
@@ -341,10 +355,31 @@ public with sharing class ProductController {
      */
     @AuraEnabled(cacheable=true)
     public static Data_Table_Column__mdt getColumns(String columnData){
-        return [select id, Column_JSON__c from Data_Table_Column__mdt  where DeveloperName = :columnData WITH SECURITY_ENFORCED];
-        //return Data_Table_Column__mdt.getInstance('Table_Columns');
+       Data_Table_Column__mdt columns=new Data_Table_Column__mdt();
+       
+        columns= [select id, Column_JSON__c from Data_Table_Column__mdt  where DeveloperName = :columnData WITH SECURITY_ENFORCED];
+        
+        return columns;
+         
+        
     }
 
+        @AuraEnabled(cacheable=true)
+	public static string getdatatableColumn(String orderType ){
+        IGenerateReqestOrder customPlugin = OrderRequestAddToCart.getCerPluginInstance('OrderEntry');
+        string lstUploadedData  ;
+        if(customPlugin != null){
+            try{
+            	lstUploadedData = customPlugin.getdatatableColumn(orderType);
+            } catch(Exception e){
+                customPlugin.errorHandleling(orderType,e);
+            }
+        }
+        return lstUploadedData;
+	}
+    
+
+    
     @AuraEnabled
 	public static List<Object> saveFile(String base64Data, String recId, String fieldsData){
         IGenerateReqestOrder customPlugin = OrderRequestAddToCart.getCerPluginInstance('OrderEntry');
@@ -472,14 +507,14 @@ public with sharing class ProductController {
 
     @AuraEnabled(cacheable=true)
     public static List<Object> fetchLookupRecords(String objectApiName, String fieldApiName,
-            String otherFieldApiName, String searchString, String selectedRecordId, String pricelistId,String recId) {
+            String otherFieldApiName, String searchString, String selectedRecordId, String fieldData,String recId) {
         IGenerateReqestOrder customPlugin = OrderRequestAddToCart.getCerPluginInstance('OrderEntry');
         List<Object> lstData = new List<Object>();
         if(customPlugin != null){
             try{
-            	lstData = customPlugin.fetchLookupRecords(objectApiName,fieldApiName,otherFieldApiName,searchString,selectedRecordId,pricelistId,recId);
+            	lstData = customPlugin.fetchLookupRecords(objectApiName,fieldApiName,otherFieldApiName,searchString,selectedRecordId,fieldData,recId);
             } catch(Exception e){
-                customPlugin.errorHandleling(pricelistId,e);
+                customPlugin.errorHandleling(fieldData,e);
             }
         }
         return lstData;
@@ -567,18 +602,57 @@ public with sharing class ProductController {
     } 
 	
     @AuraEnabled
-    public static Id createPromoRecord(Map<String, Object> params){
+    public static Id createPromoRecord(Map<String, Object> params,Id PromoId){
+        System.debug('Params:   '+params);
         Id lstrecord;
         IGenerateReqestOrder customPlugin = OrderRequestAddToCart.getCerPluginInstance('OrderEntry');
         if(customPlugin != null){
             try{
-                lstrecord = customPlugin.createPromoRecord(params);
+                lstrecord = customPlugin.createPromoRecord(params,PromoId);
             } catch(Exception e){
                 system.debug('Error in adding products to cart');
             }
         }
         return lstrecord;        
     } 
+
+    @AuraEnabled
+    public static List<Object> getPromotionJsonData(Id promoId){
+        List<Object> lstrecord;
+        IGenerateReqestOrder customPlugin = OrderRequestAddToCart.getCerPluginInstance('OrderEntry');
+        if(customPlugin != null){
+            try{
+                lstrecord = customPlugin.getPromotionJsonData(promoId);
+            } catch(Exception e){
+                system.debug('Error in adding products to cart');
+            }
+        }
+        return lstrecord;        
+    } 
+
+    @AuraEnabled
+    public static void saveRangeRecords(List<Map<String, Object>> rangeData) {
+        List<Range__c> rangeRecords = new List<Range__c>();
+
+        for (Map<String, Object> data : rangeData) {
+            Range__c range = new Range__c();
+            range.Name = 'Test';
+            range.Adjustment_Type__c = (String) data.get('Adjustment_Type__c');
+            range.Adjustment_Amount__c = (String) data.get('Adjustment_Amount__c');
+            range.Promotion__c = (Id) data.get('Promotion__c'); 
+            rangeRecords.add(range);
+            System.debug('rangeRecords:   '+rangeRecords);
+            System.debug('rangeRecords:   '+rangeData);
+        }
+
+        if (!rangeRecords.isEmpty()) {
+            insert rangeRecords;
+        }
+    }
+
+
+
+
     @AuraEnabled(cacheable=true)
     public static List<object> getAgreementLineItemFields(){
         List<object> lstrecord;
@@ -593,12 +667,26 @@ public with sharing class ProductController {
         return lstrecord;        
     } 
     @AuraEnabled(cacheable=true)
-    public static List<object> getProducts(){
+    public static List<object> getSObjectFields(String sObjectApiName){
         List<object> lstrecord;
         IGenerateReqestOrder customPlugin = OrderRequestAddToCart.getCerPluginInstance('OrderEntry');
         if(customPlugin != null){
             try{
-                lstrecord = customPlugin.getProducts();
+                lstrecord = customPlugin.getSObjectFields(sObjectApiName);
+            } catch(Exception e){
+                system.debug('Error in adding products to cart');
+            }
+        }
+        return lstrecord;        
+    }
+    @AuraEnabled(cacheable=true)
+    public static List<object> getProductsList(String filterString){
+        System.debug('filterString:   '+filterString);
+        List<object> lstrecord;
+        IGenerateReqestOrder customPlugin = OrderRequestAddToCart.getCerPluginInstance('OrderEntry');
+        if(customPlugin != null){
+            try{
+                lstrecord = customPlugin.getProductsList(filterString);
             } catch(Exception e){
                 system.debug('Error in adding products to cart');
             }
@@ -617,7 +705,8 @@ public with sharing class ProductController {
             }
         }
         return lstrecord;        
-    } 
+    }  
+
     @AuraEnabled
     public static Object generateApprovalRequestsForNonConga(String orderId){
         Object lstrecord;

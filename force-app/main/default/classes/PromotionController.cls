@@ -99,5 +99,50 @@ public with sharing class PromotionController {
             }
         }
         return fieldDetails;
-    }  
+    } 
+
+     @AuraEnabled(cacheable=true)
+    public static List<Map<String, Object>> getObjects() {
+        List<Map<String, Object>> objects = new List<Map<String, Object>>();
+
+        for (Schema.SObjectType objType : Schema.getGlobalDescribe().values()) {
+            Schema.DescribeSObjectResult describeResult = objType.getDescribe();
+            if (describeResult.isCreateable()) {
+                Map<String, Object> objInfo = new Map<String, Object>();
+                objInfo.put('label', describeResult.getLabel());
+                objInfo.put('apiName', describeResult.getName());
+                objects.add(objInfo);
+            }
+        }
+
+        return objects;
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, Object>> getFields(String objectApiName) {
+        Schema.DescribeSObjectResult describeResult = Schema.getGlobalDescribe().get(objectApiName).getDescribe();
+        return getFieldDetails(describeResult, 1);
+    }
+
+    private static List<Map<String, Object>> getFieldDetails(Schema.DescribeSObjectResult describeResult, Integer level) {
+        List<Map<String, Object>> fields = new List<Map<String, Object>>();
+        if (level > 5) return fields; // Limit to 5 levels of recursion
+
+        for (Schema.SObjectField field : describeResult.fields.getMap().values()) {
+            Schema.DescribeFieldResult fieldDescribe = field.getDescribe();
+            Map<String, Object> fieldInfo = new Map<String, Object>();
+            fieldInfo.put('label', fieldDescribe.getLabel());
+            fieldInfo.put('apiName', fieldDescribe.getName());
+            fieldInfo.put('type', fieldDescribe.getType().name());
+
+            if (fieldDescribe.getType() == Schema.DisplayType.REFERENCE) {
+                fieldInfo.put('hasChildren', true);
+            } else {
+                fieldInfo.put('hasChildren', false);
+            }
+
+            fields.add(fieldInfo);
+        }
+        return fields;
+    } 
 }

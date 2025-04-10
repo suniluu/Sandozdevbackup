@@ -5,106 +5,27 @@
         <div class="slds-col slds-size_6-of-12">
           <div class="slds-grid slds-p-bottom_x-small">
             <div class="slds-col slds-size_6-of-12 search-div">
-              <lightning-input
-                type="search"
-                label="Search..."
-                class="search-Input"
-                placeholder="Search....."
-                onchange={handleSearch}
-                variant="label-hidden"
-              ></lightning-input>
+              <lightning-input type="search" label="Search..." class="search-Input" placeholder="Search....." onchange={handleSearch} variant="label-hidden"></lightning-input>
             </div>
           </div>
         </div>
-        <div class="slds-col slds-size_6-of-12 icon-div" >
-
-<lightning-icon
-            icon-name="action:info"
-            alternative-text="Validate Cart"
-            title="Validate Cart"
-            class="backgroundcolor slds-m-left_x-small slds-icon_container_circle   slds-float_right reset-icon"
-            size="xx-small"
-            onclick={onvalidateProduct}
-          ></lightning-icon>
-
-<lightning-icon
-            icon-name="action:adjust_value"
-            alternative-text="Update Price"
-            title="Update Price"
-            class="backgroundcolor slds-m-left_x-small slds-icon_container_circle  slds-float_right reset-icon"
-            size="xx-small"
-            onclick={onValidatePricing}
-          ></lightning-icon>
-
-
-
-
-
-          <lightning-icon
-            icon-name="action:reset_password"
-            alternative-text="Reset"
-            title="Reset"
-            class="backgroundcolor slds-m-left_x-small slds-float_right reset-icon"
-            size="xx-small"
-            onclick={onReset}
-          ></lightning-icon>
-
-          <lightning-icon
-            icon-name="action:delete"
-            alternative-text="Mass Delete"
-            title="Mass Delete"
-            class="backgroundcolor slds-m-left_x-small slds-float_right"
-            size="xx-small"
-            onclick={deleterecords}
-          ></lightning-icon>
-
-          <lightning-icon
-            icon-name="action:clone"
-            alternative-text="Clone"
-            title="Clone"
-            class="backgroundcolor slds-m-left_x-small slds-float_right"
-            size="xx-small"
-            onclick={cloneProducts}
-          ></lightning-icon>
-          <lightning-icon
-            icon-name="action:edit"
-            alternative-text="Mass Edit"
-            title="Mass Edit"
-            class="backgroundcolor slds-m-left_x-small slds-float_right"
-            size="xx-small"
-            onclick={openMassEditPopup}
-          ></lightning-icon>
+        <div class="slds-col slds-size_6-of-12 icon-div">
+          <lightning-icon icon-name="action:info" alternative-text="Validate Cart" title="Validate Cart" class="backgroundcolor slds-m-left_x-small slds-icon_container_circle   slds-float_right reset-icon" size="xx-small" style="background-color: orange;" onclick={onvalidateProduct}></lightning-icon>
+          <lightning-icon icon-name="action:adjust_value" alternative-text="Update Price" title="Update Price" class="backgroundcolor slds-m-left_x-small slds-icon_container_circle  slds-float_right reset-icon" style="background-color: green;" size="xx-small" onclick={onValidatePricing}></lightning-icon>
+          <lightning-icon icon-name="action:reset_password" alternative-text="Reset" title="Reset" class="backgroundcolor slds-m-left_x-small slds-float_right reset-icon" size="xx-small" onclick={onReset}></lightning-icon>
+          <lightning-icon icon-name="action:delete" alternative-text="Mass Delete" title="Mass Delete" class="backgroundcolor slds-m-left_x-small slds-float_right" size="xx-small" onclick={deleterecords}></lightning-icon>
+          <lightning-icon icon-name="action:clone" alternative-text="Clone" title="Clone" class="backgroundcolor slds-m-left_x-small slds-float_right" size="xx-small" onclick={cloneProducts}></lightning-icon>
+          <lightning-icon icon-name="action:edit" alternative-text="Mass Edit" title="Mass Edit" class="backgroundcolor slds-m-left_x-small slds-float_right" size="xx-small" onclick={openMassEditPopup}></lightning-icon>
         </div>
       </div>
     </div>
-    <div
-      if:true={dataLoading}
-      class="slds-align_absolute-center slds-spinner_inline spinner-padding spinner-style"
-    >
-      <lightning-spinner
-        variant="brand"
-        alternative-text="Loading Data"
-        size="medium"
-      >
-      </lightning-spinner>
+    <div if:true={dataLoading} class="slds-align_absolute-center slds-spinner_inline spinner-padding spinner-style">
+      <lightning-spinner variant="brand" alternative-text="Loading Data" size="medium"></lightning-spinner>
     </div>
     <template if:false={dataLoading}>
-      <c-agreement-custom-data-table
-       key-field="recordIndex"
-        columns={columns}
-        data={productData}
-        onrowselection={onRowSelection}
-        class="divDataTable"
-        sorted-by={sortBy}
-        sorted-direction={sortDirection}
-        oncancel={handleCancel}
-        selected-rows={selectedids}
-        onsave={handleSave}
-        draft-values={saveDraftValues}
-        onsort={doSorting}
-        onremove={onrowaction}
-        onheaderaction={handleHeaderAction}
-      ></c-agreement-custom-data-table>
+      <div class="heightAdjust">
+      <c-agreement-custom-data-table key-field="recordIndex" columns={columns} data={productData} onrowselection={onRowSelection} class="divDataTable" sorted-by={sortBy} sorted-direction={sortDirection} oncancel={handleCancel} selected-rows={selectedids} onsave={handleSave} draft-values={saveDraftValues} onsort={doSorting} onremove={onrowaction} ondropdownselected={handledropdownselected} onheaderaction={handleHeaderAction}></c-agreement-custom-data-table>
+      </div>
       <!-- <c-custom-type-datatable
         key-field="recordIndex"
         columns={columns}
@@ -122,85 +43,34 @@
         onheaderaction={handleHeaderAction}
       ></c-custom-type-datatable> -->
     </template>
-   
     <template if:true={isOpenFilterInput}>
-      <section
-        role="dialog"
-        tabindex="-1"
-        aria-labelledby="modal-heading-01"
-        aria-modal="true"
-        aria-describedby="modal-content-id-1"
-        class="slds-modal slds-fade-in-open"
-      >
+      <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
         <div class="slds-modal__container filter-popup">
           <header class="slds-modal__header">
-            <button
-              class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
-              title="Close"
-              onclick={closeFilterModal}
-            >
-              <lightning-icon
-                icon-name="utility:close"
-                alternative-text="close"
-                variant="inverse"
-                size="small"
-              ></lightning-icon>
+            <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={closeFilterModal}>
+              <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse" size="small"></lightning-icon>
               <span class="slds-assistive-text">Close</span>
             </button>
-            <h2 class="slds-text-heading_medium slds-hyphenate">
-              {inputLabel}
-            </h2>
+            <h2 class="slds-text-heading_medium slds-hyphenate"> {inputLabel} </h2>
           </header>
           <div class="slds-modal__content slds-p-around_medium">
-            <lightning-input
-              onchange={handleChange}
-              value={filterAppliedValue}
-              variant="label-hidden"
-            ></lightning-input>
+            <lightning-input onchange={handleChange} value={filterAppliedValue} variant="label-hidden"></lightning-input>
           </div>
           <footer class="slds-modal__footer">
-            <button
-              class="slds-button slds-button_neutral"
-              onclick={closeFilterModal}
-              title="Cancel"
-            >
-              Cancel
-            </button>
-            <button
-              class="slds-button slds-button_brand"
-              onclick={handleFilterRecords}
-              title="Apply"
-            >
-              Apply
-            </button>
+            <button class="slds-button slds-button_neutral" onclick={closeFilterModal} title="Cancel"> Cancel </button>
+            <button class="slds-button slds-button_brand" onclick={handleFilterRecords} title="Apply"> Apply </button>
           </footer>
         </div>
       </section>
       <div class="slds-backdrop slds-backdrop_open"></div>
     </template>
     <template if:true={isMassEditPopup}>
-      <section
-        role="dialog"
-        tabindex="-1"
-        aria-labelledby="modal-heading-01"
-        aria-modal="true"
-        aria-describedby="modal-content-id-1"
-        class="slds-modal slds-fade-in-open"
-      >
+      <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
         <div class="slds-modal__container">
           <!-- Modal/Popup Box LWC header here -->
           <header class="slds-modal__header">
-            <button
-              class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
-              title="Close"
-              onclick={closeMassEditPopup}
-            >
-              <lightning-icon
-                icon-name="utility:close"
-                alternative-text="close"
-                variant="inverse"
-                size="small"
-              ></lightning-icon>
+            <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={closeMassEditPopup}>
+              <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse" size="small"></lightning-icon>
               <span class="slds-assistive-text">Close</span>
             </button>
             <h2 class="slds-text-heading_medium slds-hyphenate">Mass Edit</h2>
@@ -208,207 +78,68 @@
           <div class="slds-modal__content slds-p-around_medium">
             <template for:each={massColumnUpdates} for:item="q">
               <template if:true={q.lookup}>
-                <lightning-record-picker
-                  object-api-name={q.objname}
-                  key={q.fieldName}
-                  placeholder="Search..."
-                  label={q.label}
-                  type={q.type}
-                  onchange={handleInputType}
-                  name={q.fieldName}
-                  display-info={displayInfo}
-                  value={q.inputValue}
-                  matching-info={matchingInfo}
-                  size="small"
-                  class="slds-size_full slds-combobox-addon_end"
-                ></lightning-record-picker>
+                <lightning-record-picker object-api-name={q.objname} key={q.fieldName} placeholder="Search..." label={q.label} type={q.type} onchange={handleInputType} name={q.fieldName} display-info={displayInfo} value={q.inputValue} matching-info={matchingInfo} size="small" class="slds-size_full slds-combobox-addon_end"></lightning-record-picker>
+              </template>
+              <template if:false={q.reqDropdown}>
+                <lightning-input type={q.type} label={q.label} value={q.inputValue} key={q.fieldName} onchange={handleInputType} name={q.fieldName}></lightning-input>
               </template>
               <template if:true={q.combobox}>
-                <lightning-combobox
-                  key={q.fieldName}
-                  label={q.label}
-                  type={q.type}
-                  value={comboboxValue}
-                  placeholder="Select Progress"
-                  options={comboboxOptions}
-                  onchange={handleInputType}
-                  name={q.fieldName}
-                  required
-                ></lightning-combobox>
+                <lightning-combobox key={q.fieldName} label={q.label} type={q.type} value={comboboxValue} placeholder="Select Progress" options={comboboxOptions} onchange={handleInputType} name={q.fieldName} required></lightning-combobox>
               </template>
               <template if:true={q.regularType}>
                 <template if:true={q.reqDropdown}>
-                  <lightning-combobox
-                    key={q.fieldName}
-                    label="Discount Type"
-                    value={q.selectedDropdownValue}
-                    onchange={handleInputType}
-                    placeholder="Select Discount Type"
-                    options={typeOptions}
-                    name="DiscountType"
-                  ></lightning-combobox>
+                  <lightning-combobox key={q.fieldName} label="Discount Type" value={q.selectedDropdownValue} onchange={handleInputType} placeholder="Select Discount Type" options={typeOptions} name="DiscountType"></lightning-combobox>
                 </template>
                 <template if:true={flatdiscount}>
-                  <lightning-combobox
-                    key={q.fieldName}
-                    label="Type"
-                    value={q.discountoption}
-                    onchange={handleInputType}
-                    placeholder="Select Discount Type"
-                    options={discountOption}
-                    name="Type"
-                  ></lightning-combobox>
-                </template>
-                <template if:true={flatdiscount}>
-                  <lightning-input
-                    type={q.type}
-                    label={q.label}
-                    value={q.inputValue}
-                    key={q.fieldName}
-                    onchange={handleInputType}
-                    name={q.fieldName}
-                  ></lightning-input>
+                  <template if:true={q.reqDropdown}>
+                    <lightning-combobox key={q.fieldName} label="Type" value={q.discountoption} onchange={handleInputType} placeholder="Select Discount Type" options={discountOption} name="Type"></lightning-combobox>
+                    <lightning-input type={q.type} label={q.label} value={q.inputValue} key={q.fieldName} onchange={handleInputType} name={q.fieldName}></lightning-input>
+                  </template>
                 </template>
                 <template if:true={Volumediscount}>
-                  <template
-                    for:each={itemList}
-                    for:item="item"
-                    for:index="index"
-                  >
-                    <lightning-layout multiple-rows key={item.id}>
-                      <lightning-layout-item
-                        size="12"
-                        large-device-size="2"
-                        padding="around-small"
-                      >
-                        <lightning-input
-                          type="Number"
-                          label="EndRange"
-                          data-index={index}
-                          key={item.id}
-                          value={item.UpperBound}
-                          onchange={handleInputType1}
-                          name="UpperBound"
-                        ></lightning-input>
-                      </lightning-layout-item>
-                      <lightning-layout-item
-                        size="12"
-                        large-device-size="4"
-                        padding="around-small"
-                      >
-                        <lightning-combobox
-                          key={item.id}
-                          data-index={index}
-                          name="Type"
-                          label="Type"
-                          value={item.discountoption}
-                          onchange={handleInputType1}
-                          placeholder="Select Discount Type"
-                          options={discountOption}
-                        ></lightning-combobox>
-                      </lightning-layout-item>
-                      <lightning-layout-item
-                        size="12"
-                        large-device-size="2"
-                        padding="around-small"
-                      >
-                        <lightning-input
-                          type="Number"
-                          label="Discount"
-                          data-index={index}
-                          key={item.id}
-                          value={item.Discount}
-                          onchange={handleInputType1}
-                          name="Discount"
-                        ></lightning-input>
-                      </lightning-layout-item>
-                      <div class="slds-p-top_x-large">
-                        <lightning-layout-item
-                          size="12"
-                          large-device-size="2"
-                          padding="around-small"
-                        >
-                          <lightning-icon
-                            icon-name="action:new"
-                            data-index={index}
-                            key={item.id}
-                            id={index}
-                            alternative-text="Add   Row"
-                            size="x-small"
-                            title="ADD_ROW"
-                            onclick={addRow}
-                          >
-                          </lightning-icon>
+                  <template if:true={q.reqDropdown}>
+                    <template for:each={itemList} for:item="item" for:index="index">
+                      <lightning-layout multiple-rows key={item.id}>
+                        <lightning-layout-item size="12" large-device-size="2" padding="around-small">
+                          <lightning-input type="Number" label="EndRange" data-index={index} key={item.id} value={item.UpperBound} onchange={handleInputType1} name="UpperBound"></lightning-input>
                         </lightning-layout-item>
-                        <lightning-layout-item
-                          size="12"
-                          large-device-size="2"
-                          padding="around-small"
-                        >
-                         <template if:false={disableicon}>
-                          <lightning-icon
-                            icon-name="action:delete"
-                            data-index={index}
-                            key={item.id}
-                            id={index}
-                            alternative-text="Delete   Row"
-                            size="x-small"
-                            title="DELETE_ROW"
-                            disabled={disableicon}
-                            onclick={removeRow}
-                          >
-                          </lightning-icon>
-                         </template>
+                        <lightning-layout-item size="12" large-device-size="4" padding="around-small">
+                          <lightning-combobox key={item.id} data-index={index} name="Type" label="Type" value={item.discountoption} onchange={handleInputType1} placeholder="Select Discount Type" options={discountOption}></lightning-combobox>
                         </lightning-layout-item>
-                      </div>
-                    </lightning-layout>
+                        <lightning-layout-item size="12" large-device-size="2" padding="around-small">
+                          <lightning-input type="Number" label="Discount" data-index={index} key={item.id} value={item.Discount} onchange={handleInputType1} name="Discount"></lightning-input>
+                        </lightning-layout-item>
+                        <div class="slds-p-top_x-large">
+                          <lightning-layout-item size="12" large-device-size="2" padding="around-small">
+                            <lightning-icon icon-name="action:new" data-index={index} key={item.id} id={index} alternative-text="Add   Row" size="x-small" title="ADD_ROW" onclick={addRow}></lightning-icon>
+                          </lightning-layout-item>
+                          <lightning-layout-item size="12" large-device-size="2" padding="around-small">
+                            <template if:false={disableicon}>
+                              <lightning-icon icon-name="action:delete" data-index={index} key={item.id} id={index} alternative-text="Delete   Row" size="x-small" title="DELETE_ROW" disabled={disableicon} onclick={removeRow}></lightning-icon>
+                            </template>
+                          </lightning-layout-item>
+                        </div>
+                      </lightning-layout>
+                    </template>
                   </template>
                 </template>
               </template>
             </template>
           </div>
           <footer class="slds-modal__footer">
-            <button
-              class="slds-button slds-button_neutral"
-              onclick={closeMassEditPopup}
-              title="Cancel"
-            >
-              Cancel
-            </button>
-            <button
-              class="slds-button slds-button_brand"
-              onclick={updateMassEditPopup}
-              title="Apply"
-            >
-              Update
-            </button>
+            <button class="slds-button slds-button_neutral" onclick={closeMassEditPopup} title="Cancel"> Cancel </button>
+            <button class="slds-button slds-button_brand" onclick={updateMassEditPopup} title="Apply"> Update </button>
           </footer>
         </div>
       </section>
       <div class="slds-backdrop slds-backdrop_open"></div>
     </template>
     <template if:true={isInlinepopup}>
-      <section
-        role="dialog"
-        tabindex="-1"
-        aria-labelledby="modal-heading-01"
-        aria-modal="true"
-        aria-describedby="modal-content-id-1"
-        class="slds-modal slds-fade-in-open"
-      >
+      <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
         <div class="slds-modal__container">
           <header class="slds-modal__header">
-            <button
-              class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
-              title="Close"
-              onclick={closeinlineEditPopup}
-            >
-              <lightning-icon
-                icon-name="utility:close"
-                alternative-text="close"
-                variant="inverse"
-                size="small"
-              ></lightning-icon>
+            <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={closeinlineEditPopup}>
+              <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse" size="small"></lightning-icon>
               <span class="slds-assistive-text">Close</span>
             </button>
             <h2 class="slds-text-heading_medium slds-hyphenate">Inline Edit</h2>
@@ -416,180 +147,77 @@
           <div class="slds-modal__content slds-p-around_medium">
             <template for:each={inlineEditCol} for:item="q">
               <template if:true={q.lookup}>
-                <lightning-record-picker
-                  object-api-name={q.objname}
-                  key={q.fieldName}
-                  placeholder="Search..."
-                  label={q.label}
-                  type={q.type}
-                  onchange={handleInputType}
-                  name={q.fieldName}
-                  display-info={displayInfo}
-                  value={q.inputValue}
-                  matching-info={matchingInfo}
-                  size="small"
-                  class="slds-size_full slds-combobox-addon_end"
-                ></lightning-record-picker>
+                <lightning-record-picker object-api-name={q.objname} key={q.fieldName} placeholder="Search..." label={q.label} type={q.type} onchange={handleInputType} name={q.fieldName} display-info={displayInfo} value={q.inputValue} matching-info={matchingInfo} size="small" class="slds-size_full slds-combobox-addon_end"></lightning-record-picker>
               </template>
               <template if:true={q.combobox}>
-                <lightning-combobox
-                  key={q.fieldName}
-                  label={q.label}
-                  type={q.type}
-                  value={comboboxValue}
-                  placeholder="Select Progress"
-                  options={comboboxOptions}
-                  onchange={handleInputType}
-                  name={q.fieldName}
-                  required
-                ></lightning-combobox>
+                <lightning-combobox key={q.fieldName} label={q.label} type={q.type} value={comboboxValue} placeholder="Select Progress" options={comboboxOptions} onchange={handleInputType} name={q.fieldName} required></lightning-combobox>
+              </template>
+              <template if:false={q.reqDropdown}>
+                <lightning-input type={q.type} label={q.label} value={q.inputValue} key={q.fieldName} onchange={handleInputType} name={q.fieldName}></lightning-input>
               </template>
               <template if:true={q.regularType}>
                 <template if:true={q.reqDropdown}>
-                  <lightning-combobox
-                    key={q.fieldName}
-                    name="DiscountType"
-                    label="Discount Type"
-                    value={q.selectedDropdownValue}
-                    onchange={handleInputType}
-                    placeholder="Select Discount Type"
-                    options={typeOptions}
-                  ></lightning-combobox>
-                </template>
-                <template if:true={flatdiscount}>
-                  <lightning-combobox
-                    key={q.fieldName}
-                    name="Type"
-                    label="Type"
-                    value={q.discountoption}
-                    onchange={handleInputType}
-                    placeholder="Select Discount Type"
-                    options={discountOption}
-                  ></lightning-combobox>
-                </template>
-                <template if:true={flatdiscount}>
-                  <lightning-input
-                    type={q.type}
-                    label={q.label}
-                    value={q.inputValue}
-                    key={q.fieldName}
-                    onchange={handleInputType}
-                    name={q.fieldName}
-                  ></lightning-input>
+                  <lightning-combobox key={q.fieldName} name="DiscountType" label="Discount Type" value={q.selectedDropdownValue} onchange={handleInputType} placeholder="Select Discount Type" options={typeOptions}></lightning-combobox>
+                  <template if:true={flatdiscount}>
+                    <lightning-combobox key={q.fieldName} name="Type" label="Type" value={q.discountoption} onchange={handleInputType} placeholder="Select Discount Type" options={discountOption}></lightning-combobox>
+                  </template>
+                  <template if:true={flatdiscount}>
+                    <lightning-input type={q.type} label={q.label} value={q.inputValue} key={q.fieldName} onchange={handleInputType} name={q.fieldName}></lightning-input>
+                  </template>
                 </template>
                 <template if:true={Volumediscount}>
-                  <template
-                    for:each={itemList}
-                    for:item="item"
-                    for:index="index"
-                  >
-                    <lightning-layout multiple-rows key={item.id}>
-                      <lightning-layout-item
-                        size="12"
-                        large-device-size="2"
-                        padding="around-small"
-                      >
-                        <lightning-input
-                          type="Number"
-                          label="EndRange"
-                          data-index={index}
-                          key={item.id}
-                           value={item.UpperBound}
-                          onchange={handleInputType1}
-                          name="UpperBound"
-                        ></lightning-input>
-                      </lightning-layout-item>
-                      <lightning-layout-item
-                        size="12"
-                        large-device-size="4"
-                        padding="around-small"
-                      >
-                        <lightning-combobox
-                          key={item.id}
-                          data-index={index}
-                          name="Type"
-                          label="Type"
-                           value={item.discountoption}
-                          onchange={handleInputType1}
-                          placeholder="Select Discount Type"
-                          options={discountOption}
-                        ></lightning-combobox>
-                      </lightning-layout-item>
-                      <lightning-layout-item
-                        size="12"
-                        large-device-size="2"
-                        padding="around-small"
-                      >
-                        <lightning-input
-                          type="Number"
-                          label="Discount"
-                          data-index={index}
-                          key={item.id}
-                          value={item.Discount}
-                          onchange={handleInputType1}
-                          name="Discount"
-                        ></lightning-input>
-                      </lightning-layout-item>
-                      <div class="slds-p-top_x-large">
-                        <lightning-layout-item
-                          size="12"
-                          large-device-size="2"
-                          padding="around-small"
-                        >
-                          <lightning-icon
-                            icon-name="action:new"
-                            data-index={index}
-                            key={item.id}
-                            id={index}
-                            alternative-text="Add   Row"
-                            size="x-small"
-                            title="ADD_ROW"
-                            onclick={addRow}
-                          >
-                          </lightning-icon>
+                  <template if:true={q.reqDropdown}>
+                    <template for:each={itemList} for:item="item" for:index="index">
+                      <lightning-layout multiple-rows key={item.id}>
+                        <lightning-layout-item size="12" large-device-size="2" padding="around-small">
+                          <lightning-input type="Number" label="EndRange" data-index={index} key={item.id} value={item.UpperBound} onchange={handleInputType1} name="UpperBound"></lightning-input>
                         </lightning-layout-item>
-                        <lightning-layout-item
-                          size="12"
-                          large-device-size="2"
-                          padding="around-small"
-                        >
-                        <template if:false={disableicon}>
-                          <lightning-icon
-                            icon-name="action:remove_relationship"
-                            data-index={index}
-                            key={item.id}
-                            id={index}
-                            alternative-text="Delete   Row"
-                            size="x-small"
-                            title="DELETE_ROW"
-                            disabled={disableicon}
-                            onclick={removeRow}
-                          >
-                          </lightning-icon>
-                        </template>
+                        <lightning-layout-item size="12" large-device-size="4" padding="around-small">
+                          <lightning-combobox key={item.id} data-index={index} name="Type" label="Type" value={item.discountoption} onchange={handleInputType1} placeholder="Select Discount Type" options={discountOption}></lightning-combobox>
                         </lightning-layout-item>
-                      </div>
-                    </lightning-layout>
+                        <lightning-layout-item size="12" large-device-size="2" padding="around-small">
+                          <lightning-input type="Number" label="Discount" data-index={index} key={item.id} value={item.Discount} onchange={handleInputType1} name="Discount"></lightning-input>
+                        </lightning-layout-item>
+                        <div class="slds-p-top_x-large">
+                          <lightning-layout-item size="12" large-device-size="2" padding="around-small">
+                            <lightning-icon icon-name="action:new" data-index={index} key={item.id} id={index} alternative-text="Add   Row" size="x-small" title="ADD_ROW" onclick={addRow}></lightning-icon>
+                          </lightning-layout-item>
+                          <lightning-layout-item size="12" large-device-size="2" padding="around-small">
+                            <template if:false={disableicon}>
+                              <lightning-icon icon-name="action:remove_relationship" data-index={index} key={item.id} id={index} alternative-text="Delete   Row" size="x-small" title="DELETE_ROW" disabled={disableicon} onclick={removeRow}></lightning-icon>
+                            </template>
+                          </lightning-layout-item>
+                        </div>
+                      </lightning-layout>
+                    </template>
                   </template>
                 </template>
               </template>
             </template>
           </div>
           <footer class="slds-modal__footer">
-            <button
-              class="slds-button slds-button_neutral"
-              onclick={closeinlineEditPopup}
-              title="Cancel"
-            >
-              Cancel
+            <button class="slds-button slds-button_neutral" onclick={closeinlineEditPopup} title="Cancel"> Cancel </button>
+            <button class="slds-button slds-button_brand" onclick={updateinlineEditPopup} title="Apply"> Update </button>
+          </footer>
+        </div>
+      </section>
+      <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+    <template if:true={isPromoModalOpen}>
+      <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+        <div class="slds-modal__container">
+          <header class="slds-modal__header">
+            <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" onclick={closePromoModal}>
+              <lightning-icon icon-name="utility:close" alternative-text="close" size="small"></lightning-icon>
+              <span class="slds-assistive-text">Close</span>
             </button>
-            <button
-              class="slds-button slds-button_brand"
-              onclick={updateinlineEditPopup}
-              title="Apply"
-            >
-              Update
-            </button>
+            <h2 class="slds-text-heading_medium">Available Promotions</h2>
+          </header>
+          <div class="slds-modal__content slds-p-around_medium">
+            <lightning-datatable data={promodata} columns={modalColumns} key-field="Id" onrowselection={handleRowSelection}></lightning-datatable>
+          </div>
+          <footer class="slds-modal__footer">
+            <lightning-button variant="neutral" label="Cancel" onclick={closePromoModal}></lightning-button>&nbsp;&nbsp; <lightning-button variant="brand" label="Select" onclick={applyPromotion}></lightning-button>
           </footer>
         </div>
       </section>

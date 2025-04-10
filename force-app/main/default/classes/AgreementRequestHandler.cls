@@ -40,6 +40,167 @@ public class AgreementRequestHandler implements IGenerateAgreementController {
         public String relatedName { get; set; }
     }
     
+         @AuraEnabled
+    public static List<Object> customPriceCalculation(String agreementdata) {
+        list<object> lst=new list<Object>();
+           List<aggrementItems> lstProductData = (List<aggrementItems>)JSON.deserialize(agreementdata, List<aggrementItems>.class);
+
+            for (aggrementItems lineitem : lstProductData) {
+                decimal price=lineitem.netPrice;
+            if (lineitem.netPrice != null) {
+                if (lineitem.Rebate != null) {
+                    lineitem.netPrice -= (price * lineitem.Rebate) / 100;
+                }
+                if (lineitem.Rebate2 != null) {
+                    lineitem.netPrice -= (lineitem.netPrice * lineitem.Rebate2) / 100;
+                }
+                if (lineitem.Rebate3 != null) {
+                    lineitem.netPrice -= (lineitem.netPrice * lineitem.Rebate3) / 100;
+                }
+            }
+        }
+
+        // // Check for null or blank input
+        // if (String.isBlank(orderdata)) {
+        //     throw new IllegalArgumentException('Input orderdata is null, empty, or invalid');
+        // }
+
+        // System.debug('Input orderdata: ' + orderdata);
+
+        // List<Object> lineitems = new List<Object>();
+        // List<ProductWrapper> lstProductData;
+
+        // try {
+        //     // Deserialize the input JSON string
+        //     lstProductData = (List<ProductWrapper>)JSON.deserialize(orderdata, List<ProductWrapper>.class);
+        //     System.debug('Deserialized lstProductData: ' + lstProductData);
+        // } catch (Exception e) {
+        //     throw new IllegalArgumentException('Failed to parse input JSON: ' + e.getMessage());
+        // }
+
+        // // Process the data
+        // for (ProductWrapper lineitem : lstProductData) {
+        //     if (lineitem.netPrice != null) {
+        //         if (lineitem.Rebate != null) {
+        //             lineitem.netPrice -= (lineitem.netPrice * lineitem.Rebate) / 100;
+        //         }
+        //         if (lineitem.Rebate2 != null) {
+        //             lineitem.netPrice -= (lineitem.netPrice * lineitem.Rebate2) / 100;
+        //         }
+        //         if (lineitem.Rebate3 != null) {
+        //             lineitem.netPrice -= (lineitem.netPrice * lineitem.Rebate3) / 100;
+        //         }
+        //     }
+        // }
+
+        // System.debug('Processed lstProductData: ' + lstProductData);
+
+        // // Return the processed data
+        return lstProductData;
+    }
+ public class FieldInfo1 {
+        @AuraEnabled public String label { get; set; }
+        @AuraEnabled public String fieldName { get; set; }
+        @AuraEnabled public String fieldtype { get; set; }
+        @AuraEnabled public String referenceValue { get; set; }
+        
+        public FieldInfo1(String label, String fieldName, String fieldtype,String referenceValue) {
+            this.label = label;
+            this.fieldName = fieldName;
+            this.fieldtype = fieldtype;
+            this.referenceValue = referenceValue;
+        }
+    } 
+  public static List<FieldInfo1> getFields() {
+    Agreement_Filter_Criteria_Metadata__mdt objapiname=[SELECT Id,Object_Api_Name__c,Field_Api_Names__c  FROM Agreement_Filter_Criteria_Metadata__mdt LIMIT 1 ];
+    string obj=objapiname.Object_Api_Name__c;
+    list<String> fields= objapiname.Field_Api_Names__c.split('\r\n');
+    System.debug(fields+' fields');
+       Schema.SObjectType sObjectType = Schema.getGlobalDescribe().get(obj);
+        Map<String, Schema.SObjectField> fieldMap = sObjectType.getDescribe().fields.getMap();
+        List<FieldInfo1> fieldDetails = new List<FieldInfo1>();
+        
+        for (String fieldName : fields) {
+            //if (fieldName.endsWith('__c') || fieldName == 'Name' || fieldName == 'Id' ) {
+                
+                
+                Schema.SObjectField field = fieldMap.get(fieldName);
+                String label = field.getDescribe().getLabel();
+                String fieldtype = field.getDescribe().getType().name(); 
+                String referenceValue='';
+                if(fieldtype=='REFERENCE'){
+                    List<Schema.SObjectType> referenceTo = field.getDescribe().getReferenceTo(); 
+                    for (Schema.SObjectType relatedObject : referenceTo) 
+                    { 
+                        referenceValue=relatedObject.getDescribe().getName();
+                    }
+                }
+                fieldDetails.add(new FieldInfo1(label, fieldName, fieldtype, referenceValue));
+           
+        }
+        return fieldDetails;
+    }
+ public class pickListValue {
+        @AuraEnabled public String label { get; set; }
+        @AuraEnabled public String value { get; set; }
+        
+      
+    } 
+    public static List<object> getPicklistValues(String objectApiName, String fieldApiName) {
+            list<pickListValue> values= new List<pickListValue>();
+        try {
+            Schema.SObjectType objectType = Schema.getGlobalDescribe().get(objectApiName);
+            if (objectType != null) {
+                Schema.DescribeFieldResult fieldDescribe = objectType.getDescribe().fields.getMap().get(fieldApiName).getDescribe();
+                if (fieldDescribe != null && fieldDescribe.getPicklistValues() != null) {
+                    for (Schema.PicklistEntry entry : fieldDescribe.getPicklistValues()) {
+                        System.debug(entry+' entry');
+                        boolean active=entry.isActive();
+                        if(active==true){
+                            pickListValue pl =new pickListValue();
+                            pl.label=entry.getLabel();
+                            pl.value=entry.getValue();
+                            values.add(pl);
+                        
+                        }
+                    }
+                     System.debug(values+' values');
+                }
+            }
+        } catch (Exception e) {
+            throw new AuraHandledException('Error fetching picklist values: ' + e.getMessage());
+        }
+        return values;
+    }
+
+    public static List<FieldInfo1> getSObjectFields(String sObjectApiName) {
+        Schema.SObjectType sObjectType = Schema.getGlobalDescribe().get(sObjectApiName);
+        Map<String, Schema.SObjectField> fieldMap = sObjectType.getDescribe().fields.getMap();
+        Map<String, Schema.SObjectField> customFieldMap = new Map<String, Schema.SObjectField>();
+        List<FieldInfo1> fieldDetails = new List<FieldInfo1>();
+        
+        for (String fieldName : fieldMap.keySet()) {
+                customFieldMap.put(fieldName, fieldMap.get(fieldName));
+                
+
+                Schema.SObjectField field = customFieldMap.get(fieldName);
+                String label = field.getDescribe().getLabel();
+                String fieldtype = field.getDescribe().getType().name(); 
+                String referenceValue='';
+                if(fieldtype=='REFERENCE'){
+                    List<Schema.SObjectType> referenceTo = field.getDescribe().getReferenceTo(); 
+                    for (Schema.SObjectType relatedObject : referenceTo) 
+                    { 
+                        referenceValue=relatedObject.getDescribe().getName();
+                    }
+                 
+                }
+                fieldDetails.add(new FieldInfo1(label, fieldName, fieldtype, referenceValue));
+        }
+        return fieldDetails;
+    }
+    
+
     @AuraEnabled
     public static List<String> getApprovalsRelatedData() {
         List<String> result = new List<String>();
@@ -95,6 +256,17 @@ public class AgreementRequestHandler implements IGenerateAgreementController {
     }
     
     
+ public static String objectApiname( ) {
+  string objectApiname;
+  Agreement_Filter_Criteria_Metadata__mdt objapiname=[SELECT Id,Object_Api_Name__c FROM Agreement_Filter_Criteria_Metadata__mdt LIMIT 1 ];
+                objectApiname=objapiname.Object_Api_Name__c;
+  return objectApiname;
+
+
+ }
+    
+
+
     @AuraEnabled(cacheable=true)
     public static List<Object> getApprovalObjMetadata( ) {
         return [Select id,Submit_Approvals_Automatically__c,Approval_Product_To_Be_Used__c  from Agreement_Request_Setting__mdt where DeveloperName ='Approval_Settings'  WITH SECURITY_ENFORCED];
@@ -102,7 +274,7 @@ public class AgreementRequestHandler implements IGenerateAgreementController {
     
     @AuraEnabled(cacheable=true)
     public static List<Object> getAgreementRequestSettingMetadata(String devName ) {
-        return [Select id,DeveloperName,Is_Agreement_Accelerator__c,Is_Signature__c,Is_Approval_Detail__c from Agreement_Request_Setting__mdt where DeveloperName = :devName   WITH SECURITY_ENFORCED];
+        return [Select id,DeveloperName,Is_Agreement_Accelerator__c,Is_Signature__c,Enable_Promotions__c,Is_Approval_Detail__c from Agreement_Request_Setting__mdt where DeveloperName = :devName   WITH SECURITY_ENFORCED];
     }
     
     @AuraEnabled(cacheable=true)
@@ -195,9 +367,10 @@ public class AgreementRequestHandler implements IGenerateAgreementController {
     
     
     @AuraEnabled
-    public static List<ValidationResult> validateData(Map<String, String> fieldValues) {
+    public static List<ValidationResult> validateData(Map<String, String> fieldValues, String cartcount) {
         List<ValidationResult> validationResults = new List<ValidationResult>();
         
+        System.debug('cartcount : '+cartcount);
         for (String field : fieldValues.keySet()) {
             System.debug('Validating field: ' + field);
             String fieldValue = fieldValues.get(field);
@@ -780,23 +953,93 @@ return JSON.serialize(agrResponse);
         string   objName = 'Aggrement__c';
         return objName;
     }
-    @AuraEnabled
-    public static List<Object>  AgreementPricevalidate(string agreementLineItemData){  
-        System.debug( 'apw.discount'+agreementLineItemData);
-        List<aggrementItems> lstProductData = (List<aggrementItems>)JSON.deserialize(agreementLineItemData, List<aggrementItems>.class);
-        System.debug( 'apw.lstProductData'+lstProductData);
-        for(aggrementItems apw:lstProductData){
-            System.debug( 'apw'+apw);
-            if(apw.productCode=='SL9060'&&apw.discount==10){
-                apw.discount=20;
-                System.debug(apw.discount+'apw.discount');
-                apw.netPrice= apw.netPrice-( apw.netPrice* 10)/100;
-                System.debug(apw.netPrice+'apw.netPrice');
-            }
+    
+   /* //Autria code
+       @AuraEnabled
+public static List<Object> AgreementPricevalidate(string agreementLineItemData) {
+    System.debug('apw.discount: ' + agreementLineItemData);
+    List<aggrementItems> lstProductData = (List<aggrementItems>)JSON.deserialize(agreementLineItemData, List<aggrementItems>.class);
+    System.debug('apw.lstProductData: ' + lstProductData);
+
+    for (aggrementItems apw : lstProductData) {
+        System.debug('apw: ' + apw);
+        
+        if (apw.productCode == 'SL9060' && apw.discount == 10) {
+            apw.discount = 20;
+            System.debug(apw.discount + ' apw.discount');
+            apw.netPrice = apw.netPrice - (apw.netPrice * 10) / 100;
+            System.debug(apw.netPrice + ' apw.netPrice');
         }
-        System.debug(lstProductData+'lstProductDataq');
-        return lstProductData;
+
+       
     }
+
+    System.debug('lstProductData final: ' + lstProductData);
+    return lstProductData;
+}*/
+//Thailand code
+  	@AuraEnabled
+    public static List<Object> AgreementPricevalidate(string agreementLineItemData) {
+        System.debug('apw.discount: ' + agreementLineItemData);
+        List<aggrementItems> lstProductData = (List<aggrementItems>) JSON.deserialize(
+          agreementLineItemData,
+          List<aggrementItems>.class
+        );
+        System.debug('apw.lstProductData: ' + lstProductData);
+    
+        for (aggrementItems apw : lstProductData) {
+          System.debug('apw: ' + apw);
+          System.debug('apw:BonusPrice ' + apw.BonusPrice);
+          System.debug('apw:cashDiscount ' + apw.cashDiscount);
+          System.debug('apw:Rebate2 ' + apw.Rebate2);
+          System.debug('apw:Rebate3 ' + apw.Rebate3);
+          /*     if (apw.productCode == 'SL9060' && apw.discount == 10) {
+                apw.discount = 20;
+                System.debug(apw.discount + ' apw.discount');
+                apw.netPrice = apw.netPrice - (apw.netPrice * 10) / 100;
+                System.debug(apw.netPrice + ' apw.netPrice');
+            }
+        */
+          if (apw.Rebate3 != null && apw.Rebate2 != null) {
+            throw newMessageException(
+              'Error: Both Quantity in Invoice and qty out of invoice cannot have value simultaneously.'
+            );
+          } else if (apw.Rebate2 != null) {
+            Decimal contractbreak = 5;
+            Decimal result = (apw.Rebate2 / apw.contractbreak) + 1;
+            apw.netPrice = apw.listPrice / result;
+            if (apw.TD != null) {
+              decimal td = (1 - (apw.TD / 100));
+              apw.netPrice = apw.netPrice * td;
+            }
+          } else if (apw.Rebate3 != null) {
+            Decimal contractbreak = 1;
+            apw.Quantity = apw.Quantity != null ? apw.Quantity : 1;
+            Decimal result =
+              (((apw.Rebate3 / apw.contractbreak) / apw.Quantity) / 1) + 1;
+            apw.netPrice = apw.listPrice / result;
+            if (apw.TD != null) {
+              decimal td = (1 - (apw.TD / 100));
+              apw.netPrice = apw.netPrice * td;
+            }
+          } else if (apw.TD != null) {
+            decimal td = (1 - (apw.TD / 100));
+            apw.netPrice = apw.listPrice * td;
+          }
+        }
+    
+        System.debug('lstProductData final: ' + lstProductData);
+        return lstProductData;
+      }
+
+private static AuraHandledException newMessageException(String message) {
+    AuraHandledException e = new AuraHandledException(message);
+    string msg=message;
+    e.setMessage(msg);
+    System.debug('AuraHandledException: ' + e);
+    return e;
+}
+
     
     @AuraEnabled
     public static string Agreementlineitemsvalidate(string agreementLineItemData){ 
@@ -804,7 +1047,7 @@ return JSON.serialize(agrResponse);
         boolean error;
         List<aggrementItems> lstProductData = (List<aggrementItems>)JSON.deserialize(agreementLineItemData, List<aggrementItems>.class);
         for(aggrementItems apw:lstProductData){
-            if(apw.productCode=='SL9040'&&apw.discount>10){
+            if(apw.productCode=='GC1040'&&apw.discount>10){
                 error=true;
                 errorMessage += 'Row ' + apw.recordIndex + ': Discount exceeds 10% for ' + apw.productName;
             }
@@ -1025,7 +1268,9 @@ system.debug(apprDetails);
     }
     
     
-    public Object updateAgreementLineItemData(String recordId, List<Object> agreementLineItemData) {
+    public Object updateAgreementLineItemData(String recordId, string lstOrderData) {
+       
+       
         List<Agreement_Line_Item__c > itemsToDelete = [SELECT Id FROM Agreement_Line_Item__c WHERE Aggreement__c= :recordId];
         if(!itemsToDelete.isEmpty()){
             Delete itemsToDelete;
@@ -1033,24 +1278,28 @@ system.debug(apprDetails);
         Decimal listprice = 0;
         List<Agreement_Line_Item__c > itemsToInsert = new List<Agreement_Line_Item__c>();
         try{
-            String productDataJSON = JSON.serialize(agreementLineItemData);
-            List<Object> scopeObjectsData = (List<Object>) JSON.deserializeUntyped(
-                productDataJSON
-            );
-            for (Object scopeObject : scopeObjectsData) {
-                Map<String, Object> scopeMap = (Map<String, Object>) scopeObject;
+         List<aggrementItems> scopeObject = (List<aggrementItems>)JSON.deserialize(lstOrderData, List<aggrementItems>.class);
+            for (aggrementItems scopeObjectsData : scopeObject) {
                 Agreement_Line_Item__c agrLI = new Agreement_Line_Item__c();
-                if (scopeMap.containsKey('listPrice') && scopeMap.get('listPrice') != null) {
-                    agrLI.List_Price__c = Decimal.valueOf(String.valueOf(scopeMap.get('listPrice')));      
+                if (  scopeObjectsData.listPrice!= null) {
+                    agrLI.List_Price__c = Decimal.valueOf(String.valueOf(scopeObjectsData.listPrice));      
                 }
-                if (scopeMap.containsKey('netPrice') && scopeMap.get('netPrice') != null) {
-                    agrLI.Contract_Net_Price__c = Decimal.valueOf(String.valueOf(scopeMap.get('netPrice')));      
+                if ( scopeObjectsData.netPrice != null) {
+                    agrLI.Contract_Net_Price__c = Decimal.valueOf(String.valueOf(scopeObjectsData.netPrice));      
                 }
-                if (scopeMap.containsKey('productId') && scopeMap.get('productId') != null) {
-                    agrLI.Product__c = String.valueOf(scopeMap.get('productId'));      
+                if ( scopeObjectsData.productId != null) {
+                    agrLI.Product__c = String.valueOf(scopeObjectsData.productId);      
                 }
-                if (scopeMap.containsKey('discount') && scopeMap.get('discount') != null) {
-                    agrLI.Discount__c = Decimal.valueOf(String.valueOf(scopeMap.get('discount')));
+                if (scopeObjectsData.filterRequirements != null) {
+                    system.debug(' scopeMap.filterRequirements :: '+ scopeObjectsData.filterRequirements);
+                    agrLI.Criteria__c = JSON.serialize(scopeObjectsData.filterRequirements); 
+                    system.debug(' agrLI.Criteria__c :: '+ agrLI.Criteria__c);
+                }
+                if ( scopeObjectsData.condition != null) {
+                    agrLI.Condition__c = String.valueOf(scopeObjectsData.condition);      
+                }                
+                if ( scopeObjectsData.discount != null) {
+                    agrLI.Discount__c = scopeObjectsData.discount;
                     if(agrLI.Discount__c >= 20){
                         if(agrLI.Discount__c >= 30){
                             agrLI.Needs_Level_2_Approval__c = True;
@@ -1247,6 +1496,12 @@ system.debug('Selected Price catalog pricelistId ::: '+pricelistId);
             agr.productCode = prod.ProductCode;
             agr.productFamily = prod.Family;
             agr.listPrice = pr.List_Price__c;
+            if(agr.productCode=='SL9040'){
+            agr.contractbreak=5;
+            }
+            else if(agr.productCode=='SL9060'){
+                agr.contractbreak=1; 
+            }
             agreProductWrapper.add(agr);
         }        
         return agreProductWrapper;
@@ -1593,7 +1848,6 @@ agreProductWrapper.add(agr);
                                                         }
     
     
-    
     @AuraEnabled
     public static Id generatePDFAndSave(Id recordId,Id templateId) {
         
@@ -1613,6 +1867,7 @@ agreProductWrapper.add(agr);
         insert contentVersion;
         return contentVersion.Id;
     }
+
     
     
     @AuraEnabled
@@ -1767,6 +2022,9 @@ agreProductWrapper.add(agr);
         @AuraEnabled
         public Decimal discount { get; set; }
         
+          @AuraEnabled
+        public Decimal contractbreak { get; set; }
+        
         @AuraEnabled
         public Decimal netPrice { get; set; }
         
@@ -1849,6 +2107,49 @@ agreProductWrapper.add(agr);
         
         @AuraEnabled
         public Decimal listPrice { get; set; }
+
+            @AuraEnabled
+        public Decimal Rebate { get; set; }
+        
+          @AuraEnabled
+        public Decimal contractbreak { get; set; }
+
+        @AuraEnabled
+        public Decimal Rebate2 { get; set; }
+
+        @AuraEnabled
+        public Decimal Rebate3 { get; set; }
+        
+         @AuraEnabled
+        public Decimal TD { get; set; }
+        
+         @AuraEnabled
+        public Decimal Quantity { get; set; }
+
+        @AuraEnabled
+        public Boolean customdiscount { get; set; }
+
+        @AuraEnabled
+        public Boolean valuechanged { get; set; }
+
+        @AuraEnabled
+        public Boolean hasValue { get; set; }
+
+            
+        @AuraEnabled
+        public String condition {get; set;}
+        
+        @AuraEnabled
+        public Decimal cashDiscount {get; set;}
+       
+   	   @AuraEnabled
+        public decimal BonusPrice {get; set;}
+
+         @AuraEnabled
+        public List<filterRequirements> filterRequirements {get; set;}
+
+       
+
     }
     
     public class EntryFormWrapper{
@@ -1948,4 +2249,24 @@ agreProductWrapper.add(agr);
         @AuraEnabled
         public String Phone {get; set;}
     }
+
+      public class filterRequirements{
+        @AuraEnabled
+        public String id {get; set;}
+        
+        @AuraEnabled
+        public String field  {get; set;}
+        
+        @AuraEnabled
+        public String operator {get; set;}
+        
+        @AuraEnabled
+        public String value {get; set;}
+          
+        @AuraEnabled
+        public List<String> selectedValues {get; set;}  
+   
+     }
+
+
 }

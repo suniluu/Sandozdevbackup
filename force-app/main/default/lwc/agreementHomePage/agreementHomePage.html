@@ -82,25 +82,27 @@
             </c-agreement-header-page>-->
             <c-agreement-header-page record-id={recordId} object-name={objectName} objectapiname={objectapiname}
                 onheadersaved={handleHeaderSaved} onheaderloaded={handleHeaderLoaded} is-agreement={isAgreement}
-                not-agreement={notAgreement}>
+                not-agreement={notAgreement} cart-count={cartCount}>
             </c-agreement-header-page>
         </div>
         <div class={secondPageClass} data-step="2">
             <template if:true={orderReduestLoaded}>
-                <c-product-selection-component selected-rows={productdata} record-id={recordId}
-                    field-values={fieldValues} deleterecorddata={deleteRecordData}
+                <c-product-selection-component selected-rows={productdata} record-id={recordId} onupdatepricefilterselection={updatepricefilterselection}
+                    field-values={fieldValues} deleterecorddata={deleteRecordData} filterfield={filterfield}
                     field-data-with-labels={rawFieldSetData} ongetproductselections={handlegetproductselections}
                     pre-selected-rows={preSelectedRows} pre-fast-selected-rows={preFastSelectedRows}
-                    objectapiname={objectapiname}></c-product-selection-component>
+                    objectapiname={objectapiname} conditional-value={conditionalValue} index={filterindex} rows={rows}></c-product-selection-component>
             </template>
         </div>
         <div class={thirdPageClass} data-step="3">
-            <c-agreementpriceproduct product-data={productdata} newlineitems={newlineitems} index={index}
-                onerrormsg={errormsg} ondiscount={discount} initial-records={initialRecords} initial-data={initialData}
-                onproductdatadelete={deletedata}></c-agreementpriceproduct>
+              <template if:true={loadpriceProduct}>                                     
+                <c-agreementpriceproduct product-data={productdata} newlineitems={newlineitems} index={index} key-index={keyIndex}  item-listmap={itemListmap} flatmap={flatmap}
+                    onerrormsg={errormsg} ondiscount={discount} initial-records={initialRecords} initial-data={initialData}
+                    onproductdatadelete={deletedata}></c-agreementpriceproduct>
+            </template>               
         </div>
         <div class={fourthPageClass} data-step="4">
-            <c-agreementsummarypage record-id={recordId} objectname={objectName} product-data={discountdataprod}
+            <c-agreementsummarypage record-id={recordId} objectname={objectName} product-data={discountdataprod} filterfield={filterfield}
                 field-values={fieldValues} ongenerateapprovalrequests={handleGenerateApprovalRequests}
                 rawdata={rawFieldSetData} is-agreement={isAgreement} not-agreement={notAgreement}>
             </c-agreementsummarypage>

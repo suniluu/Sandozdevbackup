@@ -14,3 +14,7 @@
 .reset-icon{
      transform: scaleX(-1);
 }
+.heightAdjust{
+    width: auto;
+    height: 5%;
+}

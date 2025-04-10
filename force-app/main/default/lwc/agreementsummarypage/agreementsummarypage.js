@@ -26,6 +26,7 @@ export default class Agreementsummarypage extends NavigationMixin(LightningEleme
     @api autoApprovals = null; 
      @api notAgreement;
     @api isAgreement;
+    @api filterfield;
 
     @track steps = [
         { id: 1, label: 'Step 1: Updating Agreement', completed: false },
@@ -137,7 +138,9 @@ export default class Agreementsummarypage extends NavigationMixin(LightningEleme
             
     }*/
 
+
     connectedCallback() {
+     
     console.log('jj summary page raw data is :', JSON.stringify(this.rawdata));
 
     // Fetch approvals-related data
@@ -210,7 +213,16 @@ export default class Agreementsummarypage extends NavigationMixin(LightningEleme
             fieldName: item.fieldName, // Use the actual fieldName from the object
             value: item.value || '--' // Default to '--' if value is null or undefined
         }));
+        if(this.filterfield.length>1){
+         let filterArray = this.filterfield.map(item => ({
+  fieldName: item.fieldName,
+  value: item.fieldName === "filterRequirements"
+    ? JSON.stringify(item.value) || "--"
+    : item.value || "--" 
+}));
 
+        resultArray=[...resultArray,...filterArray];
+        }
         // Step 2: Incorporate fieldValues (if any) to override or add
         Object.keys(this.fieldValues).forEach(key => {
             let existingEntry = resultArray.find(entry => entry.fieldName === key);

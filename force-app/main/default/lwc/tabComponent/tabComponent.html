@@ -1,6 +1,6 @@
 <template>
     <template lwc:if={quickOrder}>
-        <c-fast-order rec-id={recId} ongetfastorderproduct={handleFastOrderProduct} price-list-api={priceList} cer-api={cerApi}  fields={fields} pre-fast-selected-rows={preFastSelectedRows}></c-fast-order>
+        <c-fast-order rec-id={recId} ongetfastorderproduct={handleFastOrderProduct} onfasthandleaddtocart={handlefasthandleaddtocart} loading={loading} price-list-api={priceList} cer-api={cerApi}  fields={fields} pre-fast-selected-rows={preFastSelectedRows}></c-fast-order>
     </template>
     <template lwc:if={reorder}>
         <c-reorder rec-id={recId} ongetreorderproduct={handleReorderProds}></c-reorder>
@@ -9,6 +9,6 @@
         <c-contracted-products rec-id={recId} ></c-contracted-products>
     </template>
     <template lwc:if={pricing}>
-        <c-pricing-component rec-id={recId} ongetpricingcompareproduct={handlePricingComapareProds} price-list-api={priceList} cer-api={cerApi}  fields={fields}  pre-selected-rows={preSelectedRows} ></c-pricing-component>
+        <c-pricing-component rec-id={recId} loading={loading} ongetpricingcompareproduct={handlePricingComapareProds} price-list-api={priceList} cer-api={cerApi}  fields={fields}  pre-selected-rows={preSelectedRows} ></c-pricing-component>
     </template>
 </template>

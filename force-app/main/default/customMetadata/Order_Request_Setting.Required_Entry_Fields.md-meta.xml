@@ -8,6 +8,6 @@
     </values>
     <values>
         <field>Plugin__c</field>
-        <value xsi:type="xsd:string">Aggreement__c</value>
+        <value xsi:type="xsd:string">Aggreement__c,Delivery_Date__c</value>
     </values>
 </CustomMetadata>

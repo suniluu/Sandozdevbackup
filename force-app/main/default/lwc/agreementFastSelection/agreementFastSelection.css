@@ -2,11 +2,11 @@
 	color : black;
 }
 .button-div-width {
-    width: 11.5rem;
+    width: 14.5rem;
 }
 .addrow-input{
     float: left; 
-    width:3rem;
+    width:27%;
 }
 .backgroundcolor {
   --sds-c-icon-color-background: var(--lwc-brandAccessible, rgb(1, 118, 211));

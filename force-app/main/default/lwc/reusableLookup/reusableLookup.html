@@ -4,31 +4,35 @@
             <div class="slds-combobox_container" if:false={isValueSelected}>
                 <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open">
                     <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right" role="none">
-                        <lightning-input onchange={handleChange} type="search" autocomplete="off" value={selectedRecordId} variant="label-hidden" placeholder={placeholder}
-                            onblur={handleInputBlur}></lightning-input>
+                        <lightning-input 
+                            onchange={handleChange} 
+                            type="search" 
+                            autocomplete="off" 
+                            value={searchString} 
+                            variant="label-hidden" 
+                            placeholder={placeholder}
+                            onblur={handleInputBlur} 
+                            onkeypress={handleKeyPress}>
+                        </lightning-input>
                     </div>
                 </div>
             </div>
             <template if:true={isValueSelected}>
-                <template if:true={required}>
-                    <span style="color:red">*</span>
-                </template>
                 <div tabindex="0" class="slds-combobox_container slds-has-selection">
                     <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click">
                         <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_left-right"
                             role="none">
-                            <span
-                                class="slds-icon_container slds-icon-standard-account slds-combobox__input-entity-icon"
+                            <span class="slds-icon_container slds-icon-standard-account slds-combobox__input-entity-icon"
                                 title="Account">
                                 <lightning-icon icon-name={selectedIconName} alternative-text={selectedIconName}
                                     size="x-small"></lightning-icon>
                             </span>
                             <button type="button"
                                 class="slds-input_faux slds-combobox__input slds-combobox__input-value" title={selectedRecordName}
-                                aria-labelledby="combobox-label-id-34 combobox-id-5-selected-value" style="padding-left: 1.75rem;"
-                                id="combobox-id-5-selected-value" aria-controls="listbox-id-5" aria-expanded="false"
+                                aria-labelledby="combobox-label-id combobox-id-selected-value" style="padding-left: 1.75rem;"
+                                id="combobox-id-selected-value" aria-controls="listbox-id" aria-expanded="false"
                                 aria-haspopup="listbox">
-                                <span class="slds-truncate" id="combobox-value-id-19" style="overflow: hidden !important;">{selectedRecordName}</span>
+                                <span class="slds-truncate" id="combobox-value-id" style="overflow: hidden !important;">{selectedRecordName}</span>
                             </button>
                             <button class="slds-button slds-button_icon slds-input__icon slds-input__icon_right"
                                 title="Remove selected option" onclick={handleCommit}>
@@ -40,7 +44,7 @@
                 </div>
             </template>
             <template if:true={showRecentRecords}>
-                <div id="listbox-id-4" tabindex="0" onblur={handleBlur} onmousedown={handleDivClick}
+                <div id="listbox-id" tabindex="0" onblur={handleBlur} onmousedown={handleDivClick}
                     class="slds-dropdown slds-dropdown_length-with-icon-7 slds-dropdown_fluid" role="listbox">
                     <ul class="slds-listbox slds-listbox_vertical" role="presentation">
                         <template for:each={recordsList} for:item="rec">

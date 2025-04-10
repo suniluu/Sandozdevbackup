@@ -1,10 +1,13 @@
 <template>
     <template lwc:if={agreementCatelog}>
          <!-- <c-agreement-catelog rec-id={recId}  fields={fields} ongetagreementcatelogprods={handlegetagreementcatelogprods} pre-selected-rows={preSelectedRows} objectapiname={objectapiname} ></c-agreement-catelog> -->
-          <c-agreement-catelog rec-id={recId}  fields={fieldDataWithLabels} ongetagreementcatelogprods={handlegetagreementcatelogprods} pre-selected-rows={preSelectedRows} objectapiname={objectapiname} ></c-agreement-catelog>
+          <c-agreement-catelog rec-id={recId} loading={loading} fields={fieldDataWithLabels}  ongetagreementcatelogprods={handlegetagreementcatelogprods} pre-selected-rows={preSelectedRows} objectapiname={objectapiname} ></c-agreement-catelog>
     </template>
     <template lwc:if={agreementSelection}>
-        <c-agreement-fast-selection   rec-id={recId}  fields={fields}  objectapiname={objectapiname} ongetagreementfastprods={handlegetagreementfastprods} field-data-with-labels={fieldDataWithLabels} pre-fast-selected-rows={preFastSelectedRows} >
+        <c-agreement-fast-selection   rec-id={recId}  fields={fields} loading={loading}  objectapiname={objectapiname} ongetagreementfastprods={handlegetagreementfastprods} field-data-with-labels={fieldDataWithLabels} pre-fast-selected-rows={preFastSelectedRows} >
         </c-agreement-fast-selection>
+    </template>
+    <template lwc:if={agreementFilter}>
+       <c-agreement-price-filter  rec-id={recId} updatedfilterfield={filterfield} field-data-with-labels={fieldDataWithLabels} onupdatepricefilter={updatepricefilter} conditional-value={conditionalValue} index={index} updatedrows={rows}></c-agreement-price-filter>
     </template>
 </template>

@@ -5,7 +5,7 @@ global Interface IGenerateReqestOrder {
     * @param Map<Id Object> scopeObjectLst 
     * @param ; 
     **/
-    Object fastOrderAddToCart(List<Object> orderData, String orderId);
+    Object fastOrderAddToCart(List<Object> orderData, String orderId, Boolean isSave);
     
     Object createConfiguration(String configId);
     
@@ -77,7 +77,7 @@ global Interface IGenerateReqestOrder {
     
     Object saveConfiguration(String orderId, List<Object> orderData, List<Object> productData);
 
-    List<Object> fetchLookupRecords(String objectApiName, String fieldApiName,String otherFieldApiName, String searchString, String selectedRecordId, String pricelistId,String recId);
+    List<Object> fetchLookupRecords(String objectApiName, String fieldApiName,String otherFieldApiName, String searchString, String selectedRecordId, String fieldData,String recId);
     
     //List<String> getOrderPricingMeta();
     Map<String, String> getOrderPricingMetadata();
@@ -86,7 +86,7 @@ global Interface IGenerateReqestOrder {
     
     String orderlineitemsvalidate(string agreementLineItemData); 
     
-    List<Object> validateData(Map<string,string> fieldValues);
+    List<Object> validateData(Map<String,String> fieldValues,Map<String, String> updatedfieldValues , String cartcount);
 
     Boolean checkIsCongaUsed(String devName);
 
@@ -96,7 +96,7 @@ global Interface IGenerateReqestOrder {
     
     List<Object> customPriceCalculation(string orderdata);
     
-    Id createPromoRecord(Map<String, Object> params);
+    Id createPromoRecord(Map<String, Object> params , Id PromoId);
     
     List<object> getAgreementLineItemFields();
     
@@ -107,4 +107,14 @@ global Interface IGenerateReqestOrder {
     String getchartData(String compName);
 
 	String getCurrencySymbol();
+    
+    String validateAccountOrderType(string recId,String recordType);
+
+    List<object> getSObjectFields(String sObjectApiName);
+
+    list<Object> getProductsList(String filterString);
+
+    List<Object> getPromotionJsonData(Id promoId);
+    
+    String getdatatableColumn(string orderType);
 }

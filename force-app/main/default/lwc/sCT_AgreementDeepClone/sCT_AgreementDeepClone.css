@@ -1,0 +1,10 @@
+.flexClass{
+	display: flex;
+}
+.filter-popup{
+	max-width: 40rem;
+	width: 40rem;
+}
+.slds-scrollable_y{
+	height:20rem;
+}

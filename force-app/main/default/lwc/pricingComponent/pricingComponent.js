@@ -7,7 +7,7 @@ export default class PricingComponent extends LightningElement {
     @track sortBy;
     @track sortDirection = 'asc';
     @track initialRecords;
-    @track dataLoading=false;
+    @api loading;
     @track isOpenFilterInput = false;
     @track filterAppliedValue = '';
     @track data;
@@ -18,6 +18,7 @@ export default class PricingComponent extends LightningElement {
     @api priceListApi;
     @api cerApi;
     @track searchKey='';
+    @track filterdata=[];
 
     pricingCompare =[];
     componentLoaded = false;
@@ -41,7 +42,7 @@ export default class PricingComponent extends LightningElement {
     }
 
     loadPricingData() {
-        this.dataLoading = true;
+        this.loading = true;
         console.log('selected price list catlog load ::; '+ JSON.stringify(this.fields));
         getPricingRecords({ recId: this.recId, fieldsData: JSON.stringify(this.fields), cerApi: this.cerApi,priceListApi: this.priceListApi})
         .then(result => {
@@ -51,7 +52,7 @@ export default class PricingComponent extends LightningElement {
             } else {
                 this.data = result;
             }
-            this.dataLoading = false;
+            this.loading = false;
         })
         .catch(error => {
             this.error = error;
@@ -59,7 +60,27 @@ export default class PricingComponent extends LightningElement {
     }
    
     loadMoreData(event) {
-        if(this.filterAppliedValue){
+            console.log('filetr filterdata :: '+JSON.stringify(this.filterdata));
+              console.log('this.filterdata>0'+this.filterdata.length);
+         if(this.filterdata.length>0 ){
+            console.log('this.filterdata>0'+this.filterdata.length);
+             const { target } = event;
+            target.isLoading = true;
+            const startIndex = this.data.length;
+            const remainingRecords = this.filterdata.length - startIndex;
+
+            if (remainingRecords > 0) {
+                const endIndex = Math.min(startIndex + 20, this.filterdata.length);
+                const newData = this.filterdata.slice(startIndex, endIndex);
+                this.data = this.data.concat(newData);
+            } else {
+                this.data = this.filterdata;
+                target.enableInfiniteLoading=false;
+            }
+            target.isLoading = false;
+
+        } else{
+            console.log('this.filterdata else'+this.filterdata.length);
             const { target } = event;
             target.isLoading = true;
             const startIndex = this.data.length;
@@ -74,7 +95,8 @@ export default class PricingComponent extends LightningElement {
                 target.enableInfiniteLoading=false;
             }
             target.isLoading = false;
-        }    
+        }
+          
     }
 
     doSorting(event) {
@@ -143,10 +165,51 @@ this.preSelectedRows = [...selectedItemsSet];
         });
         this.dispatchEvent(selectFastOrder);    
     }
+   /* handleRowSelection(event) {
+        if (event.detail.config.action) {
+            let updatedItemsSet = new Set(event.detail.selectedRows?.map((ele) => ele.Id) || []);
+            let selectedItemsSet = new Set(this.preSelectedRows);
+            let loadedItemsSet = new Set(this.data.map((ele) => ele.Id));
+
+            // Add newly selected rows
+            updatedItemsSet.forEach((id) => selectedItemsSet.add(id));
+
+            // Remove deselected rows
+            loadedItemsSet.forEach((id) => {
+                if (!updatedItemsSet.has(id)) {
+                    selectedItemsSet.delete(id);
+                }
+            });
+
+            this.preSelectedRows = [...selectedItemsSet];
+
+            // Filter selected records for pricing comparison
+            this.pricingCompare = this.initialRecords.filter((ele) =>
+                selectedItemsSet.has(ele.Id)
+            );
+
+            // Dispatch event with updated data
+            const selectedData = {
+                selectedRecord: this.pricingCompare,
+                preselected: this.preSelectedRows,
+            };
+
+            this.dispatchEvent(
+                new CustomEvent("getpricingcompareproduct", {
+                    detail: selectedData,
+                    bubbles: true,
+                    composed: true,
+                })
+            );
+        }
+    }*/
+
 
     handleSearch(event){
+        console.log(this.initialRecords.length+'len');
         const searchKey = event.target.value.toLowerCase();
         this.searchKey=searchKey;
+            const baseTableEle = this.template.querySelector('c-custom-type-datatable');
         if (searchKey.length>=3) {
             this.data = this.initialRecords;
             if (this.data) {
@@ -183,10 +246,16 @@ this.preSelectedRows = [...selectedItemsSet];
         });
       }
     });
-                this.data = searchRecords;
+    if(searchRecords.length>50){
+                this.filterdata=searchRecords;
+                this.data = searchRecords.slice(0,50);
+    }else{
+         this.data = searchRecords;
+            this.filterdata=searchRecords;
+    }
             }
         } else {
-            if(this.initialRecords.length>20){
+            if(this.initialRecords.length>50){
                   let updatedata=this.initialRecords;
                     this.columns.forEach((column) => {
       var filterValue = this.columnFilterValues[column.fieldName];
@@ -207,9 +276,12 @@ this.preSelectedRows = [...selectedItemsSet];
           return false;
         });
       }
-    });
-    
-                this.data = updatedata.slice(0, 20);
+    }); 
+     
+        console.log(updatedata.length+' updatedatalen');
+                      this.filterdata=updatedata;
+                       console.log(this.filterdata.length+' filterdatalen');
+                this.data = updatedata.slice(0, 50);
             } else {
                 let updatedata=this.initialRecords;
                     this.columns.forEach((column) => {
@@ -232,16 +304,29 @@ this.preSelectedRows = [...selectedItemsSet];
         });
       }
     });
+                  this.filterdata=updatedata;
                 this.data = updatedata;
             }
         }
+         if (baseTableEle) {
+       baseTableEle.enableInfiniteLoading = this.filterdata.length > 50;
+         baseTableEle.selectedRows = Array.isArray(this.preSelectedRows) && this.preSelectedRows.length > 0
+                ? this.preSelectedRows
+                : [];
+                console.log('end');
         
-     this.template.querySelector("c-custom-type-datatable").selectedRows=this.preSelectedRows;
+//  baseTableEle.selectedRows=this.preSelectedRows.length>0 ? this.preSelectedRows : [];
+    }
+    //this.template.querySelector("c-custom-type-datatable").selectedRows=this.preSelectedRows.length>0 ? this.preSelectedRows : [];
     }
 
     closeFilterModal(){
         this.isOpenFilterInput = false;
         this.filterAppliedValue = '';
+         const baseTableEle = this.template.querySelector('c-custom-type-datatable');
+            if (baseTableEle) {
+        baseTableEle.enableInfiniteLoading = this.filterdata.length>50;
+      }
     }
 
     handleOpenFilterInput(){
@@ -287,6 +372,7 @@ this.preSelectedRows = [...selectedItemsSet];
     handleFilterRecords(actionName) {
         var dataArray = [...this.initialRecords];
         const filterColumnName = this.columns[this.columnIndex].fieldName.trim();
+         const baseTableEle = this.template.querySelector('c-custom-type-datatable');
         this.mapFilterData[filterColumnName] = this.filterAppliedValue;
         this.columns.forEach(column => {
             var filterValue = this.columnFilterValues[column.fieldName];
@@ -332,7 +418,11 @@ this.preSelectedRows = [...selectedItemsSet];
       }
     }
         this.columns = [...this.columns];
-        this.data = dataArray; 
+           if (baseTableEle) {
+        baseTableEle.enableInfiniteLoading = this.filterdata.length>50;
+      }
+        this.filterdata=dataArray;
+        this.data = dataArray.slice(0, 50); 
         this.closeFilterModal();
         if(this.template.querySelector('.pricing')){
             if(actionName === 'clear'){

@@ -10,7 +10,7 @@
 	</div>
 	<div class={firstPageClass}>
 		<div if:true={fields}>
-			<c-entry-component object-name={objname} field-set={typename} onloadercompletion={handleloadercompletion} pre-selected-rows={preSelectedRows} pre-fast-selected-rows={preFastSelectedRows} onentrysaved={handleEntrySaved} rec-id={recId} fields={fields}></c-entry-component>
+			<c-entry-component object-name={objname} field-set={typename} onloadercompletion={handleloadercompletion} pre-selected-rows={preSelectedRows} pre-fast-selected-rows={preFastSelectedRows} onentrysaved={handleEntrySaved} rec-id={recId} fields={fields} cart-count={cartCount}></c-entry-component>
 		</div>
 	</div>
 	<div class={secondPageClass}>
@@ -21,8 +21,10 @@
 		</template>
 	</div>
 	<div class={thirdPageClass}>
-		<c-products-summary product-data={productData} index={index}  initial-data={initialData} initial-records={initialRecords}  onerrormsg={errormsg}
+		 
+		<c-products-summary product-data={productData} neworderlinestatus={neworderlinestatus} enablecancelbutton={enablecancelbutton} orderlinestatus={orderlinestatus} index={index} typename={typename}  initial-data={initialData} initial-records={initialRecords}  onerrormsg={errormsg}
 		ontotalnetprice={handletotalnetprice} cart-count={cartCount} onproductdiscount={discountdata}  ondelete={deletedata} fields={fields}></c-products-summary>
+		 
 	</div>
 	<div class={fourthPageClass}>
 		<c-checkout-Page objectname={objname} rec-id={recId} product-data={discountdataprod} typename={typename} entryselecteddata={fields} orderid={orderid}></c-checkout-Page>

@@ -4,7 +4,7 @@ public inherited sharing class OrderRequestAddToCart {
     }
     
     @AuraEnabled
-    public static Object addProductsToCart(String orderData, String orderId){
+    public static Object addProductsToCart(String orderData, String orderId, Boolean isSave){
 		Object lstrecord;
         IGenerateReqestOrder customPlugin = getCerPluginInstance('OrderEntry');
         System.debug(orderData);
@@ -12,7 +12,7 @@ public inherited sharing class OrderRequestAddToCart {
         System.debug(lstOrderData);
         if(customPlugin != null){
             try{
-                lstrecord = customPlugin.fastOrderAddToCart(lstOrderData, orderId);
+                lstrecord = customPlugin.fastOrderAddToCart(lstOrderData, orderId, isSave);
             } catch(Exception e){
                 system.debug('Error in creating order');
             }
@@ -195,12 +195,12 @@ public inherited sharing class OrderRequestAddToCart {
     }
     
     @AuraEnabled(cacheable=true)
-    public static Object validateData(Map<String, String> fieldValues) {
+    public static Object validateData(Map<String, String> fieldValues,Map<String, String> updatedfieldValues,String cartcount) {
         List<Object> result = new List<Object>();
         IGenerateReqestOrder customPlugin = getCerPluginInstance('OrderEntry');
         if(customPlugin != null){
             try{
-            	result = customPlugin.validateData(fieldValues);
+            	result = customPlugin.validateData(fieldValues,updatedfieldValues,cartcount);
             } catch(Exception e){
                 system.debug('Error encountered');
             }

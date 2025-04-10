@@ -20,13 +20,14 @@
         </div>
       </div>
       <div class="slds-col slds-size_4-of-12 icon-div">
-        <lightning-icon icon-name="action:info" alternative-text="Validate Products" title="Validate Products"
-          class="backgroundcolor slds-m-left_x-small slds-icon_container_circle   slds-float_right reset-icon"
-          size="xx-small" onclick={onvalidateProduct}></lightning-icon>
 
-        <lightning-icon icon-name="action:adjust_value" alternative-text="Validate Pricing" title="Validate Pricing"
-          class="backgroundcolor slds-m-left_x-small slds-icon_container_circle  slds-float_right reset-icon"
-          size="xx-small" onclick={onValidatePricing}></lightning-icon>
+     <lightning-icon icon-name="action:info" alternative-text="Validate Cart" title="Validate Cart"
+    class=" slds-m-left_x-small slds-icon_container_circle slds-float_right reset-icon" style="background-color: green;"
+    size="xx-small" onclick={onvalidateProduct} ></lightning-icon>
+
+        <lightning-icon icon-name="action:adjust_value" alternative-text="Update Price" title="Update Price"
+          class="  Pricing slds-m-left_x-small slds-icon_container_circle  slds-float_right reset-icon" style="background-color: orange;"
+          size="xx-small" onclick={onValidatePricing} ></lightning-icon>
         <lightning-icon icon-name="action:reset_password" alternative-text="Reset" title="Reset"
           class="backgroundcolor slds-m-left_x-small slds-float_right reset-icon" size="xx-small" onclick={onReset}>
         </lightning-icon>
@@ -41,7 +42,11 @@
         <lightning-icon icon-name="action:edit" alternative-text="Mass Edit" title="Mass Edit"
           class="backgroundcolor slds-m-left_x-small slds-float_right" size="xx-small" onclick={openMassEditPopup}>
         </lightning-icon>
-        
+        <template if:true={enablecancelbutton}>
+          <lightning-icon icon-name="action:remove" alternative-text="Cancel OrderLineItem" title="Cancel OrderLineItem"
+    class=" slds-m-left_x-small slds-icon_container_circle slds-float_right reset-icon"  
+    size="xx-small" onclick={onCancelOrderlineitems} ></lightning-icon>
+</template>
       </div>
     </div>
   </div>
@@ -50,9 +55,9 @@
     </lightning-spinner>
   </div>
   <template if:false={dataLoading}>
-    <c-custom-type-datatable key-field="recordIndex" columns={columns} data={productData}
+    <c-custom-type-datatable key-field="recordIndex" columns={columns} data={productData} onproductchanged={productchanged}  oncellchange={handleCellChange}
       onrowselection={onRowSelection} class="divDataTable" sorted-by={sortBy} sorted-direction={sortDirection}
-      oncancel={handleCancel} selected-rows={selectedids} onsave={handleSave} draft-values={saveDraftValues}
+      oncancel={handleCancel} selected-rows={selectedids} onsave={handleSave} draft-values={saveDraftValues} oncheckboxevent={checkboxevent}
       onsort={doSorting} onremove={onrowaction} onheaderaction={handleHeaderAction}></c-custom-type-datatable>
   </template>
 
@@ -279,4 +284,20 @@
     </section>
     <div class="slds-backdrop slds-backdrop_open"></div>
   </template>
+  <template if:true={showWarning}>
+    <section role="dialog" class="slds-modal slds-fade-in-open">
+        <div class="slds-modal__container">
+            <header class="slds-modal__header">
+                <h2 class="slds-text-heading_medium">Warning</h2>
+            </header>
+            <div class="slds-modal__content slds-p-around_medium">
+                <p>Please select only one promotion.</p>
+            </div>
+            <footer class="slds-modal__footer">
+                <lightning-button label="OK" variant="brand" onclick={closeWarning}></lightning-button>
+            </footer>
+        </div>
+    </section>
+    <div class="slds-backdrop slds-backdrop_open"></div>
+</template>
 </template>

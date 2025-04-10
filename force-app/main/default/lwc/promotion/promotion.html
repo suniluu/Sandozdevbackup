@@ -1,114 +1,266 @@
 <template>
-    <lightning-card title="Create New Promotion">
-        <div class="slds-p-around_medium">
-
-            <lightning-input label="Name" onchange={handleFieldChange}></lightning-input>
-
-            <lightning-input type="checkbox" label="Active" checked={Active__c} onchange={handleFieldChange}>
-            </lightning-input>
-
-            <lightning-input type="checkbox" label="Include with other promotions" checked={IncludeOtherPromo}
-                onchange={handleFieldChange}></lightning-input>
-
-            <div class="slds-grid slds-gutters">
-                <div class="slds-col slds-size_1-of-2">
-                    <lightning-input type="date" label="Effective Date" onchange={handleFieldChange}></lightning-input>
-                </div>
-                <div class="slds-col slds-size_1-of-2">
-                    <lightning-input type="date" label="Expiration Date" onchange={handleFieldChange}></lightning-input>
-                </div>
-            </div>
-
-            <lightning-dual-listbox label="Select Products" source-label="Available Products"
-                selected-label="Selected Products" options={products} value={selectedProductsCodes}
-                onchange={handleFieldChange}>
-            </lightning-dual-listbox>
-
-            <lightning-card title="Conditions">
-                <div class="slds-p-around_medium">
-                    <div class="slds-col slds-size_1-of-1 slds-p-bottom_x-small">
-                        <div class="slds-grid">
-                            <div class="slds-col slds-size_3-of-12 table-header"><strong>Field</strong></div>
-                            <div class="slds-col slds-size_3-of-12 table-header"><strong>Operator</strong></div>
-                            <div class="slds-col slds-size_3-of-12 table-header"><strong>Value</strong></div>
-                            <div class="slds-col slds-size_3-of-12 table-header"><strong>Actions</strong></div>
+    <lightning-quick-action-panel>
+        <div class="custom-header">
+            <div >
+                <lightning-layout>
+                    <lightning-layout-item class="slds-size_1-of-2 slds-text-heading_medium">
+                        <div class="icon-title-container">
+                            <lightning-icon icon-name="utility:promotions" size="large"></lightning-icon>
+                            <h2 class="header-title">Promotion</h2>
                         </div>
-                    </div>
+                    </lightning-layout-item>
+                
+                    <lightning-layout-item class="slds-size_1-of-2 ">
+                        <div class="button-container slds-p-top_small">
+                            <template if:true={isEdit}>
+                                <lightning-button label="Cancel" class="slds-m-left_small" onclick={handleCancel}>
+                                </lightning-button>
+                            </template>
+                            <lightning-button label="Save" class="slds-m-left_small" onclick={handleSave}>
+                            </lightning-button>
+                        </div>
+                    </lightning-layout-item>
+                </lightning-layout>                              
+            </div>
+        </div>  
+        <template if:true={isSpinner}>
+                <lightning-spinner alternative-text="Loading" size="large"></lightning-spinner>
+        </template>
+        <template if:false={isSpinner}>
+            <div class="tabset-container">
+                <lightning-tabset variant="scoped" active-tab-value={currentStep} onactive={handleTabChange}>
+                    <lightning-tab label="Promotion Details" value="step1" class="custom-tab">
+                        
+                    <div class="slds-p-around_medium fontColor">
+                        <lightning-layout horizontal-align="spread" multiple-rows>
+                            <lightning-layout-item size="6" padding="around-small">
+                                <lightning-input label="Name" class="bold-input-label" onchange={handleFieldChange} value={Name}>
+                                </lightning-input>
+                            </lightning-layout-item>
+                            <lightning-layout-item size="6" padding="around-small">
+                                <lightning-combobox label="Type" value={promoType} options={TypeOptions} onchange={handleFieldChange}>
+                                </lightning-combobox>    
+                            </lightning-layout-item>                        
+                            <lightning-layout-item size="6" padding="around-small">
+                                <lightning-input type="checkbox" label="Active" class="bold-input-label" checked={Active}
+                                    onchange={handleFieldChange}></lightning-input>
+                            </lightning-layout-item>
+                            <lightning-layout-item size="6" padding="around-small">
+                                <lightning-input type="checkbox" label="Include with other promotions" class="bold-input-label"
+                                    checked={IncludeOtherPromo} onchange={handleFieldChange}></lightning-input>
+                            </lightning-layout-item>
+                            <lightning-layout-item size="6" padding="around-small">
+                                <lightning-input type="date" label="Effective Date" class="bold-input-label" onchange={handleFieldChange}
+                                                value={EffectiveDate}></lightning-input>
+                            </lightning-layout-item>
+                            <lightning-layout-item size="6" padding="around-small">
+                                <lightning-input type="date" label="Expiration Date" class="bold-input-label" onchange={handleFieldChange}
+                                                value={ExpirationDate}></lightning-input>
+                            </lightning-layout-item>                            
+                        </lightning-layout>
+                    </div>    
+                    </lightning-tab>
 
-                    <template for:each={rows} for:item="row">
-                        <div class="slds-col slds-size_1-of-1 slds-p-bottom_x-small" key={row.id}>
-                            <div class="slds-grid slds-gutters">
-                                <div class="slds-col slds-size_3-of-12">
-                                    <lightning-combobox value={row.field} onchange={handleRowFieldChange}
-                                        data-id={row.id} data-field="field" options={agreementFieldOptions}>
-                                    </lightning-combobox>
+                    <lightning-tab label="Scope" value="step2">
+                        <div>
+                            <lightning-card>
+                                <div class="slds-p-around_small">
+                                    <c-product-criteria data-id="Included" is-excluded={forFalseStatement} header-name="Included Products Criteria" button-label="Add Included Products" onproductdata={handleProductIncludeData} includeddata={includedData} is-delete={isIncludeDelete}></c-product-criteria>
+                                </div>
+                                <div class="slds-p-around_small">
+                                    <c-product-criteria data-id="Excluded" is-excluded={forTrueStatement} header-name="Excluded Products Criteria"  button-label="Add Excluded Products" onproductdata={handleProductExcludeData} excludeddata={excludedData} is-delete={isExcludeDelete}></c-product-criteria>
+                                </div>
+                            </lightning-card>
+                        </div>
+                    </lightning-tab>
 
-                                </div>
-                                <div class="slds-col slds-size_3-of-12">
-                                    <lightning-combobox value={row.operator} options={operatorOptions}
-                                        onchange={handleOperatorChange} data-id={row.id} data-field="operator">
-                                    </lightning-combobox>
-                                </div>
-                                <div class="slds-col slds-size_3-of-12">
-                                    <template if:false={row.isreferenced}>
-                                        <lightning-input value={row.value} onchange={handleValueChange} data-id={row.id}
-                                            data-field="value">
-                                        </lightning-input>
-                                    </template>
-                                    <template if:true={row.isreferenced}>
-                                        <lightning-record-picker label="Search " data-id={row.id}
-                                            onchange={handleChange} matching-info={matchingInfo}
-                                            display-info={displayInfo} filter={filter}
-                                            object-api-name={row.objectApiName}></lightning-record-picker>
-                                    </template>
+                    <lightning-tab label="Criteria" value="step3">
+                            <div class="slds-box slds-border-top">               
+                                <div class="slds-theme_shade slds-grid slds-gutters slds-p-vertical_small slds-text-title_caps slds-border_bottom">
+                                <div class="slds-col slds-border_right slds-size_1-of-12"><b>Sl.No</b></div>
+                                <div class="slds-col slds-border_right slds-size_3-of-12"><b>Field</b></div>
+                                <div class="slds-col slds-border_right slds-size_3-of-12"><b>Operator</b></div>
+                                <div class="slds-col slds-border_right slds-size_3-of-12"><b>Value</b></div>
+                                <div class="slds-col slds-size_2-of-12"><b>Actions</b></div>
+                            </div>
 
-                                </div>
-                                <div class="slds-col slds-size_3-of-12">
-                                    <div class="adjustmentClass">
-                                        <lightning-button variant="neutral" label="+" onclick={addRow} data-id={row.id}>
-                                        </lightning-button>
-                                        <lightning-button variant="destructive" label="-" onclick={removeRow}
-                                            data-id={row.id} class="slds-m-left_small">
-                                        </lightning-button>
+                            <template for:each={rows} for:item="row">
+                                <div class="slds-col slds-size_1-of-1 slds-p-bottom_x-small" key={row.id}>
+                                    <div class="slds-grid slds-gutters">
+                                        <div class="slds-col slds-size_1-of-12">
+                                            <h1 class="slds-p-top_medium slds-p-left_medium slds-text-title_bold">{row.id}</h1>
+                                        </div>
+
+                                        <div class="slds-col slds-size_3-of-12">
+                                            <template if:true={conditionOptions}>
+                                                <div class="slds-p-top_large">
+                                                    <c-promotion-combo-box data-id={row.id} data-field="field" place-holder="Select an Option"
+                                                        onsendingselecteditem={handleSelectedItems} is-close-string={forTrueStatement}
+                                                        onneedoptions={handleSendingOptions} options={conditionOptions}
+                                                        object-name={objectName} onvaluereceived={handleValueReceived} 
+                                                        whole-field-value={row.criteriaValue} display-selected-label={row.criteriaLabel}
+                                                        show-dropdown={showDropdown} >
+                                                    </c-promotion-combo-box>
+                                                </div>
+                                            </template>
+                                        </div>
+
+                                        <div class="slds-col slds-size_3-of-12">
+                                            <lightning-combobox value={row.operator} options={operatorOptions} class="slds-p-top_xx-small"
+                                                onchange={handleOperatorChange} data-id={row.id} data-field="operator">
+                                            </lightning-combobox>
+                                        </div>
+
+                                        <div class="slds-col slds-size_3-of-12">
+                                            <lightning-input value={row.value} onchange={handleValueChange} class="slds-p-top_xx-small"
+                                                data-id={row.id} data-field="value">
+                                            </lightning-input>
+                                        </div>
+
+                                        <div class="slds-col slds-size_2-of-12">
+                                            <div class="adjustmentClass slds-p-top_large">
+                                                <lightning-button variant="neutral" label="+" onclick={addRow}
+                                                    data-id={row.id}>
+                                                </lightning-button>
+                                                <lightning-button variant="destructive" label="-" onclick={removeRow}
+                                                    data-id={row.id} class="slds-m-left_small">
+                                                </lightning-button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
+                            </template>
+
+                            
+                            <div class="slds-grid slds-gutters slds-p-top_xx-large slds-size_1-of-2">
+                                <label class="slds-col slds-size_1-of-4 slds-p-top_xx-small slds-text-title_bold">Conditional Requirement</label>
+                                <lightning-input variant="label-hidden" class="slds-col slds-size_2-of-5"
+                                    value={conditionalValue} onchange={handleConditionalRequirmnt}>
+                                </lightning-input>
                             </div>
                         </div>
-                    </template>
-                </div>
-            </lightning-card>
+                    </lightning-tab>
 
-    <!--<lightning-card title="Field Selector" icon-name="utility:settings">
-        <template if:true={fieldOptions}>
-            <lightning-combobox
-                label="Select Field"
-                value={selectedField}
-                options={fieldOptions}
-                onchange={handleFieldChange}>
-            </lightning-combobox>
-        </template>
-        <template if:false={fieldOptions}>
-            <lightning-spinner alternative-text="Loading fields"></lightning-spinner>
-        </template>
-    </lightning-card>-->
+                    <lightning-tab label="Benefits" value="step4">
+                        <div class="slds-p-around_small">
+                            <div class="slds-grid slds-gutters slds-wrap">
+                                <!-- Rate Type -->
+                                <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                        <lightning-combobox label="Rate Type" value={rateType}
+                                            options={rateTypeOptions} onchange={handleFieldChange}>
+                                        </lightning-combobox>
+                                </div>
 
+                                <!-- Single Rate -->
+                                <template if:true={showAdjustmentType}>
+                                    <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                            <lightning-combobox label="Adjustment Type" value={adjustmentType}
+                                                options={adjustmentTypeOptions} onchange={handleFieldChange}>
+                                            </lightning-combobox>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                        <lightning-input type="number" formatter="decimal" step="0.01" label="Adjustment Amount" onchange={handleFieldChange} value={adjustmentAmount}>
+                                        </lightning-input>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-2 slds-p-bottom_small">
+                                            <lightning-combobox label="Adjustment Applies To"
+                                                value={adjustmentAppliesTo}
+                                                options={adjustmentAppliesToOptions} onchange={handleFieldChange}>
+                                            </lightning-combobox>
+                                    </div>
+                                </template>
+                            </div>
 
-            <div class="slds-grid slds-gutters">
-                <div class="slds-col slds-size_1-of-2">
-                    <template if:true={picklistValues}>
-                        <lightning-combobox label="Adjustment Type" value={picklistValue} options={picklistValues}
-                            onchange={handleFieldChange}></lightning-combobox>
-                    </template>
-                </div>
-                <div class="slds-col slds-size_1-of-2">
-                    <lightning-input label="Adjustment Amount" onchange={handleFieldChange}></lightning-input>
-                </div>
+                            <!-- Rate Type for Tiers and No Tiers -->
+                            <template if:true={noTiersAdjustment}>
+
+                                <div class="slds-box slds-border-top">
+                                    <div class="slds-grid slds-gutters slds-p-vertical_small slds-border_bottom">
+                                        <div class="slds-col slds-border_right slds-size_4-of-12">Rate Table Columns</div>
+                                        <div class="slds-col slds-border_right slds-size_4-of-12">Unit of Measure</div>
+                                        <div class="slds-col  slds-size_4-of-12">Adjustment Apply's To</div>
+                                    </div>
+                                    <div class="slds-grid slds-gutters slds-p-vertical_small">
+                                        <div class="slds-col slds-border_right slds-size_4-of-12">
+                                            <c-promotion-combo-box onsendingselecteditem={handleSelectedItems} place-holder="Select Options"
+                                                        onneedoptions={handleSendingOptions} options={conditionOptions} is-close-string={forFalseStatement}
+                                                        object-name={objectName} onvaluereceived={handleMultiSelectCriteriaValue}
+                                                        show-dropdown={showDropdown}>
+                                            </c-promotion-combo-box>
+                                            <template if:true={multipleSelectValues}>
+                                                <lightning-pill-container items={multipleSelectValues} onitemremove={handlePillRemove}></lightning-pill-container>
+                                            </template>
+                                        </div>
+
+                                        <div class="slds-col slds-border_right slds-size_4-of-12">
+                                            <lightning-combobox value={unitOfMeasureValue} options={UOMOptions}
+                                                onchange={handleTierFieldChange} variant="label-hidden" data-field="UOM">
+                                            </lightning-combobox>
+                                        </div>
+
+                                        <div class="slds-col slds-size_4-of-12">
+                                            <lightning-combobox variant="label-hidden"
+                                                value={adjustmentTo} data-field="AdjusmentApplyTo"
+                                                options={adjustmentAppliesToOptions} onchange={handleTierFieldChange}>
+                                            </lightning-combobox>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="slds-box slds-border-top slds-m-top_medium ">
+                                    <h1 class="slds-text-title_bold slds-text-title_caps slds-p-bottom_x-small">Rate Table</h1>
+                                    <div class="slds-theme_shade slds-grid slds-gutters slds-p-vertical_small slds-text-title_caps slds-border_bottom">
+                                        <div class="slds-col slds-border_right slds-size_2-of-12 flexWrap"></div>
+                                    
+                                        <template for:each={multipleSelectValues} for:item="rangCol">
+                                            <div key={rangCol.value} class="slds-col slds-border_right flexWrap">{rangCol.label}</div>
+                                        </template>
+                                        
+                                        <template if:true={withtiersAdjustment}>
+                                        <div class="slds-col slds-border_right flexWrap">Min</div>
+                                        <div class="slds-col slds-border_right flexWrap">Max</div>
+                                        </template>
+                                    
+                                        <div class="slds-col slds-border_right flexWrap">Adjustment Type</div>
+                                        <div class="slds-col flexWrap">Adjustment Amount</div>
+                                    </div>
+                                    
+                                    <template for:each={rangeRows} for:item="ord">
+                                        <div key={ord.id} class="slds-grid slds-gutters slds-p-vertical_x-small slds-border_bottom">
+                                            <div class="slds-col slds-border_right slds-size_2-of-12 flexWrap">
+                                                <lightning-button variant="neutral" label="+" onclick={addRowr} data-id={ord.id}></lightning-button>
+                                                <lightning-button variant="destructive" label="-" onclick={removeRowr} data-id={ord.id} class="slds-m-left_small"></lightning-button>
+                                            </div>
+                                        
+                                            <template for:each={ord.rangeColumns} for:item="rangCol">
+                                                <div key={rangCol.apiName} class="slds-col slds-border_right flexWrap">
+                                                    <lightning-input data-row-id={ord.id} data-field={rangCol.apiName} value={rangCol.value} onchange={handleRangeColumns} variant="label-hidden"></lightning-input>
+                                                </div>
+                                            </template>
+                                            
+                                            <template if:true={withtiersAdjustment}>
+                                                <div class="slds-col slds-border_right flexWrap">
+                                                    <lightning-input type="number" data-id={ord.id} value={ord.minValue} data-field="minValue" onchange={handleTierMinValue} formatter="decimal" step="0.01" variant="label-hidden"></lightning-input>
+                                                </div>
+                                                <div class="slds-col slds-border_right flexWrap">
+                                                    <lightning-input type="number" data-id={ord.id} value={ord.maxValue} data-field="maxValue" onchange={handleTierMaxValue} formatter="decimal" step="0.01" variant="label-hidden"></lightning-input>
+                                                </div>
+                                            </template>
+                                        
+                                            <div class="slds-col slds-border_right flexWrap">
+                                                <lightning-combobox variant="label-hidden" data-id={ord.id} value={ord.tiersAdjustmentType} options={rangeAdjustmentTypeOptions} data-field="tiersAdjustmentType" onchange={handleTierAdjusmentTypeChange}></lightning-combobox>
+                                            </div>
+                                            <div class="slds-col flexWrap">
+                                                <lightning-input type="number" formatter="decimal" step="0.01" variant="label-hidden" data-id={ord.id} data-field="tiersAdjustmentAmount" onchange={handleTierAdjustmentAmountChange} value={ord.tiersAdjustmentAmount}></lightning-input>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>                    
+                        </div>
+                    </lightning-tab>
+                </lightning-tabset>
             </div>
-
-            <div class="slds-m-top_medium">
-                <lightning-button label="Save" onclick={handleSave}></lightning-button>
-            </div>
-
-        </div>
-    </lightning-card>
+        </template>
+    </lightning-quick-action-panel>
 </template>

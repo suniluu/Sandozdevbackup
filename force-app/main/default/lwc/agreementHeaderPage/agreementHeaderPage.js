@@ -11,11 +11,12 @@ export default class AgreementHeaderPage extends LightningElement {
     @track showButtons = false;
     @api notAgreement;
     @api isAgreement;
+    @api cartCount;
     originalFieldValues = {}; // Store original field values
     modifiedFields = {}; // Track which fields have been updated by the user
 
     connectedCallback() {
-        console.log('Object Name:', this.objectName);
+        console.log('Object NameKK:', this.objectName);
         console.log('Record ID:', this.recordId);
 
         getAgreementHomePageFieldSet({ objectName: this.objectName, recordId: this.recordId })
@@ -118,7 +119,12 @@ export default class AgreementHeaderPage extends LightningElement {
                 fieldData[field.fieldName] = field.value || '--';
             });
 
-            validateData({ fieldValues: fieldData })
+            let cartProductCount =0;
+            if(this.cartCount){
+                cartProductCount = this.cartCount?this.cartCount:0;
+            }
+
+            validateData({ fieldValues: fieldData ,cartcount:cartProductCount })
                 .then(results => {
                     if (results.length === 0) {
                         const form = this.template.querySelector('lightning-record-edit-form');

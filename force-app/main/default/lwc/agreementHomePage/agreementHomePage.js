@@ -24,6 +24,10 @@ export default class AgreementHomePage extends LightningElement {
     @api currentStep = '1';
     @track displayerror = false;
     @track checkingvalue = false;
+    @track conditionalValue='1';
+    @track filterindex=2;
+    @track rows=[];
+    @track filterfield=[];
 
     @track cartCount = 0;
     @api index = 1;
@@ -47,6 +51,18 @@ export default class AgreementHomePage extends LightningElement {
     @track notAgreement = '';
     @track approvalDetailPath;
     @track signaturePath;
+	@track keyIndex=0;
+ 
+   @track itemListmap = new Map(); 
+   @track loadpriceProduct=false;		
+   @track flatmap= new Map();		   
+ 
+    options = [
+        { label: 'None', value: 'None' },
+        { label: 'Regular Bonus', value: 'Regular Bonus' },
+        { label: 'One Time Bonus', value: 'One Time Bonus' }
+    ];								   
+    
 
     firstPageClass = 'show-div';
     secondPageClass = 'hide-div';
@@ -60,7 +76,7 @@ export default class AgreementHomePage extends LightningElement {
         if (this.checkingvalue == true && selectedStep > 3) {
             const event = new ShowToastEvent({
                 title: "Error",
-                message: "PLS click on validate pricing button once",
+                message: "Please click on validate pricing button once !",
                 variant: "error",
                 mode: "dismissable"
             });
@@ -72,7 +88,7 @@ export default class AgreementHomePage extends LightningElement {
             if (this.displayerror == true && this.oldstep < selectedStep) {
                 const event = new ShowToastEvent({
                     title: "Error",
-                    message: "There are error in cuurent You cant got to nxt page",
+                    message: "There are error in current you can't go to next page !",
                     variant: "error",
                     mode: "dismissable"
                 });
@@ -336,16 +352,32 @@ export default class AgreementHomePage extends LightningElement {
 
         getexistinglineitems({ recordId: this.recordId })
             .then(result => {
-                this.cartCount = result.length;
-                this.lineitems = result;
-                let productDataWithIndex = result;
-                const existLines = result.map(item => {
+                 let productDataWithIndex=[];
+                 if (result && Array.isArray(result.AggrementlineitemWrapper) && result.AggrementlineitemWrapper.length > 0) {
+                console.log(JSON.stringify(result)+' existinglineitem');
+                this.filterfield=[...result.filterRequirements];
+                    console.log(this.filterfield+' this.filterfield');
+                this.rows=[...result.filterRequirements];
+                 console.log(this.rows+' this.rows');
+                this.filterindex=result.filterRequirements.length+1;
+              //  this.filterindex=++this.filterindex;
+              console.log(result.filterRequirements.length+'  this.filterindex=');
+                 console.log( this.filterindex+'  this.filterindex=');
+                 this.conditionalValue=result.condition;
+             
+                
+                
+                 console.log( this.conditionalValue+'  this.conditionalValue');
+                this.cartCount = result.AggrementlineitemWrapper.length;
+                this.lineitems = result.AggrementlineitemWrapper;
+                 productDataWithIndex = result.AggrementlineitemWrapper;
+                const existLines = result.AggrementlineitemWrapper.map(item => {
                     return { ...item, recordId: item.productId };
                 });
                 const existindRecords = existLines.map((item) => item.recordId);
                 this.preSelectedRows = existindRecords;
                 this.preSelecteCatelog = this.preSelectedRows;
-                if (result && Array.isArray(result) && result.length > 0) {
+               
                     this.checkingvalue = false;
                     console.log('inside jj check');
                     this.currentStep = '4';
@@ -353,6 +385,14 @@ export default class AgreementHomePage extends LightningElement {
                     this.firstPageClass = 'hide-div';
                     this.fourthPageClass = 'show-div';
                 }
+				else{
+                    this.loadpriceProduct=true;
+                    console.log( this.loadpriceProduct+'  this.loadpriceProductelse');
+                }
+	  
+			  
+					   
+	 
                 let productsArray = [];
                 let valuesArray = [];
 
@@ -381,6 +421,31 @@ export default class AgreementHomePage extends LightningElement {
                     dataArray.push(obj);
                 }
                 productDataWithIndex = dataArray;
+                dataArray.forEach((item, index) => {
+                    if (item.selectedDropdownValue == "Volume") {
+                        
+                        const newItem = {
+                        id: this.keyIndex++,
+                        UpperBound: item.EndRange,
+                        record: true,
+                        discountoption: item.discountoption,
+                        Discount: item.discount,
+                        dataindex: item.recordIndex
+                        };
+
+                        if (!this.itemListmap[item.recordIndex]) {
+                        this.itemListmap[item.recordIndex] = [];
+                        }
+                        this.itemListmap[item.recordIndex].push(newItem);
+                    }
+                    else if(item.selectedDropdownValue == 'Flat'){
+                        this.flatmap[item.recordIndex]=item;
+                    }
+                    });
+                    this.loadpriceProduct=true;
+                     console.log( this.loadpriceProduct+'  this.loadpriceProduct');
+                      console.log('dataArray ' +JSON.stringify(dataArray));
+                    console.log(' this.itemListmap ' +JSON.stringify( this.itemListmap));
                 if (this.discountdataprod.length > 0) {
                     this.productdata = productDataWithIndex.concat(this.discountdataprod);
                     this.initialData = this.initialData ? this.initialData.concat(productDataWithIndex) : productDataWithIndex;
@@ -400,7 +465,7 @@ export default class AgreementHomePage extends LightningElement {
         console.log('getAgreementRequestSettingMetadata');
 
 
-
+       
 
 
     }
@@ -452,7 +517,11 @@ export default class AgreementHomePage extends LightningElement {
         this.preSelecteCatelog = event.detail.preselected;
         this.preSelectedFast = event.detail.fastpreSelect;
         let productDataWithIndex = event.detail.selectedrows;
-
+        this.preSelectedRows = this.preSelecteCatelog;
+        this.preFastSelectedRows =this.preSelectedFast;
+         console.log(' HOMEPAGE preSelectedRows :; '+JSON.stringify(this.preSelectedRows));
+         console.log(' HOMEPAGE preSelecteCatelog :; '+JSON.stringify(this.preSelecteCatelog));
+         console.log(' HOMEPAGE preSelectedFast :; '+JSON.stringify(this.preSelectedFast));
 
         let productsArray = [];
         let valuesArray = [];
@@ -479,7 +548,9 @@ export default class AgreementHomePage extends LightningElement {
 
             var obj = { ...valuesArray[i] };
             obj.recordIndex = this.index++;
+            obj.contractPrice = obj.listPrice ? obj.listPrice : 0;
             obj.netPrice = obj.listPrice ? obj.listPrice : 0;
+            obj.options = this.options ;
             dataArray.push(obj);
 
         }
@@ -500,6 +571,7 @@ export default class AgreementHomePage extends LightningElement {
         this.cartCount = this.productdata.length;
         console.log(JSON.stringify(this.productdata) + ' product data');
     }
+
     errormsg(event) {
         this.oldstep = this.currentStep;
 
@@ -521,5 +593,46 @@ export default class AgreementHomePage extends LightningElement {
             console.log('event' + JSON.stringify(event));
             this.dispatchEvent(event);
         }
+    }
+
+    updatepricefilterselection(event){
+        let invalidIds=[];
+         const priceFilter =event.detail; 
+         this.rows=event.detail.rows;
+         this.filterindex=event.detail.index;
+         this.conditionalValue=event.detail.conditionalValue;
+//          if(this.rows.length>1){
+//             this.rows.filter(item => {
+//       if (!(item.field && item.operator && item.value)) {
+//         invalidIds.push(item.id);
+//            console.log(JSON.stringify(invalidIds)+' invalidIds if home'); 
+//         return false;
+//       }
+//       return true;
+//     });
+//              this.rows = this.rows.filter(item => 
+//   item.field && item.operator && item.value
+// );
+//  let tokens = this.conditionalValue.split(" ");
+
+//  for(let rowIdToRemove of invalidIds){
+//   const index = tokens.indexOf(String(rowIdToRemove));
+
+//   if (index !== -1) { 
+//     if (index === 0) { 
+//       tokens.splice(index, 2);  
+//     } else if (index === tokens.length - 1) { 
+//       tokens.splice(index - 1, 2); 
+//     } else {
+     
+//       tokens.splice(index - 1, 2);  
+//     }
+//   }
+//  }
+//   this.conditionalValue = tokens.join(" ");
+//          }
+this.filterfield=[...priceFilter.filterfield];
+         console.log('priceFilter :: '+JSON.stringify(priceFilter)); 
+        
     }
 }

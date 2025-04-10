@@ -8,6 +8,6 @@
     </values>
     <values>
         <field>Plugin__c</field>
-        <value xsi:type="xsd:string">Account__c,Payment_Terms__c,Order_Type__c,Wholesaler__c,Delivery_Date__c</value>
+        <value xsi:type="xsd:string">Account__c,Payment_Terms__c,Order_Type__c,Wholesaler__c,Delivery_Date__c,Do_Not_Call__c,Location__c</value>
     </values>
 </CustomMetadata>

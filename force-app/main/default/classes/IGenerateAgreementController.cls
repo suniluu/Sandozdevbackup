@@ -14,7 +14,7 @@ global Interface IGenerateAgreementController {
     
     List<Map<String, Object>> getAgreementHomePageFieldSet(String objectName, Id recordId);
     
-    List<Object> validateData(Map<String, String> fieldValues);
+    List<Object> validateData(Map<String, String> fieldValues, String cartcount);
     
     Map<Id, String> getLookupFieldNames(List<Id> ids);
 
@@ -34,7 +34,7 @@ global Interface IGenerateAgreementController {
     
     Object updateAgreementData(String recordId, List<Object> agreementData);
 
-    Object updateAgreementLineItemData(String recordId, List<Object> agreementLineItemData);
+    Object updateAgreementLineItemData(String recordId, string agreementLineItemData);
     
     List<Object> updateProducts(String recordId, String saveDraftValues, String productData);
     
@@ -88,7 +88,15 @@ global Interface IGenerateAgreementController {
     List<Map<String, String>> getTemplateOptions();
     List<Map<String, String>> getClausesOptions();
     Id generatePDFAndSave(Id recordId,Id templateId);
+
     String previewPDF(Id recordId,Id templateId);
-    
+     List<Object> customPriceCalculation(string agreementdata);
+
+         List<object> getFields();
+    List<object> getSObjectFields(String sObjectApiName);
+
+        String objectApiname();
+            
+     List<object> getPicklistValues(String objectApiName,string fieldApiName);
     
 }

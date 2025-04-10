@@ -1,10 +1,18 @@
 <template>
-    <div class="slds-p-around_x-small">
-        <c-product-name-component value={value} objname={typeAttributes.objname} record-id={typeAttributes.recordId} fieldapi={typeAttributes.fieldapi}
+    <!-- <div class="slds-p-around_x-small">
+        <c-product-name-component value={value}  record-id={typeAttributes.recordId} fieldapi={typeAttributes.fieldapi}
                                     fieldapiname={typeAttributes.fieldapiname} field-lookup-name={typeAttributes.fieldLookupName} 
                                     addfield={typeAttributes.addField} addcol={typeAttributes.addCol} 
-                                    is-disabled={typeAttributes.isDisabled} has-value={typeAttributes.hasValue} price-list={typeAttributes.priceList}
+                                    is-disabled={typeAttributes.isDisabled} has-value={typeAttributes.hasValue} fields={typeAttributes.fields} price-list={typeAttributes.priceList}
+                                    product-name={typeAttributes.productName} rec-id={typeAttributes.recId}></c-product-name-component>
+    </div> -->
+      <div class="slds-p-around_x-small">
+        <c-product-name-component value={value}  record-id={typeAttributes.recordId} fieldapi={typeAttributes.fieldapi}
+                                    fieldapiname={typeAttributes.fieldapiname} field-lookup-name={typeAttributes.fieldLookupName} 
+                                    addfield={typeAttributes.addField} addcol={typeAttributes.addCol} 
+                                    is-disabled={typeAttributes.isDisabled} has-value={typeAttributes.hasValue} fields={typeAttributes.fields} 
+                                    objname={typeAttributes.objname}
                                     product-name={typeAttributes.productName} rec-id={typeAttributes.recId}></c-product-name-component>
     </div>
 </template>
- <!-- product-name={typeAttributes.productName} -->
+ <!-- product-name={typeAttributes.productName} price-list={typeAttributes.priceList}  objname={typeAttributes.objname}-->

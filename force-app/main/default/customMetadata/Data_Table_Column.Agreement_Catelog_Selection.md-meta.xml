@@ -17,7 +17,8 @@
 	 &quot;actions&quot;  : [{&quot;label&quot;:&quot;Set Filter&quot;,&quot;disabled&quot;:false,&quot;name&quot;:&quot;filter&quot;,&quot;iconName&quot;: &quot;utility:filter&quot;},
              {&quot;label&quot;:&quot;Clear Filter&quot;,&quot;disabled&quot;:true,&quot;name&quot;:&quot;clear&quot;,&quot;iconName&quot;: &quot;utility:clear&quot;}]
 },
-{ &quot;label&quot;: &quot;List Price&quot;, &quot;type&quot;: &quot;currency&quot;, &quot;fieldName&quot;: &quot;listPrice&quot;, &quot;sortable&quot;: &quot;true&quot; }
+{ &quot;label&quot;: &quot;List Price&quot;, &quot;type&quot;: &quot;currency&quot;, &quot;fieldName&quot;: &quot;listPrice&quot;, &quot;sortable&quot;: &quot;true&quot; },
+{ &quot;label&quot;: &quot;&quot;, &quot;fieldName&quot;: &quot;recordId&quot;, &quot;type&quot;: &quot;pricerulecol&quot;,&quot;initialWidth&quot;:200,&quot;fixedWidth&quot;: 70}
 ]</value>
     </values>
 </CustomMetadata>

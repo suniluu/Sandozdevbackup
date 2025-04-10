@@ -7,6 +7,7 @@ export default class TabComponent extends LightningElement {
     @api preFastSelectedRows;
     @api priceList;
     @api cerApi;
+    @api loading;
     get quickOrder(){
         return this.tablabel == 'Quick_Order';
     }
@@ -33,6 +34,13 @@ export default class TabComponent extends LightningElement {
 
     handlePricingComapareProds(event){
         const selectRecords = new CustomEvent("getpricingcompareproducttab",{
+            detail:event.detail, bubbles: true, composed: true
+        });
+        this.dispatchEvent(selectRecords);
+    }
+
+    handlefasthandleaddtocart(event){
+         const selectRecords = new CustomEvent("tabhandleaddtocart",{
             detail:event.detail, bubbles: true, composed: true
         });
         this.dispatchEvent(selectRecords);

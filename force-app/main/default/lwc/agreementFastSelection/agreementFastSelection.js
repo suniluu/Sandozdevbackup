@@ -15,14 +15,15 @@ export default class AgreementFastSelection extends LightningElement {
     @track initialrecords=[];
     @track rowSelectedProds=[];
     @track sortDirection = 'asc';
-    @track dataLoading=false;
+    @api loading;
     @track isOpenFilterInput = false;
     @track isModalOpen = false;
     @track isDisabled = false;
     @track filterAppliedValue = '';
-    @track numRows = 1;
+    @track numRows = 10;
     @track rowIndex = 1;
     @track selectedValue;
+    @track showLoader=false;
 
     @api recId;
     @api fields;
@@ -76,7 +77,7 @@ export default class AgreementFastSelection extends LightningElement {
     }
 
     loadCatelogData() {
-        this.dataLoading = true;
+        this.loading = true;
         const productId ='';
         getPricingRecords({ recId: this.recId,productId: productId,fieldsData : JSON.stringify(this.fieldDataWithLabels),objApi : this.objectapiname})
         .then(result => {
@@ -86,7 +87,7 @@ export default class AgreementFastSelection extends LightningElement {
             } else {
                 this.data = result;
             }
-            this.dataLoading = false;
+            this.loading = false;
         })
         .catch(error => {
             this.error = error;
@@ -230,10 +231,13 @@ export default class AgreementFastSelection extends LightningElement {
             //      console.log('if else agreemenet fast  :: '+pricelistId);
             // }
         }
+        if (!this.selectedValue && this.options.length > 0) {
+            this.selectedValue = this.options[0].value; // Default to first option if not set
+        }
         console.log('priceList outside agreemenet fast  :: '+pricelistId);
         console.log('valuesofpl agreemenet fast  :: '+valuesofpl);
         for (let i = 1; i <= this.numRows; i++) {
-            var rowData = {"recordId": this.rowIndex,"isDisabled":true,"isFamily":false,"options":this.options,"selectedValue":"Product Name","priceList" : pricelistId,"recId" : this.recId};
+            var rowData = {"recordId": this.rowIndex,"isDisabled":true,"isFamily":false,"options":this.options,"selectedValue":this.selectedValue,"priceList" : pricelistId,"recId" : this.recId};
             uploadedData.push(rowData);
             this.rowIndex++;
         }
@@ -321,10 +325,11 @@ export default class AgreementFastSelection extends LightningElement {
     saveFile() {
         try {
             this.showLoader = true;
-            console.log(JSON.stringify(this.fields));
+            console.log('SaveFIles agreement :: '+JSON.stringify(this.fieldDataWithLabels));
             this.isDisabled = true;
-            saveFile({ base64Data: JSON.stringify(this.fileContents), recId: this.recId,fieldsData : JSON.stringify(this.fields) })
+            saveFile({ base64Data: JSON.stringify(this.fileContents), recId: this.recId,fieldsData : JSON.stringify(this.fieldDataWithLabels) })
             .then(result => {
+                console.log('Savefile result :: '+ JSON.stringify(result));
                 this.fileName = '';
                 this.isDisabled = false;
                 this.isModalOpen = false;

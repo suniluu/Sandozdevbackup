@@ -1,7 +1,6 @@
-import { LightningElement, api ,track } from 'lwc';
-/*import fetchRecords from '@salesforce/apex/ReusableLookupSearch.fetchRecords';
- The delay used when debouncing event handlers before invoking Apex. */
- import fetchRecords from '@salesforce/apex/ProductController.fetchLookupRecords';
+import { LightningElement, api, track } from 'lwc';
+import fetchRecords from '@salesforce/apex/ProductController.fetchLookupRecords';
+
 const DELAY = 500;
 
 export default class ReusableLookup extends LightningElement {
@@ -17,26 +16,10 @@ export default class ReusableLookup extends LightningElement {
     @api fields;
     @api priceList;
     @api recId;
-    //@api value;
-   // @api pricelistId ="a0Fao0000019VvFEAU";
     
     recordsList = [];
     @api selectedRecordName;
     preventClosingOfSerachPanel = false;
-
-    get methodInput() {
-        return {
-            objectApiName: this.objectApiName,
-            fieldApiName: this.fieldApiName,
-            otherFieldApiName: this.otherFieldApiName,
-            searchString: this.searchString,
-            selectedRecordId: this.selectedRecordId,
-            parentRecordId: this.parentRecordId,
-            parentFieldApiName: this.parentFieldApiName,
-            pricelistId : this.priceList,
-            recId :this.recId
-        };
-    }
 
     get showRecentRecords() {
         if (!this.recordsList) {
@@ -45,16 +28,11 @@ export default class ReusableLookup extends LightningElement {
         return this.recordsList.length > 0;
     }
 
-    //getting the default selected record
     connectedCallback() {
-        console.log('pricelist from REUSABLE :: '+this.priceList);
-        console.log('recId from REUSABLE :: '+this.recId);
-        console.log('selectedRecordId from REUSABLE :: '+this.selectedRecordId);
-       // if (this.selectedRecordId) {
-        if(this.priceList){
+      
+        if(this.fields){
             this.fetchSobjectRecords(true);
         }
-       // }
     }
 
     //call the apex method
@@ -65,7 +43,7 @@ export default class ReusableLookup extends LightningElement {
             otherFieldApiName: this.otherFieldApiName,
             searchString: this.searchString,
             selectedRecordId: this.selectedRecordId,
-            pricelistId : this.priceList,
+            fieldData : this.fields,
             recId :this.recId
         }).then(result => {
             console.log('Reusable search :: '+JSON.stringify(result));
@@ -88,33 +66,56 @@ export default class ReusableLookup extends LightningElement {
     //handler for calling apex when user change the value in lookup
     handleChange(event) {
         this.searchString = event.target.value;
-       // console.log('resuable search ' +event.target.value);
-        this.fetchSobjectRecords(false);
+        window.clearTimeout(this.delayTimeout);
+        this.delayTimeout = setTimeout(() => {
+            this.fetchSobjectRecords();
+        }, DELAY);
     }
-
-    //handler for clicking outside the selection panel
-    handleBlur() {
+    
+     handleBlur() {
         this.recordsList = [];
-        this.preventClosingOfSerachPanel = false;
+        this.preventClosingOfSearchPanel = false;
     }
 
-    //handle the click inside the search panel to prevent it getting closed
     handleDivClick() {
-        this.preventClosingOfSerachPanel = true;
+        this.preventClosingOfSearchPanel = true;
     }
 
-    //handler for deselection of the selected item
+    handleKeyPress(event) {
+        if (event.key === 'Enter') {
+            if (this.recordsList && this.recordsList.length > 0) {
+                const selectedRecord = this.recordsList.find(rec => 
+                    rec.mainField.toLowerCase().includes(this.searchString.toLowerCase()) ||
+                    rec.subField.toLowerCase().includes(this.searchString.toLowerCase())
+                );
+                if (selectedRecord) {
+                    this.selectedRecordId = selectedRecord.id;
+                    this.selectedRecordName = selectedRecord.mainField;
+                    this.recordsList = [];
+                    const selectedEvent = new CustomEvent('valueselected', {
+                        detail: selectedRecord
+                    });
+                    this.dispatchEvent(selectedEvent);
+                } else {
+                    console.log('No matching record found.');
+                }
+            } else {
+                console.log('No records available to select.');
+            }
+        }
+    }
+
     handleCommit() {
-        this.selectedRecordId = "";
-        this.selectedRecordName = "";
-        this.value = "";
+        this.selectedRecordId = '';
+        this.selectedRecordName = '';
         const selectedEvent = new CustomEvent('removeval', {
-            detail: '', bubbles: true, composed: true
+            detail: '',
+            bubbles: true,
+            composed: true
         });
         this.dispatchEvent(selectedEvent);
     }
 
-    //handler for selection of records from lookup result list
     handleSelect(event) {
         let selectedRecord = {
             mainField: event.currentTarget.dataset.mainfield,
@@ -124,23 +125,19 @@ export default class ReusableLookup extends LightningElement {
         this.selectedRecordId = selectedRecord.id;
         this.selectedRecordName = selectedRecord.mainField;
         this.recordsList = [];
-        // Creates the event
         const selectedEvent = new CustomEvent('valueselected', {
             detail: selectedRecord
         });
-        //dispatching the custom event
         this.dispatchEvent(selectedEvent);
     }
     
-    handleInputBlur(event) {
+    handleInputBlur() {
         window.clearTimeout(this.delayTimeout);
-        // eslint-disable-next-line @lwc/lwc/no-async-operation
         this.delayTimeout = setTimeout(() => {
-            if (!this.preventClosingOfSerachPanel) {
+            if (!this.preventClosingOfSearchPanel) {
                 this.recordsList = [];
             }
-            this.preventClosingOfSerachPanel = false;
+            this.preventClosingOfSearchPanel = false;
         }, DELAY);
     }
-
 }

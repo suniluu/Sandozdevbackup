@@ -1,3 +1,6 @@
 <template>
     <lightning-button-icon icon-name="standard:manual_discounts" variant="brand" alternative-text="Discounts" size="x-small" class="slds-m-left_xxx-small" title="Discounts" onclick={removeRow}></lightning-button-icon>
+    <template if:true={promotionsCheck}>
+    <lightning-button-icon icon-name="utility:display_text" variant="brand" alternative-text="Apply Promotions" size="x-small" class="slds-m-left_xxx-small " title="Apply Promotions" onclick={removeRow}></lightning-button-icon>
+    </template>
 </template>

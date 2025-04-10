@@ -1,0 +1,193 @@
+<template>
+    <lightning-card title="PCR Search">
+        <template for:each={filters} for:item="filter">
+            <lightning-layout key={filter.id} class="slds-m-around_medium" vertical-align="center">
+                <lightning-layout-item class="slds-p-horizontal_small slds-size_3-of-12">
+                    <lightning-combobox 
+                        data-id={filter.id} 
+                        name="filterName" 
+                        value={filter.filterName} 
+                        placeholder="Select Filter" 
+                        variant="label-hidden" 
+                        options={filterOptions} 
+                        onchange={handleChange}>
+                    </lightning-combobox>
+                </lightning-layout-item>
+                
+                <lightning-layout-item class="slds-p-horizontal_small slds-size_2-of-12">
+                    <lightning-combobox 
+                        data-id={filter.id} 
+                        name="filterOperator" 
+                        variant="label-hidden" 
+                        value={filter.filterOperator} 
+                        placeholder="Select Operator" 
+                        options={operatorOptions} 
+                        onchange={handleChange}>
+                    </lightning-combobox>
+                </lightning-layout-item>
+                
+                <lightning-layout-item class="slds-p-horizontal_small slds-size_3-of-12">
+                    <template if:false={filter.IsPicklistField}> 
+                        <template if:false={filter.IsDateField}>
+                            <lightning-input 
+                                data-id={filter.id} 
+                                name="filterValue" 
+                                value={filter.filterValue} 
+                                variant="label-hidden" 
+                                onchange={handleChange}>
+                            </lightning-input>
+                        </template>
+                    </template>
+                    
+                    <template if:true={filter.IsPicklistField}>
+                        <lightning-combobox 
+                            data-id={filter.id} 
+                            name="filterValue" 
+                            variant="label-hidden" 
+                            value={filter.filterValue}
+                            options={statusOptions}
+                            onchange={handleChange}>
+                        </lightning-combobox>
+                    </template>
+
+                    <template if:true={filter.IsDateField}>
+                        <div class="flexClass">
+                            <lightning-input
+                                type="date"
+                                data-id={filter.id} 
+                                name="filterValue" 
+                                value={filter.filterValue} 
+                                variant="label-hidden"
+                                placeholder="From" 
+                                onchange={handleChange}>
+                            </lightning-input>
+                            <template if:true={filter.IsOperatorBetween}>
+                                &nbsp;
+                                <lightning-input
+                                    type="date"
+                                    data-id={filter.id} 
+                                    name="filterValueDate" 
+                                    value={filter.filterValueDate} 
+                                    variant="label-hidden"
+                                    placeholder="To"
+                                    onchange={handleChange}>
+                                </lightning-input>
+                            </template>
+                        </div>
+                    </template>
+
+                </lightning-layout-item>
+                
+                <lightning-layout-item class="slds-p-horizontal_small">
+                    <lightning-button-icon 
+                        icon-name="action:new" 
+                        alternative-text="new"
+                        data-id={filter.id}
+                        onclick={addRow}>
+                    </lightning-button-icon>
+                </lightning-layout-item>
+                
+                <lightning-layout-item class="slds-p-horizontal_small">
+                    <lightning-button-icon 
+                        icon-name="action:close" 
+                        alternative-text="close"
+                        data-id={filter.id}
+                        onclick={removeRow}>
+                    </lightning-button-icon>
+                </lightning-layout-item>
+            </lightning-layout>
+        </template>
+
+        <div class="slds-m-around_medium flexClass">
+            <lightning-button  label="Search PCR's" variant="neutral" disabled={isSearchDisabled}
+                onclick={handleSearchPCR}></lightning-button>
+                &nbsp;
+            <lightning-button  label="Clone PCR's" variant="brand-outline" disabled={isCloneDisabled}
+                onclick={handleProductSelectionPCR}></lightning-button>
+        </div>
+
+        <template if:true={displaydata}>
+            <template if:true={isDataFound}>
+                <div class="slds-m-around_medium slds-scrollable_y">
+                    <lightning-datatable
+                        key-field="Id"
+                        data={filteredData}
+                        columns={columns}
+                        onrowselection={handleRowSelection}
+                    ></lightning-datatable>
+                </div>
+            </template>
+            <template if:false={isDataFound}>
+                <div class="slds-m-around_medium slds-align_absolute-center slds-box slds-theme_shade">
+                    <span class="sslds-text-heading_small slds-text-bold">No records found for this search!</span>
+                </div>
+            </template>
+        </template>
+        
+
+        <!-- Product Input Modal -->
+        <template if:true={isOpenProductInput}>
+            <section 
+                role="dialog" 
+                tabindex="-1" 
+                aria-labelledby="modal-heading-01" 
+                aria-modal="true"
+                aria-describedby="modal-content-id-1" 
+                class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container filter-popup">
+                    <!-- Modal Header -->
+                    <header class="slds-modal__header">
+                        <button 
+                            class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"
+                            title="Close" 
+                            onclick={closeProductModal}>
+                            <lightning-icon 
+                                icon-name="utility:close" 
+                                alternative-text="close" 
+                                variant="inverse"
+                                size="small">
+                            </lightning-icon>
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <h2 class="slds-text-heading_medium slds-hyphenate">Product Selection</h2>
+                    </header>
+    
+                    <lightning-spinner if:true={isLoading}></lightning-spinner>
+                    <!-- Modal Body -->
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <lightning-record-picker label="Select Existing Product" placeholder="Search..."
+                            object-api-name="Product2" filter={filter} value={oldProductId}
+                            onchange={handleExistingProductChange} matching-info={matchingInfo} 
+                            display-info={displayInfo} disabled="true">
+                        </lightning-record-picker>
+
+                        <br/>
+                        <lightning-record-picker label="Select New Product" placeholder="Search..."
+                            object-api-name="Product2" filter={filter}
+                            onchange={handleNewProductChange} matching-info={matchingInfo} 
+                            display-info={displayInfo}>
+                        </lightning-record-picker>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <footer class="slds-modal__footer">
+                        <button 
+                            class="slds-button slds-button_neutral" 
+                            onclick={closeProductModal}
+                            title="Cancel">
+                            Cancel
+                        </button>
+                        <button 
+                            class="slds-button slds-button_brand" 
+                            onclick={handleClonePCR}
+                            disabled = {isClonePCR}
+                            title="Clone PCR">
+                            Clone PCR
+                        </button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+    </lightning-card>
+</template>

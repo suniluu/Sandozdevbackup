@@ -1,11 +1,12 @@
 import { LightningElement, track, api } from 'lwc';
 import { ShowToastEvent } from "lightning/platformShowToastEvent";
 import fetchOrderLineItems from "@salesforce/apex/ProductController.fetchOrderLineItems";
+
+import linestatus from '@salesforce/label/c.Order_lineItem_Status';
+import newlinestatus from '@salesforce/label/c.New_Order_LineItem';
 export default class Body extends LightningElement {
     @api orderdata;
-    @api orderproductdata;
-    @api orderdate;
-    @api selectedLocation;
+    @api orderproductdata; 
     @api productData;
     @api initialRecords;
     @api initialData;
@@ -19,6 +20,8 @@ export default class Body extends LightningElement {
     @api orderid;
     @api priceList;
     @api cerApi;
+    @api fielddata;
+    @track enablecancelbutton=false;
     
     @track orderReduestLoaded = false;
     @track discountdataprod = [];
@@ -32,15 +35,21 @@ export default class Body extends LightningElement {
     @track displayerror='';
     @track checkingvalue=false;
     @track newlineitems=[];
+    @api datefield;
 
+
+    @api locationfield; 
+    @api wholesalerfield;
     step = 1;
     currentStep = "1";
     firstPageClass = 'show-div';
     secondPageClass = 'hide-div';
     thirdPageClass = 'hide-div';
     fourthPageClass = 'hide-div';
-    
+        @track orderlinestatus=linestatus;
+        @track neworderlinestatus=newlinestatus;
     connectedCallback() {
+           console.log(this.orderlinestatus+' orderlinestatus');
         this.typename = this.typename.replaceAll(' ', '');
         this.initialDataloaded=true;
         if(this.orderid){
@@ -62,7 +71,7 @@ export default class Body extends LightningElement {
     }
 
     handleSetUpSteps() {
-        if (this.displayerror == true && this.oldstep < this.step) {
+        if (this.displayerror == true && 3 < this.step) {
             const event = new ShowToastEvent({
                 title: "Error",
                 message: "There are error in cuurent You cant got to nxt page",
@@ -103,7 +112,7 @@ export default class Body extends LightningElement {
                 if (this.checkingvalue == true && this.step > 3) {
                 const event = new ShowToastEvent({
                     title: "Error",
-                    message: "PLS click on validate pricing button once",
+                    message: "Please click on validate pricing button once",
                     variant: "error",
                     mode: "dismissable"
                 });
@@ -121,16 +130,41 @@ export default class Body extends LightningElement {
     }
     handleEntrySaved(event){
         const { fieldData, fieldAttributes } = event.detail;
+        console.log(JSON.stringify(fieldData)+' fieldData');
+         console.log(JSON.stringify(fieldAttributes)+' fieldAttributes');
+
         const selectedEvent = new CustomEvent('valuerecieved', {
                 detail: fieldData, bubbles: true, composed: true
         });
         this.dispatchEvent(selectedEvent);
         this.fields=fieldAttributes;
+        this.fielddata=fieldData;
         this.step++;
+        let dataArray=[];
+          for(var i = 0; i < this.discountdataprod.length; i++){
+                   if(this.discountdataprod[i].productName != ''){
+                           var obj = {...this.discountdataprod[i]}; 
+                   // obj.orderdate = this.orderdate;
+                    obj.location =  this.locationfield? this.fielddata[ this.locationfield]? this.fielddata[ this.locationfield]:'':'';
+                 
+                    obj.wholesaler=this.wholesalerfield?this.fielddata[ this.wholesalerfield]? this.fielddata[ this.wholesalerfield]:'':'';
+                        obj.isDisabled = false;
+                        obj.hasValue=true;
+                           obj.orderdate=this.datefield? this.fielddata[ this.datefield]? this.fielddata[ this.datefield]:'':'';    
+                      //  obj.hasValue = obj.location ? true : false;
+
+                    dataArray.push(obj);
+                    console.log(JSON.stringify(obj)+' objbody');
+                }
+            }
+              console.log(JSON.stringify(this.productData)+' productData');
+            this.productData=[...dataArray];
         this.handleSetUpSteps();
     }
 
     handleDatafromOrderReq(event) {
+          console.time("handleDatafromOrderReq Execution Time"); // Start timer
+        console.log(JSON.stringify(this.fielddata)+' fieldsdata start');
         this.orderproductdata = event.detail.selectedrows;
         this.preSelectedFast = event.detail.fastpreSelect;
         this.preSelecteCatelog = event.detail.preselected;
@@ -165,14 +199,21 @@ export default class Body extends LightningElement {
             productDataWithIndex = valuesArray;
             var dataArray = [];
             for(var i = 0; i < productDataWithIndex.length; i++){
-                if(productDataWithIndex[i].productName != ''){
-                    var obj = {...productDataWithIndex[i]};
+                   if(productDataWithIndex[i].productName != ''){
+                           var obj = {...productDataWithIndex[i]};
                     obj.recordIndex = this.index++;
-                    obj.orderdate = this.orderdate;
-                    obj.location = this.selectedLocation;
-                    obj.isDisabled = false;
-                    obj.hasValue = this.selectedLocation ? true : false;
-                    dataArray.push(obj);
+                   // obj.orderdate = this.orderdate;
+                    obj.location =  this.locationfield? this.fielddata[ this.locationfield]? this.fielddata[ this.locationfield]:'':'';
+                 obj.checkboxorder=false;
+                 obj.status=this.neworderlinestatus;
+                 
+                    obj.wholesaler=this.wholesalerfield?this.fielddata[ this.wholesalerfield]? this.fielddata[ this.wholesalerfield]:'':'';
+                        obj.isDisabled = false;
+                        obj.hasValue=true;
+                           obj.orderdate=this.datefield? this.fielddata[ this.datefield]? this.fielddata[ this.datefield]:'':'';    
+                      //  obj.hasValue = obj.location ? true : false;
+
+                    dataArray.push(obj); 
                 }
             }
             productDataWithIndex = dataArray;
@@ -205,6 +246,8 @@ export default class Body extends LightningElement {
         } else {
             console.log('orderdata is not an object.');
         }
+      //  this.productData=this.productData.slice(0, 50); 
+         console.timeEnd("handleDatafromOrderReq Execution Time");
     }
 
     getOrderLineItems(){
@@ -217,11 +260,18 @@ export default class Body extends LightningElement {
                 let selectedids=[];
                 for(var i = 0; i < result.length; i++){
                     if(result[i].productName != ''){
+                           console.log(result[i].status +' result.status ');
+                         if(result[i].status!='' &&result[i].status!=null && result[i].status==this.orderlinestatus){
+                            this.enablecancelbutton=true;
+                            
+                        }
                         let obj = { ...result[i] };
-                        obj.orderdate = this.orderdate?this.orderdate:'';
-                        obj.location = this.selectedLocation?this.selectedLocation:'';
+                        // obj.orderdate = this.orderdate?this.orderdate:'';
+                        // obj.location = this.selectedLocation?this.selectedLocation:'';
+                        //                             obj.selectedwholesaler=this.selectedwholesaler?this.selectedwholesaler:'';
                         obj.isDisabled = false;
-                        obj.hasValue = this.selectedLocation ? true : false;
+                        obj.hasValue=true;
+                       // obj.hasValue = this.selectedLocation ? true : false;
                         obj.recordIndex=this.index++;
                         dataArray.push(obj);
                         selectedids.push(result[i].Id);

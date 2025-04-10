@@ -37,8 +37,8 @@ export default class CheckoutPage extends NavigationMixin(LightningElement) {
         { id: 1, label: 'Step 1: Creating Order', completed: false },
         { id: 2, label: 'Step 2: Creating Configuration', completed: false },
         { id: 3, label: 'Step 3: Creating Line Items', completed: false },
-        { id: 4, label: 'Step 4: Finalizing the Configuration', completed: false },
-        { id: 5, label: 'Step 5: Raising Approval Requests if any', completed: false },
+        { id: 4, label: 'Step 4: Raising Approval Requests if any', completed: false },
+        { id: 5, label: 'Step 5: Finalizing the Configuration', completed: false },
         { id: 6, label: 'Step 6: Creating Order Line Items', completed: false }
     ];
 
@@ -160,12 +160,12 @@ export default class CheckoutPage extends NavigationMixin(LightningElement) {
         }
     }
 
-    handleProceed() {
+    /*handleProceed() {
         console.log('JJ new order data in handle proceed is:', JSON.stringify(this.entryselecteddata));
         this.entryselecteddata = [...this.entryselecteddata, ...this.formFieldChanges];
         console.log('JJ checkout page after appending data is:', JSON.stringify(this.entryselecteddata));
         console.log('JJ checkout page after product data is:', JSON.stringify(this.productData));
-       
+
         this.formFieldChanges = [];
         if(this.isCongaUsed){
             console.log('Is conga used checkout  :: '+ this.isCongaUsed);
@@ -173,7 +173,7 @@ export default class CheckoutPage extends NavigationMixin(LightningElement) {
                 this.isSecondModalOpen = true;
                 this.isFirstModalOpen = false;
         
-                addProductsToCart({ orderData: JSON.stringify(this.entryselecteddata), orderId : this.orderid})
+                addProductsToCart({ orderData: JSON.stringify(this.entryselecteddata), orderId : this.orderid, isSave: false})
                     .then(result => {
                         console.log('jj after first method :',JSON.stringify(result));
                         const orderCreationResponse = JSON.parse(result);
@@ -281,7 +281,7 @@ export default class CheckoutPage extends NavigationMixin(LightningElement) {
                 this.isSecondModalOpen = true;
                 this.isFirstModalOpen = false;
                 let objName;
-                addProductsToCart({ orderData: JSON.stringify(this.entryselecteddata), orderId : this.orderid})
+                addProductsToCart({ orderData: JSON.stringify(this.entryselecteddata), orderId : this.orderid, isSave: false})
                     .then(result => {
                         console.log('jj after first method :',JSON.stringify(result));
                         const orderCreationResponse = JSON.parse(result);
@@ -347,7 +347,198 @@ export default class CheckoutPage extends NavigationMixin(LightningElement) {
                 this.showToast('Error', 'Error creating order: Order data or product data is empty.', 'error');
             }
         }
-    }
+    }*/
+
+            handleProceed() {
+            console.log('JJ new order data in handle proceed is:', JSON.stringify(this.entryselecteddata));
+            this.entryselecteddata = [...this.entryselecteddata, ...this.formFieldChanges];
+            console.log('JJ checkout page after appending data is:', JSON.stringify(this.entryselecteddata));
+            console.log('JJ checkout page after product data is:', JSON.stringify(this.productData));
+
+            this.formFieldChanges = [];
+            if (this.isCongaUsed) {
+                console.log('Is conga used checkout  :: ' + this.isCongaUsed);
+                if (this.entryselecteddata.length > 0 && this.productData.length > 0) {
+                    this.isSecondModalOpen = true;
+                    this.isFirstModalOpen = false;
+
+                    addProductsToCart({ orderData: JSON.stringify(this.entryselecteddata), orderId: this.orderid, isSave: false })
+                        .then(result => {
+                            console.log('jj after first method :', JSON.stringify(result));
+                            const orderCreationResponse = JSON.parse(result);
+                            console.log('jj after first method  orderCreationResponse :', orderCreationResponse);
+                            if (orderCreationResponse.success) {
+                                this.markStepCompleted(1);
+                                console.log('jj inside first method :', this.updateStepStatus);
+                                console.log('jj after first method orderCreationResponse.order :', orderCreationResponse.order);
+                                this.orderId = orderCreationResponse.order.Id;
+                                console.log('jj order id in 2nd method start is :', this.orderId);
+                                return createConfiguration({ orderId: this.orderId });
+                            } else {
+                                this.isSecondModalOpen = false;
+                                throw new Error(orderCreationResponse.message);
+                            }
+                        })
+                        .then(configResponse => {
+                            console.log('jj after second method configResponse :', configResponse);
+                            const configResponse1 = JSON.parse(configResponse);
+                            if (configResponse1.success) {
+                                console.log('jj after second method json parse :', configResponse1);
+                                this.configurationId = configResponse1.configId;
+                                console.log('jj this.configurationId parse :', this.configurationId);
+                                console.log('jj after second method json parse :', configResponse1.configId);
+                                this.markStepCompleted(2);
+                                return createConfigLineItems({ configId: this.configurationId, productData: JSON.stringify(this.productData) });
+                            } else {
+                                this.isSecondModalOpen = false;
+                                throw new Error(configResponse1.message);
+                            }
+                        })
+                        .then(lineItemsResponse => {
+                            console.log('jj after third method:', lineItemsResponse);
+
+                            if (lineItemsResponse) {
+                                this.markStepCompleted(3);
+                                // Call generateApprovalRequests first
+                                return generateApprovalRequests({ orderId: this.orderId, configId: this.configurationId });
+                            } else {
+                                this.isSecondModalOpen = false;
+                                const firstMessageOrError = lineItemsResponse.find(item => item.hasOwnProperty('message') || item.hasOwnProperty('error'));
+                                const errorMessage = firstMessageOrError.error || firstMessageOrError.message || 'Line items creation failed';
+                                throw new Error(errorMessage);
+                            }
+                        })
+                        .then(approvalsResponse => {
+                            console.log('jj after approvals method:', approvalsResponse);
+                            const approvalsResponse1 = JSON.parse(approvalsResponse);
+                            console.log('jj approvalsResponse method:', approvalsResponse);
+                            if (approvalsResponse1.success) {
+                                this.markStepCompleted(4);
+                                console.log('jj order id in approvals method start is :', this.orderId);
+                                // Call finalizeCart after approvals
+                                return finalizeCart({ configId: this.configurationId });
+                            } else {
+                                this.isSecondModalOpen = false;
+                                throw new Error(approvalsResponse1.message);
+                            }
+                        })
+                        .then(finalizeCartResponse => {
+                            console.log('jj after finalizeCart method:', finalizeCartResponse);
+                            const finalizeResponse = JSON.parse(finalizeCartResponse);
+                            console.log('jj finalizeResponse method:', finalizeResponse);
+                            if (finalizeResponse.success) {
+                                this.markStepCompleted(5);
+                                return createOrderLineItems({ orderId: this.orderId, configId: this.configurationId });
+                            } else {
+                                this.isSecondModalOpen = false;
+                                throw new Error(finalizeResponse.message);
+                            }
+                        })
+                        .then(createOrderLineItemsResponse => {
+                            console.log('jj after fifth method :', createOrderLineItemsResponse);
+                            const orderLineItemsResponse = JSON.parse(createOrderLineItemsResponse);
+                            console.log('jj after first method  orderLineItemsResponse :', orderLineItemsResponse);
+                            if (orderLineItemsResponse.success) {
+                                this.markStepCompleted(6);
+                                this.showToast('Success', 'Order process completed successfully. Redirecting you to the order', 'success');
+                                this.isSecondModalOpen = false;
+                                console.log('jj order id in 6th method completion is :', this.orderId);
+                                console.log('jj object name in 6th method is :', orderLineItemsResponse.objectName);
+
+                                this[NavigationMixin.Navigate]({
+                                    type: 'standard__recordPage',
+                                    attributes: {
+                                        recordId: this.orderId,
+                                        objectApiName: orderLineItemsResponse.objectName,
+                                        actionName: 'view'
+                                    },
+                                });
+                            } else {
+                                this.isSecondModalOpen = false;
+                                throw new Error(orderLineItemsResponse.message);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error in the order process:', error);
+                            this.showToast('Error', error.message, 'error');
+                        });
+                } else {
+                    this.showToast('Error', 'Error creating order: Order data or product data is empty.', 'error');
+                }
+            } else {
+                console.log('Is conga not used checkout  :: ' + this.isCongaUsed);
+                if (this.entryselecteddata.length > 0 && this.productData.length > 0) {
+                    this.isSecondModalOpen = true;
+                    this.isFirstModalOpen = false;
+                    let objName;
+                    addProductsToCart({ orderData: JSON.stringify(this.entryselecteddata), orderId: this.orderid, isSave: false })
+                        .then(result => {
+                            console.log('jj after first method :', JSON.stringify(result));
+                            const orderCreationResponse = JSON.parse(result);
+                            console.log('jj after first method  orderCreationResponse :', orderCreationResponse);
+                            if (orderCreationResponse.success) {
+                                this.markStepCompleted(1);
+                                console.log('jj inside first method :', this.updateStepStatus);
+                                console.log('jj after first method orderCreationResponse.order :', orderCreationResponse.order);
+                                this.orderId = orderCreationResponse.order.Id;
+                                console.log('jj order id in 1st method start is :', this.orderId);
+                                console.log('jj JSON.stringify(this.productData) in 1st method start is :', JSON.stringify(this.productData));
+                                return createOrderLineItemsForNonConga({ orderId: this.orderId, productData: JSON.stringify(this.productData) });
+                            } else {
+                                this.isSecondModalOpen = false;
+                                throw new Error(orderCreationResponse.message);
+                            }
+                        })
+                        .then(createOrderLineItemsResponse => {
+                            console.log('jj after second method :', createOrderLineItemsResponse);
+                            const orderLineItemsResponse = JSON.parse(createOrderLineItemsResponse);
+                            console.log('jj after second method  orderLineItemsResponse :', orderLineItemsResponse);
+                            if (orderLineItemsResponse.success) {
+                                this.markStepCompleted(2);
+                                this.isSecondModalOpen = false;
+                                objName = orderLineItemsResponse.objectName;
+                                console.log('jj order objName in 2th method completion is :', objName);
+                                console.log('jj order id in 2th method completion is :', this.orderId);
+                                console.log('jj object name in 2th method is :', orderLineItemsResponse.objectName);
+                                return generateApprovalRequestsForNonConga({ orderId: this.orderId });
+
+                            } else {
+                                this.isSecondModalOpen = false;
+                                throw new Error(orderLineItemsResponse.message);
+                            }
+                        })
+                        .then(approvalsResponse => {
+                            console.log('jj after third method:', approvalsResponse);
+                            const approvalsResponse1 = JSON.parse(approvalsResponse);
+                            console.log('jj finalizeResponse method:', approvalsResponse);
+                            if (approvalsResponse1.success) {
+                                this.markStepCompleted(3);
+                                this.showToast('Success', 'Order process completed successfully. Redirecting you to the order', 'success');
+                                console.log('jj order id in 3th method start is :', this.orderId);
+                                this[NavigationMixin.Navigate]({
+                                    type: 'standard__recordPage',
+                                    attributes: {
+                                        recordId: this.orderId,
+                                        objectApiName: objName,
+                                        actionName: 'view'
+                                    },
+                                });
+                            } else {
+                                this.isSecondModalOpen = false;
+                                throw new Error(approvalsResponse1.message);
+                            }
+                        })
+
+                        .catch(error => {
+                            console.error('Error in the order process:', error);
+                            this.showToast('Error', error.message, 'error');
+                        });
+                } else {
+                    this.showToast('Error', 'Error creating order: Order data or product data is empty.', 'error');
+                }
+            }
+        }
+
 
     showToast(title, message, variant) {
         const evt = new ShowToastEvent({
@@ -391,7 +582,7 @@ export default class CheckoutPage extends NavigationMixin(LightningElement) {
         this.formFieldChanges = [];       
         if ((this.entryselecteddata && this.entryselecteddata.length > 0) && (this.productData && this.productData.length > 0)) {
             this.isSaveModalOpen = true;
-			     addProductsToCart({ orderData: JSON.stringify(this.entryselecteddata), orderId : this.orderid})
+			     addProductsToCart({ orderData: JSON.stringify(this.entryselecteddata), orderId : this.orderid, isSave: true})
                 .then(result => {
                     console.log('jj after first method :',result);
                     const orderCreationResponse = JSON.parse(result);

@@ -3,20 +3,22 @@
         <lightning-input type="search" label="Search..." placeholder="Search....." 
             onchange={handleSearch} variant="label-hidden" class="search-Input" ></lightning-input>
     </div>
-    <div if:true={dataLoading} class="slds-align_absolute-center slds-spinner_inline spinner-padding spinner-style">
+    <div if:true={loading} class="slds-align_absolute-center slds-spinner_inline spinner-padding spinner-style spinner-container-outer slds-is-relative mousecur">
+        
         <lightning-spinner variant="brand" alternative-text="Loading Data" size="medium">
         </lightning-spinner>
+             <div class="slds-backdrop slds-backdrop_open"></div>
     </div>
-    <template  if:false={dataLoading} >
+    <!-- <template  if:false={loading} > -->
         <div class="slds-scrollable_y">
-            <c-agreement-custom-data-table key-field="recordId" data={productdata} columns={columns} class="pricing " onrowselection={handleRowSelection} enable-infinite-loading
+            <c-agreement-custom-data-table key-field="recordId" data={productdata} onremove={handlepricing} columns={columns} class="pricing " onrowselection={handleRowSelection} enable-infinite-loading
               onloadmore={loadMoreData}  selected-rows={preSelectedRows} sorted-by={sortBy} sorted-direction={sortDirection} onsort={doSorting} onheaderaction={handleHeaderAction}
             ></c-agreement-custom-data-table>
             <!-- <c-custom-type-datatable key-field="recordId" data={data} columns={columns} class="pricing " onrowselection={handleRowSelection} enable-infinite-loading
               onloadmore={loadMoreData}  selected-rows={preSelectedRows} sorted-by={sortBy} sorted-direction={sortDirection} onsort={doSorting} onheaderaction={handleHeaderAction}>
             </c-custom-type-datatable> -->
         </div>
-    </template>
+    <!-- </template> -->
     <template if:true={isOpenFilterInput}>
         <!-- Modal/Popup Box LWC starts here -->
         <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
@@ -46,5 +48,158 @@
             </div>
         </section>
         <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+    <template if:true={popup}>
+           <section
+        role="dialog"
+        tabindex="-1"
+        aria-labelledby="modal-heading-02"
+        aria-modal="true"
+        aria-describedby="modal-content-id-2"
+        class="slds-modal slds-fade-in-open"
+      >
+        <div class="slds-modal__container">
+          <!-- Modal/Popup Box LWC header here -->
+          <header class="slds-modal__header">
+            <h2 class="slds-text-heading_medium slds-hyphenate">Edit Product Filter Criteria</h2>
+          </header>
+         <div class="slds-p-around_small slds-modal__content slds-p-around_medium">
+                    <div class="slds-col slds-size_1-of-1 slds-p-bottom_x-small">
+                        <div class="slds-grid">
+                            <div class="slds-col slds-size_1-of-12 table-header"><strong>S.No</strong></div>
+                            <div class="slds-col slds-size_3-of-12 table-header"><strong>Field</strong></div>
+                            <div class="slds-col slds-size_3-of-12 table-header"><strong>Operator</strong></div>
+                            <div class="slds-col slds-size_3-of-12 table-header"><strong>Value</strong></div>
+                            <div class="slds-col slds-size_2-of-12 table-header"><strong>Actions</strong></div>
+                        </div>
+                    </div>
+
+                    <template for:each={rows} for:item="row">
+                        <div class="slds-col slds-size_1-of-1 slds-p-bottom_x-small" key={row.id}>
+                            <div class="slds-grid slds-gutters" style="align-items:end;">
+
+                                <div class="slds-col slds-size_1-of-12"  style="padding-bottom:0.5rem;">
+                                    <h1 class="slds-p-top_medium slds-p-left_medium">{row.id}</h1>
+                                </div>
+
+                                <div class="slds-col slds-size_3-of-12">
+                                   <template if:true={conditionOptions}>
+                                      
+                                             <!-- <lightning-combobox
+                                                value={row.field}
+                                                placeholder="Select Progress"
+                                                options={options}
+                                                data-id={row.id}
+                                                data-field="field"
+                                                onchange={handlechangefield} ></lightning-combobox> -->
+                                            <c-pricerule-combobx data-id={row.id} data-field="field" selected-value={row.field} apinameobject={apiNameObject} onsendingselecteditem={handleSelectedItems} onneedoptions={handleSendingOptions} 
+                                                            options={conditionOptions} object-name={objectName} onvaluereceived={handleValueReceived}
+                                                          ></c-pricerule-combobx>
+                                      
+                                    </template>
+                                </div>
+
+                                <div class="slds-col slds-size_3-of-12">
+                                    <lightning-combobox value={row.operator} options={operatorOptions}
+                                        onchange={handleOperatorChange} data-id={row.id} data-field="operator">
+                                    </lightning-combobox>
+                                </div>
+
+                                <div class="slds-col slds-size_3-of-12">
+                                    <template if:true={row.text}>
+                                        <lightning-input value={row.value} onchange={handleValueChange} data-id={row.id}
+                                            data-field="value">
+                                        </lightning-input>
+                                    </template>
+                                    <template if:true={row.picklist}>
+                                        <template if:true={row.pickoptions}>
+                                        <lightning-combobox
+                                                value={row.value}
+                                                placeholder="Select Progress"
+                                                options={row.pickoptions}
+                                                data-id={row.id}
+                                                data-field="value"
+                                                data-type={row.type}
+                                                onchange={handleValueChange} ></lightning-combobox>
+                                    </template>
+                                    </template>
+                                    <template if:true={row.checkbox}>
+                                          <lightning-input value={row.value} checked={row.value} onchange={handleValueChange} data-id={row.id} style="padding-left: 4.7rem; padding-bottom:0.7rem" type="checkbox"
+                                            data-field="value"></lightning-input>
+                                    </template>
+                                    <template if:true={row.lookup}>
+                                         <lightning-record-picker
+                                                object-api-name={objectName}
+                                                placeholder="Search..."
+                                                label="Select a record"
+                                                variant="label-hidden"
+                                                onchange={handleValueChange}
+                                                value={row.value}
+                                                data-id={row.id}
+                                                data-field="value"
+                                                size="small"
+                                                class="slds-size_full slds-combobox-addon_end">
+                                            </lightning-record-picker>
+                                    </template>
+
+                                     <template if:true={row.multiSelect}>
+                                        <template if:true={row.selectedValues}>
+                                            <div class="slds-p-around_xx-small">
+                                    <template for:each={row.selectedValues} for:item="val">
+                                        <lightning-pill key={val.value} name={val.value} label={val.label}   data-id={row.id}
+                                                data-field={val.value}
+                                            onremove={handleRemove}>
+                                            <lightning-icon icon-name='standard:article' alternative-text='article'>
+                                            </lightning-icon>
+                                        </lightning-pill>
+                                    </template>
+                                </div>
+                                        </template>
+                                     </template>
+                                </div>
+
+                                <div class="slds-col slds-size_2-of-12">
+                                    <div class="adjustmentClass">
+                                        <lightning-button variant="neutral" label="+" onclick={addRow} data-id={row.id}>
+                                        </lightning-button>
+                                        <template if:false={disableicon}>
+                                        <lightning-button variant="destructive" label="-" onclick={removeRow}
+                                            data-id={row.id} class="slds-m-left_small">
+                                        </lightning-button>
+                                        </template>
+                                    </div>
+                                </div>
+                             
+                            </div>
+                           
+                        </div>
+                        
+                    </template>
+                         <div class="slds-grid slds-gutters slds-m-top_medium slds-size_1-of-2">
+                    <label class="slds-col slds-size_1-of-3">Conditional Requirement</label>
+                    <lightning-input variant="label-hidden" class="slds-col slds-size_2-of-3" value={conditionalValue} onchange={handleConditionalRequirmnt}></lightning-input>
+                </div>
+                </div>
+                 
+              
+                  <footer class="slds-modal__footer">
+            <button
+              class="slds-button slds-button_neutral"
+              onclick={closePopup}
+              title="Cancel"
+            >
+              Cancel
+            </button>
+            <button
+              class="slds-button slds-button_brand"
+              onclick={updatePopup}
+              title="Apply"
+            >
+              Update
+            </button>
+          </footer>
+             </div>
+      </section>
+      <div class="slds-backdrop slds-backdrop_open"></div>
     </template>
 </template>

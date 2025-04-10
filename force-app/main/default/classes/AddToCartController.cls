@@ -59,28 +59,13 @@ public with sharing class AddToCartController implements IGenerateReqestOrder {
 
 
 
-    public Object fastOrderAddToCart(List<Object> orderData, String orderId){
+    public Object fastOrderAddToCart(List<Object> orderData, String orderId, Boolean isSave){
         List<OrderField> orderFields = new List<OrderField>();
         Order orderObj = new Order();        
-        
+        system.debug('jigar save value is :'+isSave);
         try {
             if(orderId != null){
                 System.debug('24 orderId'+ orderId);
-                /*String query = 'SELECT Id';
-system.debug('outside query is :'+query);
-for (Object item : orderData) {
-Map<String, Object> fieldMap = (Map<String, Object>)item;           
-String fieldName = (String)fieldMap.get('fieldName');
-if(fieldName!='Order_Type__c' && fieldName!='Payment_Terms__c' && fieldName!='Internal_Notes__c' && fieldName!='Wholesaler__c' && fieldName!='Delivery_Date__c' && fieldName!='PO_Number__c' && fieldName!='Order_Reason__c' && fieldName!='Delivery_Text__c' && fieldName!='Delivery_Type__c'  && fieldName!='Invoice_Text__c'){
-query = query+','+fieldName;
-}
-system.debug('inside query :'+query);
-}
-query = query + ' FROM Order WHERE Id = :orderId';
-System.debug('final query :' + query);
-Order orderObj1 = Database.query(query.replace(':orderId', '\'' + String.escapeSingleQuotes(orderId) + '\''));
-System.debug('Order retrieved :' + orderObj1);
-return orderObj;*/
                 orderObj = [SELECT Id FROM Order where Id = :orderId];
                 OrderCreationResponse orderResponse =  new OrderCreationResponse(true, 'Order created successfully.', orderObj);
                 String jsonResponse = JSON.serialize(orderResponse);
@@ -469,80 +454,108 @@ return orderObj;*/
         return (List<Object>) lstProductData;
     }
     
-    public List<Promotions__c> getRecordsFromPromoDetails (String productData) {
+    public List<Promotions__c> getRecordsFromPromoDetails(String productData) {
+
         List<ProductWrapper> lstProductData = (List<ProductWrapper>) JSON.deserialize(productData, List<ProductWrapper>.class);
-        system.debug('lstProductData'+lstProductData);
         Set<String> productIds = new Set<String>();
         for (ProductWrapper pw : lstProductData) {
             productIds.add(pw.productId);
-            System.debug('pw'+pw.discountApplied);
         }
-        system.debug('productIds'+productIds);
-        List<Product2> productlist = [SELECT Id, Name, ProductCode FROM Product2 WHERE Id IN :productIds];
-
+        DateTime TODAY = System.now();
+        List<Product2> productlist = [SELECT Id,ProductCode,family FROM Product2 WHERE Id IN :productIds];
         Set<String> productCodes = new Set<String>();
         for (Product2 prod : productlist) {
             productCodes.add(prod.ProductCode);
         }
+        Set<String> productFamily = new Set<String>();
+        for (Product2 prod : productlist) {
+            productFamily.add(prod.family);
+        }
+        Set<Promotions__c> filteredPromotions = new Set<Promotions__c>();
+        for (Promotions__c promotion : [SELECT Id, Name, Active__c, Adjustment_Type__c, Adjustment_Applies_To__c, Excluded__c,
+                                                Excluded_Product_Family__c, Field_Conditions__c, Include_with_other_promotions__c,
+                                                Effective_Date__c, Expiration_Date__c, Product_Family__c, Promotion_Code__c,
+                                                Rate_Type__c, Type__c, Adjustment_Amount__c, Products__c
+                                                FROM Promotions__c Where Active__c = true AND 
+                                                Effective_Date__c <= :TODAY AND Expiration_Date__c >= :TODAY
+                                        ])
+        {
+            Set<String> promoProducts = parsePromoField(promotion.products__c);
+            Set<String> promoExcludeProducts = parsePromoField(promotion.Excluded__c);
+            Set<String> promoFamily = parsePromoField(promotion.Product_Family__c);
+            Set<String> promoExcludeFamily = parsePromoField(promotion.Excluded_Product_Family__c);
 
-        system.debug('productCodes'+productCodes);
-        
-        List<Promotions__c> promotionsList = [SELECT Id, Name, Adjustment_Type__c, Adjustment_Amount__c, products__c 
-                                              FROM Promotions__c];
-
-        system.debug('promotionsList'+promotionsList);                                      
-        
-        List<Promotions__c> filteredPromotions = new List<Promotions__c>();
-        
-        for (Promotions__c promotion : promotionsList) {
-            if (promotion != null && promotion.products__c != null) {
-                System.debug('promotion'+promotion);
-                String[] promoProductCodes = promotion.products__c.split(';');
-                Boolean matchFound = false;
-                
-                for (String promoCode : promoProductCodes) {
-                    if (productCodes.contains(promoCode.trim())) {
-                        matchFound = true;
-                        break; 
-                    }
-                }
-                
-                if (matchFound) {
+            if(promotion.products__c != null && promotion.products__c.trim().equalsIgnoreCase('All')){
+                filteredPromotions.add(promotion);
+            }else{
+                if(promoProducts != null && !promoProducts.isEmpty() && promoProducts.containsAll(productCodes)){
                     filteredPromotions.add(promotion);
                 }
-            }
-            else{
-                System.debug('No Promotions');
+                if(promoFamily != null && !promoFamily.isEmpty() && promoFamily.containsAll(productFamily)){
+                    filteredPromotions.add(promotion);
+                }
+                if(promoExcludeProducts != null && !promoExcludeProducts.isEmpty()){
+                    boolean isExcludePrd = promoExcludeProducts.containsAll(productCodes);
+                    if(!isExcludePrd){
+                        filteredPromotions.add(promotion);
+                    }else{
+                        if (filteredPromotions.contains(promotion)) { 
+                            filteredPromotions.remove(promotion);
+                        }
+                    }
+                }
+                if(promoExcludeFamily != null && !promoExcludeFamily.isEmpty()){
+                    boolean isExcludeFam = promoExcludeFamily.containsAll(productFamily);
+                    if(!isExcludeFam){
+                        filteredPromotions.add(promotion);
+                    }else{
+                        if (filteredPromotions.contains(promotion)) { 
+                            filteredPromotions.remove(promotion); 
+                        }
+                    }
+                }
+                List<Map<String, String>> fieldConditions = (List<Map<String, String>>) JSON.deserialize(promotion.Field_Conditions__c, List<Map<String, String>>.class);
+                for (Map<String, String> condition : fieldConditions) {
+                    String field = condition.get('field');
+                    String operator = condition.get('operator');
+                    String value = condition.get('value');
+                }
             }
         }
-        return filteredPromotions;
+        List<Promotions__c> filteredListPromotions = new List<Promotions__c>(filteredPromotions);
+        return filteredListPromotions;
+    }
+
+
+    private Set<String> parsePromoField(String fieldValue) {
+        return fieldValue != null ? new Set<String>(fieldValue.split(';')) : new Set<String>();
     }
 
     public static List<Object> applyPromotionToProductDetail(String productData, String promotionId) {
-      List<ProductWrapper> lstProductData = (List<ProductWrapper>) JSON.deserialize(productData, List<ProductWrapper>.class);
-      Promotions__c promotions = [SELECT Id, Name, Adjustment_Type__c, Adjustment_Amount__c, products__c FROM Promotions__c where Id =:promotionId];
-      
-      for (ProductWrapper pw : lstProductData) {
-          if(pw.discountApplied == null){
-              pw.discountApplied = false;
-          }
-          system.debug('pw.discountApplied'+pw.discountApplied);
-          If(promotions.Adjustment_Type__c == 'Discount Amount' && pw.netprice >= promotions.Adjustment_Amount__c){
-          pw.netPrice -= Integer.valueOf(promotions.Adjustment_Amount__c);
-          pw.discountApplied = true;
-      
-      }
-      else if(promotions.Adjustment_Type__c == '% Discount' && !pw.discountApplied){
-          System.debug('discount***'+ pw.discountApplied);
-          Integer discountPercentage = Integer.valueOf(promotions.Adjustment_Amount__c);
-          Decimal Price = Decimal.valueOf(discountPercentage)/100;
-          pw.netPrice = (pw.netPrice) * (1-Price);
-          pw.discountApplied = true;
+        List<ProductWrapper> lstProductData = (List<ProductWrapper>) JSON.deserialize(productData, List<ProductWrapper>.class);
+        Promotions__c promotions = [SELECT Id, Name, Adjustment_Type__c, Adjustment_Amount__c, products__c FROM Promotions__c where Id =:promotionId];
+        
+        for (ProductWrapper pw : lstProductData) {
+            if(pw.discountApplied == null){
+                pw.discountApplied = false;
+            }
 
-      }
-      }
-      system.debug('lstProductData'+lstProductData);
-      return  (List<Object>) lstProductData;
+            system.debug('pw.discountApplied'+pw.discountApplied);
+            if(promotions.Adjustment_Type__c == 'Discount Amount' && pw.netprice >= promotions.Adjustment_Amount__c){
+                pw.netPrice -= Integer.valueOf(promotions.Adjustment_Amount__c);
+                pw.discountApplied = true;
+            }
+            else if(promotions.Adjustment_Type__c == '% Discount' && !pw.discountApplied){
+                System.debug('discount***'+ pw.discountApplied);
+                Integer discountPercentage = Integer.valueOf(promotions.Adjustment_Amount__c);
+                Decimal Price = Decimal.valueOf(discountPercentage)/100;
+                pw.netPrice = (pw.netPrice) * (1-Price);
+                pw.discountApplied = true;
+
+            }
+        }
+        system.debug('lstProductData'+lstProductData);
+        return  (List<Object>) lstProductData;
     }
     
     
@@ -796,6 +809,7 @@ efw.value = typename == 'DirectOrder' ? 'Standard' : 'Mixed';
                 efw.isType = mapEntryFormWrapper.get(f.APIName).isType;
                 efw.isDate = mapEntryFormWrapper.get(f.APIName).isDate;
                 efw.isLocation = mapEntryFormWrapper.get(f.APIName).isLocation;
+                efw.iswholesale = mapEntryFormWrapper.get(f.APIName).isLocation;
                 efw.isAgreement = mapEntryFormWrapper.get(f.APIName).isAgreement;
                 efw.isPriceList = mapEntryFormWrapper.get(f.APIName).isPriceList;
                 efw.relatedObject = 'Sample_Product__c';
@@ -866,7 +880,9 @@ accountIds.add(sp.SCT_Wholesaler__c);
 }
 }
 map<Id,Account> mapAccounts = new map<Id,Account>([select id,Name from Account where Id IN : accountIds]);*/
-            
+            Date myDate = Date.today();
+       
+       Date tomDate = Date.today() + 1;
             //for(Apttus_Config2__Order__c sp : lstOrders){
             for(FormField f : fields){
                 EntryFormWrapper efw = new EntryFormWrapper();
@@ -877,7 +893,8 @@ map<Id,Account> mapAccounts = new map<Id,Account>([select id,Name from Account w
                 efw.isDisabled = disableFields.contains(f.APIName) ? true : false;
                 efw.isRequired = reqFields.contains(f.APIName) ? true : false;
                 efw.isType = f.APIName == 'Order_Type__c' ? true : false;
-                efw.isDate = f.APIName == 'Delivery_Type__c' ? true : false;
+                efw.isDate = f.APIName == 'Delivery_Date__c' ? true : false;
+                efw.iswholesale=f.APIname == 'Wholesaler__c' ? true : FALSE;
                 efw.isLocation = f.APIName == 'Location__c' ? true : false;
                 efw.isAgreement = f.APIName == 'Aggreement__c' ? true : false;
                 //efw.isPriceList = f.APIName == 'Price_List__c' ? true : false;
@@ -891,11 +908,17 @@ map<Id,Account> mapAccounts = new map<Id,Account>([select id,Name from Account w
 efw.value = fieldSetName == 'DirectOrder' ? 'Standard' : 'Mixed';
 }*/
                 if(f.Type == 'REFERENCE' && f.APIName == 'Aggreement__c'){
-                    efw.value = lstAgreement != null && !lstAgreement.isEmpty() ? lstAgreement[0].Id : null;
+                    efw.value = lstAgreement != null && !lstAgreement.isEmpty() ? lstAgreement[0].Id : 'a02ao0000061MSrAAM';
                     efw.displayValue = mapAgreement.get(efw.value) != null ? mapAgreement.get(efw.value).Name : '';//sp.get(f.APIName) != null && mapAccounts != null && mapAccounts.get(''+sp.get(f.APIName)) != null ? mapAccounts.get(''+sp.get(f.APIName)).Name : '';
                 }
                 if(f.Type == 'REFERENCE' && f.APIName == 'Account__c'){
                     efw.value = recId;
+                }
+                 if( f.APIName == 'Wholesaler__c'){
+                    efw.value = '001ao00001WK72PAAT';
+                }
+                 if(  f.APIName == 'Location__c'){
+                    efw.value = '003ao0000003mrPAAQ';
                 }
                 /*if(f.Type == 'REFERENCE' && f.APIName == 'Price_List__c'){
                     efw.value = 'a0Fao0000019VvFEAU';
@@ -903,6 +926,10 @@ efw.value = fieldSetName == 'DirectOrder' ? 'Standard' : 'Mixed';
                  if(f.Type == 'REFERENCE' && f.APIName == 'Price_List_Name__c'){
                    // efw.value = 'a0Fao0000019VvFEAU';
                    efw.value = 'a0Fao000005KV1ZEAW';
+                }
+                if( f.APIName == 'Delivery_Date__c'){
+                    efw.dateValue = fieldSetName == 'DirectOrder' ? tomDate : myDate;
+                    efw.value = fieldSetName == 'DirectOrder' ? string.Valueof(tomDate) : string.Valueof(myDate);
                 }
                 if(f.Type == 'DATE' && efw.value != null){
                     List<String> lstDate = efw.value.split(' ');
@@ -1142,6 +1169,23 @@ return lstEntryFormWrapper;*/
     public void deleteCartConfiguration(String recId){
         
     }
+    
+     public string getdatatableColumn(String orderType){
+          System.debug(orderType+ 'orderType');
+         string column;
+         string columnname;
+         if(orderType=='Quick Order'){
+             columnname='Price_Products';
+         }else{
+             columnname='Price_Products';
+         }
+    Data_Table_Column__mdt dbt=    [select id, Column_JSON__c from Data_Table_Column__mdt  where DeveloperName = :columnname WITH SECURITY_ENFORCED];
+         column=dbt.Column_JSON__c;
+         return column;
+        
+    }
+    
+     
     public List<Object> bestcontractpricing(String fields,String productdata){
         
         List<EntryFormWrapper> lstEntryFormWrap = (List<EntryFormWrapper>)JSON.deserialize(fields, List<EntryFormWrapper>.class);
@@ -1241,58 +1285,85 @@ List<Aggrement_Info__c> lstAggrementInfo = [SELECT Id,Aggreement__c,Aggreement__
         return new List<Object>();
     }
     
-    public List<Object> getPricingData(String recId, String fieldsData,String cerApi,String priceListApi){
-        system.debug('jj recid is :'+recId);
-        system.debug('jj cerApi obj is :'+cerApi);
-        system.debug('jj priceListApi obj is :'+priceListApi);
-        List<String> filterproducts = getFilterProducts(recId);
-        Id agreementId;
-        Id pricelistId;
-        List<PricingWrapper> lstPricingWrapper = new List<PricingWrapper>();
-        Set<String> uniqueProductNames = new Set<String>();
+    	public List<Object> getPricingData(String recId, String fieldsData, String cerApi, String priceListApi) {
+		system.debug('jj recid is :' + recId);
+		system.debug('jj cerApi obj is :' + cerApi);
+		system.debug('jj priceListApi obj is :' + priceListApi);
+
+		List<String> filterproducts = getFilterProducts(recId);
+		Id agreementId;
+		Id pricelistId;
+		String orderType = '';
+		Boolean doNotCall = false;
+		String location = '';
+		List<PricingWrapper> lstPricingWrapper = new List<PricingWrapper>();
+		 Set<String> uniqueProductNames = new Set<String>();
 		List<Price_List_Item__c> uniquePricelist = new List<Price_List_Item__c>();
 		List<Agreement_Line_Item__c> uniqueALI = new List<Agreement_Line_Item__c>();
-       
-        if(fieldsData != Null || fieldsData != ''){
-            EntryFormWrapper[] lstEntryFormWrap = (List<EntryFormWrapper>)JSON.deserialize(fieldsData, List<EntryFormWrapper>.class);
-            for(EntryFormWrapper obj : lstEntryFormWrap){
-                if(obj.fieldName == 'Aggreement__c'){
-                    agreementId = obj.value;
-                    system.debug('agreementId ::'+agreementId);
-                }
-                if(obj.fieldName == 'Price_List_Name__c'){
-                    pricelistId = obj.value;
-                    system.debug('Price_List_Name__c ::'+pricelistId);
-                }
-                
-            }
-        }
-        Integer i = 1;
-        if(agreementId != null || priceListId != null){
-            if(!filterproducts.isEmpty()){ 
-                List<Agreement_Line_Item__c> agreeLineList =[SELECT Id,Aggreement__c,Product__c, Product__r.Name,Product_Code__c, Product_Family__c,List_Price__c,Contract_Net_Price__c,Aggreement__r.Price_List__r.Name 
-                                                             from Agreement_Line_Item__c where Aggreement__c =:agreementId and Product__r.Name NOT IN :filterProducts ];
-                 for (Agreement_Line_Item__c item : agreeLineList) {
+        Map<String,string> headerdata =new Map<string,string>();    
+		// Parse fieldsData
+		if (fieldsData != null && fieldsData != '') {
+			EntryFormWrapper[] lstEntryFormWrap = (List<EntryFormWrapper>) JSON.deserialize(fieldsData, List<EntryFormWrapper>.class);
+			for (EntryFormWrapper obj : lstEntryFormWrap) {
+				if (obj.fieldName == 'Aggreement__c') agreementId = obj.value;
+				if (obj.fieldName == 'Price_List_Name__c') pricelistId = obj.value;
+				if (obj.fieldName == 'Order_Type__c') orderType = obj.value;
+				if (obj.fieldName == 'Do_Not_Call__c') doNotCall = Boolean.valueOf(obj.value);
+				if (obj.fieldName == 'Location__c') location = obj.value;
+                headerdata.put(obj.fieldName,obj.value);
+			}
+		}
+             system.debug('agreementId ist ::: '+agreementId);
+             system.debug('pricelistId ist ::: '+pricelistId);
+             system.debug('orderType ist ::: '+orderType);
+             system.debug('doNotCall ist ::: '+doNotCall);
+             system.debug('location ist ::: '+location);
+
+		if (agreementId != null && pricelistId != null) {
+			// Query Agreement Line Items
+			List<Agreement_Line_Item__c> agreeLineList = [
+				SELECT Id, Aggreement__c, Product__c, Product__r.Name, Product_Code__c, Product_Family__c, 
+					   List_Price__c, Contract_Net_Price__c, Aggreement__r.Price_List__r.Name,
+					   Criteria__c, Condition__c
+				FROM Agreement_Line_Item__c
+				WHERE Aggreement__c = :agreementId ];
+              for (Agreement_Line_Item__c item : agreeLineList) {
                     // Check uniqueness based on a field, e.g., Product_Name__r.Name
                     if (!uniqueProductNames.contains(item.Product__r.Name)) {
                         uniqueProductNames.add(item.Product__r.Name);
                         uniqueALI.add(item);
+                        system.debug('uniqueALI ist ::: '+uniqueALI);
                     }
                 }
-                for(Agreement_Line_Item__c agr :uniqueALI){
-                    Price_List__c pricelst = agr.Aggreement__r.Price_List__r;
-                    Product2 prod = agr.Product__r;
+
+			for (Agreement_Line_Item__c item : uniqueALI) {
+				Boolean satisfiesCriteria = true;
+
+				// If the ALI has criteria, evaluate it
+				if (item.Criteria__c != null && item.Condition__c != null) {
+                     system.debug('satisfiesCriteria ist ::: '+satisfiesCriteria);
+					List<filterRequirements> criteriaList = (List<filterRequirements>) JSON.deserialize(item.Criteria__c, List<filterRequirements>.class);
+                    system.debug('filterRequirements ist ::: '+criteriaList);
+					satisfiesCriteria = evaluateCriteria(criteriaList, item.Condition__c, location, doNotCall,headerdata);
+                    system.debug('satisfiesCriteria ist ::: '+satisfiesCriteria);
+				}
+
+				// Add ALI to the result if it has no criteria or satisfies its criteria
+				if (satisfiesCriteria) {
                     PricingWrapper c = new PricingWrapper();
-                    c.Id = agr.Product__c;
-                    c.productName =prod.Name ;
-                    c.nationalId = ''+(Integer.valueof((Math.random() * 100000)));
-                    c.contractNumber = ''+(Integer.valueof((Math.random() * 100000)));
-                    c.priceListName = pricelst.Name;
-                    c.price =agr.Contract_Net_Price__c;
+                    c.Id = item.Product__c;
+                    c.productName = item.Product__r.Name;
+                    c.nationalId = '' + (Integer.valueOf((Math.random() * 100000)));
+                    c.contractNumber = '' + (Integer.valueOf((Math.random() * 100000)));
+                    c.priceListName = item.Aggreement__r.Price_List__r.Name;
+                    c.price = item.Contract_Net_Price__c;
                     lstPricingWrapper.add(c);
-                }
-                system.debug('If Agrrelineitem ist ::: '+lstPricingWrapper);   
-                
+                    system.debug('If Agrrelineitem ::: '+lstPricingWrapper);
+					
+				}
+			}
+			//if(!filterproducts.isEmpty()){ 
+                             
                 List<Price_List_Item__c>  pricelistitem=[Select Id,Product_Name__r.Name,Product_Name__r.Family,Product_Name__r.ProductCode,Price_List__c,Product_Name__c,List_Price__c,Price_List__r.Name
                                                          from Price_List_Item__c
                                                          where  Price_List__c =:priceListId and Product_Name__r.Name NOT IN :filterProducts];
@@ -1312,62 +1383,113 @@ List<Aggrement_Info__c> lstAggrementInfo = [SELECT Id,Aggreement__c,Aggreement__
                     c.priceListName = pli.Price_List__r.Name;
                     c.price =pli.List_Price__c;
                     lstPricingWrapper.add(c);
+                    
+                     system.debug('priclsit ist ::: '+lstPricingWrapper);
                 }
                 
                 system.debug('If Agrrelineitem and priclsit ist ::: '+lstPricingWrapper);
-            }else{
-                List<Agreement_Line_Item__c> agreeLineList =[SELECT Id,Aggreement__c,Product__c, Product__r.Name,Product_Code__c, Product_Family__c,List_Price__c,Contract_Net_Price__c,Aggreement__r.Price_List__r.Name 
-                                                             from Agreement_Line_Item__c where Aggreement__c =:agreementId ];
-                 for (Agreement_Line_Item__c item : agreeLineList) {
-                    // Check uniqueness based on a field, e.g., Product_Name__r.Name
-                    if (!uniqueProductNames.contains(item.Product__r.Name)) {
-                        uniqueProductNames.add(item.Product__r.Name);
-                        uniqueALI.add(item);
-                    }
-                }
-                for(Agreement_Line_Item__c agr :uniqueALI){
-                    Price_List__c pricelst = agr.Aggreement__r.Price_List__r;
-                    Product2 prod = agr.Product__r;
-                    PricingWrapper c = new PricingWrapper();
-                    c.Id = agr.Product__c;
-                    c.productName =prod.Name ;
-                    c.nationalId = ''+(Integer.valueof((Math.random() * 100000)));
-                    c.contractNumber = ''+(Integer.valueof((Math.random() * 100000)));
-                    c.priceListName = pricelst.Name;
-                    c.price =agr.Contract_Net_Price__c;
-                    lstPricingWrapper.add(c);
-                }
-                system.debug('else Agrrelineitem ist ::: '+lstPricingWrapper);   
+           // }
+		}
+
+		return lstPricingWrapper;
+	}
+
+	// Helper to evaluate criteria
+	private Boolean evaluateCriteria(List<filterRequirements> criteriaList, String condition, String location, Boolean doNotCall,Map<string,string> headerdata) {
+		Boolean result = false;
+
+		try {
+			// Evaluate each criterion
+			Map<String, Boolean> criteriaResults = new Map<String, Boolean>();
+
+			for (filterRequirements criteria : criteriaList) {
+				Boolean conditionMet = false;
+
+				// Evaluate individual criteria
+			/*	if (criteria.field == 'Location__c' && criteria.operator == '=' && criteria.value == 'abc') {
+					conditionMet = (location == criteria.value);
+                     system.debug('conditionMet 1366 ist ::: '+conditionMet);
+				}*/
                 
-                List<Price_List_Item__c>  pricelistitem=[Select Id,Product_Name__r.Name,Product_Name__r.Family,Product_Name__r.ProductCode,Price_List__c,Product_Name__c,List_Price__c,Price_List__r.Name
-                                                         from Price_List_Item__c
-                                                         where  Price_List__c =:priceListId ];
-                 for (Price_List_Item__c item : pricelistitem) {
-                    // Check uniqueness based on a field, e.g., Product_Name__r.Name
-                    if (!uniqueProductNames.contains(item.Product_Name__r.Name)) {
-                        uniqueProductNames.add(item.Product_Name__r.Name);
-                        uniquePricelist.add(item);
-                    }
-                }
-                for(Price_List_Item__c pli :uniquePricelist){
-                    PricingWrapper c = new PricingWrapper();
-                    c.Id = pli.Product_Name__c;
-                    c.productName =pli.Product_Name__r.Name ;
-                    c.nationalId = ''+(Integer.valueof((Math.random() * 100000)));
-                    c.contractNumber = ''+(Integer.valueof((Math.random() * 100000)));
-                    c.priceListName = pli.Price_List__r.Name;
-                    c.price =pli.List_Price__c;
-                    lstPricingWrapper.add(c);
-                }
-                
-                system.debug('else Agrrelineitem and priclsit ist ::: '+lstPricingWrapper);
-            }
+                if (criteria.field=='Location__r.account.sct_account_business_model__c'&&criteria.operator=='IN') {
+                    Account acc=[select id,sct_account_business_model__c from account where id='001ao00001WMps9AAD'];
+                    System.debug('acc.sct_account_business_model__c '+acc.sct_account_business_model__c);
+                      System.debug('criteria.selectedValues'+criteria.selectedValues);
+					conditionMet =  criteria.selectedValues.contains(acc.sct_account_business_model__c);
+                       System.debug('criteria.selectedValues.contains(acc.sct_account_business_model__c)'+criteria.selectedValues.contains(acc.sct_account_business_model__c));
+                       System.debug('conditionMet'+conditionMet);
+                     system.debug('conditionMet 1366 ist ::: '+conditionMet);
+				}
+               else if (headerdata.get(criteria.field)!=null) {
+					conditionMet = (headerdata.get(criteria.field) == criteria.value);
+                     system.debug('conditionMet 1366 ist ::: '+conditionMet);
+				}
+
+				// Store the result of this criterion (keyed by ID)
+				criteriaResults.put(criteria.id, conditionMet);
+                 system.debug('criteriaResults 1375 ist ::: '+criteriaResults);
+			}
+
+			// Combine individual results using the logical condition
+			if (condition != null) {
+				result = evaluateLogicalExpression(condition, criteriaResults);
+                system.debug('result 1380 ::: '+result);
+			}
+		} catch (Exception e) {
+			system.debug('Error evaluating criteria: ' + e.getMessage());
+		}
+
+		return result;
+	}
+
+
+	// Helper to evaluate logical expressions
+    private Boolean evaluateLogicalExpression(String condition, Map<String, Boolean> criteriaResults) {
+        try {
+            // Replace placeholders with boolean values
+            String expression = condition;
             
-        }            
-        return lstPricingWrapper;
+            for (String key : criteriaResults.keySet()) {
+                expression = expression.replace(key, criteriaResults.get(key) ? 'true' : 'false');
+            }
+            System.debug('Processed expression: ' + expression);
+            
+            // Parse the expression manually
+            return evaluateCustomLogic(expression);
+        } catch (Exception e) {
+            System.debug('Error in evaluateLogicalExpression: ' + e.getMessage());
+            return false;
+        }
     }
+    
+    private Boolean evaluateCustomLogic(String expression) {
+        // Manually split and evaluate the expression using logical operators
+        // Example: "true AND false OR true" becomes true && false || true
+        List<String> tokens = expression.split('\\s+');
+        Boolean result = null;
+        String operator = null;
         
-        public static List<String> getFilterProducts(String recId){
+        for (String token : tokens) {
+            if (token == 'true' || token == 'false') {
+                Boolean current = Boolean.valueOf(token);
+                
+                if (result == null) {
+                    result = current;
+                } else if (operator == 'AND') {
+                    result = result && current;
+                } else if (operator == 'OR') {
+                    result = result || current;
+                }
+            } else if (token == 'AND' || token == 'OR') {
+                operator = token;
+            }
+        }
+        
+        return result != null ? result : false;
+    }
+
+
+    public static List<String> getFilterProducts(String recId){
             List<String> objectList = new List<String>();
             String effCountry = [Select Id,Effective_Country__c from Account where Id =: recId].Effective_Country__c;
             system.debug('Effective COuntry ::: '+ effCountry);
@@ -1634,11 +1756,53 @@ pw.opportunityName = mapOpportunity.get(''+obj.get('Opportunity__c')).Name;
         
     }
     
+   public static string validateAccountOrderType(String recId, String recordType) {
+       String errorMessage = '';
+       
+       // Query account details
+      Account acc = [SELECT Id, Type,Effective_Country__c FROM Account WHERE Id = :recId LIMIT 1];
+       system.debug('Account :: '+acc);
+       system.debug('Account.Type :: '+acc.Type);
+       system.debug('Account.Effective_Country__c :: '+acc.Effective_Country__c);
+       if (recordType == 'Quick Order') {
+           if (acc.Type == 'Prospect' || acc.Type == 'Customer - Channel' || acc.Type == 'Installation Partner') {
+                    errorMessage = 'It is not allowed to place orders for this account Quick Order type.';
+               } else if (String.isBlank(acc.Effective_Country__c)) {
+                   errorMessage = 'Missing effective country, order cannot be created.';
+               }
+       }
+       else if (recordType == 'Regular Order') {
+           if (acc.Type == 'Customer - Direct' || acc.Type == 'Technology Partner') {
+                    errorMessage = 'It is not allowed to place orders for this account Regular Order type.';
+                }
+           }
+       
+       return errorMessage;
+   }
+
+    
    
     @AuraEnabled
     public static List<ResultWrapper> fetchLookupRecords(String objectApiName, String fieldApiName,
-       	String otherFieldApiName, String searchString, String selectedRecordId, String pricelistId,String recId) {
+       	String otherFieldApiName, String searchString, String selectedRecordId, String fieldData,String recId) {
         //String pluginName = [SELECT Plugin__c,DeveloperName FROM Agreement_Request_Setting__mdt where DeveloperName ='AgreementRequest'].Plugin__c;
+        Id agreementId;
+		Id pricelistId;
+		String orderType = '';
+		Boolean doNotCall = false;
+		String location = '';
+        if (fieldData != null && fieldData != '') {
+			EntryFormWrapper[] lstEntryFormWrap = (List<EntryFormWrapper>) JSON.deserialize(fieldData, List<EntryFormWrapper>.class);
+			for (EntryFormWrapper obj : lstEntryFormWrap) {
+				if (obj.fieldName == 'Aggreement__c') agreementId = obj.value;
+				if (obj.fieldName == 'Price_List_Name__c') pricelistId = obj.value;
+				if (obj.fieldName == 'Order_Type__c') orderType = obj.value;
+				if (obj.fieldName == 'Do_Not_Call__c') doNotCall = Boolean.valueOf(obj.value);
+				if (obj.fieldName == 'Location__c') location = obj.value;
+                //headerdata.put(obj.fieldName,obj.value);
+			}
+		}
+          
         system.debug('pricelistId :: '+pricelistId);
         system.debug('recId :: '+recId);
 		List<String> filterproducts = getFilterProducts(recId);
@@ -1696,12 +1860,13 @@ pw.opportunityName = mapOpportunity.get(''+obj.get('Opportunity__c')).Name;
     }
     
      @AuraEnabled
-    public static List<ValidationResult> validateData(Map<String, String> fieldValues) {
+    public static List<ValidationResult> validateData(Map<String, String> fieldValues,Map<String, String> updatedfieldValues , String cartcount) {
         List<ValidationResult> validationResults = new List<ValidationResult>();
-    
+    	String accountRecId='';
+        System.debug('fieldValues :'+fieldValues);
+        System.debug('updatedfieldValues :'+updatedfieldValues);
         for (String field : fieldValues.keySet()) {
-            System.debug('Validating field: ' + field);
-            String fieldValue = fieldValues.get(field);
+             String fieldValue = fieldValues.get(field);
     
             // Example validation logic
             if (field == 'Internal_Notes__c' && fieldValue == 'test') {
@@ -1809,44 +1974,140 @@ pw.opportunityName = mapOpportunity.get(''+obj.get('Opportunity__c')).Name;
         }
     }
     
+    public static Id createPromoRecord(Map<String, Object> params, Id promoId) {
+        try {
+            // Parse Details Tab Values
+            Promotions__c promo = new Promotions__c(
+                Name = (String) params.get('Name'),
+                Active__c = (Boolean) params.get('Active__c'),
+                Include_with_other_promotions__c = (Boolean) params.get('Include_with_other_promotions__c'),
+                Effective_Date__c = params.get('Effective_Date__c')!=null ?Date.valueOf((String) params.get('Effective_Date__c')):null,
+                Expiration_Date__c =params.get('Expiration_Date__c')!=null? Date.valueOf((String) params.get('Expiration_Date__c')):null,
+                Type__c = (String) params.get('Type__c'),
+                
+                // Products Tab Values
+                Products__c = (String) params.get('Products__c'),
+                Excluded__c = (String) params.get('Excluded__c'),
+                Product_Family__c = (String) params.get('Product_Family__c'),
+                Excluded_Product_Family__c = (String) params.get('Excluded_Product_Family__c'),
     
-    public static Id createPromoRecord(Map<String, Object> params) {
-        try{
-        system.debug('params'+params);
-        String Name = (String) params.get('Name');
-        Boolean Active = (Boolean)params.get('Active__c');
-        Boolean IncludeOtherPromo = (Boolean)params.get('Include_with_other_promotions__c');
-        Date effectiveDate = params.get('Effective_Date__c') != null ? Date.valueOf((String)params.get('Effective_Date__c')) : null;
-        Date expirationDate = params.get('Expiration_Date__c') != null ? Date.valueOf((String)params.get('Expiration_Date__c')) : null;
-        String AdjustmentType = (String)params.get('Adjustment_Type__c');
-        Decimal AdjustmentAmount = (Decimal)params.get('Adjustment_Amount__c');
-        String selectedProductsStr = (string)params.get('Products__c');
-        List<String> selectedProductCodes = selectedProductsStr != null ? selectedProductsStr.split(';') : new List<String>();
-
-            Promotions__c Promo = new Promotions__c(
-                Name = Name,
-                Active__c = Active,
-                Include_with_other_promotions__c = IncludeOtherPromo,
-                Effective_Date__c = EffectiveDate,
-                Expiration_Date__c = ExpirationDate,
-                Adjustment_Type__c = AdjustmentType,
-                Adjustment_Amount__c = AdjustmentAmount          
+                // Criteria Tab Values
+                Field_Conditions__c = (String) params.get('Field_Conditions__c'),
+                
+                // Rate Type Value
+                Rate_Type__c = String.isNotBlank((String) params.get('Rate_Type__c')) 
+                    ? (String) params.get('Rate_Type__c') 
+                    : 'Single Rate'
             );
-
-            if (!selectedProductCodes.isEmpty()) {               
-                Promo.Products__c = String.join(selectedProductCodes, ';'); 
+    
+            // Update promo if PromoId is provided
+            if (promoId != null) {
+                promo.Id = promoId;
+            }
+            System.debug('Field_Conditions__c: ' + promo.Field_Conditions__c);
+            if (promo.Rate_Type__c == 'Single Rate') {
+                // Parse Benefits Tab Values
+                promo.Adjustment_Type__c = (String) params.get('Adjustment_Type__c');
+                promo.Adjustment_Amount__c = (Decimal) params.get('Adjustment_Amount__c');
+                promo.Adjustment_Applies_To__c = (String) params.get('Adjustment_Applies_To__c');
+            }
+    
+            // Insert or update the promo record
+            if (promoId != null) {
+                update promo;
+            } else {
+                insert promo;
+            }
+    
+            
+            if (promo.Rate_Type__c != 'Single Rate') {
+                try {
+                    // Parse Range Records
+                    String uom = (String) params.get('UOM__c');
+                    String rangeAdjustmentAppliesTo = (String) params.get('Range_Adjustment_Applies_To__c');
+                    List<Object> rateTableRows = (List<Object>) JSON.deserializeUntyped((String) params.get('RateTableRows'));
+                    List<Range__c> rangeRecords = new List<Range__c>();
+                    List<Range__c> updateRangeRecords = new List<Range__c>();
+    
+                    for (Object row : rateTableRows) {
+                        Map<String, Object> rowMap = (Map<String, Object>)row;
+                        Range__c range = new Range__c();
+                        range.Promotion__c = Promo.Id;
+                        range.Adjustment_Applies_To__c = RangeAdjustmentAppliesTo;
+                        range.UOM__c = UOM;
+                        range.Name = rowMap.containsKey('id') && rowMap.get('id') != null
+                                    ? String.valueOf(rowMap.get('id'))
+                                    : null;
+                                            
+                        range.Adjustment_Type__c = (String) rowMap.get('tiersAdjustmentType');
+                        range.Adjustment_Amount__c = (String) rowMap.get('tiersAdjustmentAmount');
+                        range.Maximum__c = rowMap.containsKey('maxValue') && rowMap.get('maxValue') != null
+                        ? Decimal.valueOf((String)rowMap.get('maxValue'))
+                        : null;
+                        range.Minimum__c = rowMap.containsKey('minValue') && rowMap.get('minValue') != null
+                                        ? Decimal.valueOf((String)rowMap.get('minValue'))
+                                        : null;
+                        range.Criteria_Condition__c = (String) rowMap.get('criteriaConditionalValue');
+    
+                        if (promoId != null && rowMap.containsKey('id') && rowMap.get('id') != null) {
+                            
+                        	List<Range__c> existingRange = new list<Range__c>();
+                            existingRange = [SELECT Id FROM Range__c WHERE Promotion__c = :promo.Id AND Name = :String.valueOf(rowMap.get('id')) LIMIT 1];
+                            if (!existingRange.isEmpty()) {  
+                                range.Id = existingRange[0].Id; 
+                                updateRangeRecords.add(range); 
+                            }
+                            else { 
+                                rangeRecords.add(range); 
+                            }
+                        } else {
+                            rangeRecords.add(range);
+                        }
+                    }
+    
+                    // Update or insert ranges
+                    if (!updateRangeRecords.isEmpty()) {
+                        update updateRangeRecords;
+                    }
+                    if (!rangeRecords.isEmpty()) {
+                        insert rangeRecords;
+                    }
+                    
+                } catch (Exception e) {
+                    throw new AuraHandledException('Error creating Ranges: ' + e.getMessage());
+                }
             }
 
-            insert Promo;
+            // Handle JSON data
+            SCF_Promotion_JSON_Data__c promoJson = new SCF_Promotion_JSON_Data__c(
+                Promo_Id__c = promo.Id,
+                Promotion_Data__c = (String) params.get('JSONPromotionInfo'),
+                Range_Data__c = (String) params.get('JSONRangeInfo')
+            );
+
+            if (promoId != null) {
+                SCF_Promotion_JSON_Data__c existingJson = [SELECT Id FROM SCF_Promotion_JSON_Data__c WHERE Promo_Id__c = :promo.Id LIMIT 1];
+                promoJson.Id = existingJson.Id;
+                update promoJson;
+            } else {
+                insert promoJson;
+            }
+    
             return promo.Id;
-    }
-    Catch(exception e){
-        throw new AuraHandledException('Error creating Promotion: ' + e.getMessage());
-    }
+    
+        } catch (Exception e) {
+            throw new AuraHandledException('Error creating Promotion: ' + e.getMessage());
+        }
+    }    
 
-    }
+    Public static List<SCF_Promotion_JSON_Data__c> getPromotionJsonData(Id promoId) {
+        return [
+            SELECT Id, Promotion_Data__c, Range_Data__c, Promo_Id__c 
+            FROM SCF_Promotion_JSON_Data__c 
+            WHERE Promo_Id__c = :promoId
+        ];
+    }  
 
-   
     public static List<String> getPicklistValues(String fieldApiName) {
         List<String> picklistValues = new List<String>();
 
@@ -1878,15 +2139,26 @@ pw.opportunityName = mapOpportunity.get(''+obj.get('Opportunity__c')).Name;
         return products;
     }
 
+    public Static list<Object> getProductsList(String filterString){
+        String query = 'SELECT Id,Name,ProductCode FROM Product2';
+        if (filterString != null && filterString != '') {
+            filterString = String.escapeSingleQuotes(filterString);
+            query += ' WHERE Name LIKE \'%' + filterString + '%\'';
+        }
+        return Database.query(query);
+    }
+
     public class FieldInfo {
         @AuraEnabled public String label { get; set; }
         @AuraEnabled public String fieldName { get; set; }
         @AuraEnabled public String fieldtype { get; set; }
+        @AuraEnabled public String referenceValue { get; set; }
         
-        public FieldInfo(String label, String fieldName, String fieldtype) {
+        public FieldInfo(String label, String fieldName, String fieldtype,String referenceValue) {
             this.label = label;
             this.fieldName = fieldName;
             this.fieldtype = fieldtype;
+            this.referenceValue = referenceValue;
         }
     }
 
@@ -1902,11 +2174,43 @@ pw.opportunityName = mapOpportunity.get(''+obj.get('Opportunity__c')).Name;
                 Schema.SObjectField field = customFieldMap.get(fieldName);
                 String label = field.getDescribe().getLabel();
                 String fieldtype = field.getDescribe().getType().name(); 
-                fieldDetails.add(new FieldInfo(label, fieldName, fieldtype));
+                String referenceValue='';
+                if(fieldtype=='REFERENCE'){
+                    List<Schema.SObjectType> referenceTo = field.getDescribe().getReferenceTo(); 
+                    for (Schema.SObjectType relatedObject : referenceTo) 
+                    { 
+                        referenceValue=relatedObject.getDescribe().getName();
+                    }
+                }
+                fieldDetails.add(new FieldInfo(label, fieldName, fieldtype, referenceValue));
             }
         }
         return fieldDetails;
-    } 
+    }
+    public static List<FieldInfo> getSObjectFields(String sObjectApiName) {
+        Schema.SObjectType sObjectType = Schema.getGlobalDescribe().get(sObjectApiName);
+        Map<String, Schema.SObjectField> fieldMap = sObjectType.getDescribe().fields.getMap();
+        Map<String, Schema.SObjectField> customFieldMap = new Map<String, Schema.SObjectField>();
+        List<FieldInfo> fieldDetails = new List<FieldInfo>();
+        
+        for (String fieldName : fieldMap.keySet()) {
+                customFieldMap.put(fieldName, fieldMap.get(fieldName));
+
+                Schema.SObjectField field = customFieldMap.get(fieldName);
+                String label = field.getDescribe().getLabel();
+                String fieldtype = field.getDescribe().getType().name(); 
+                String referenceValue='';
+                if(fieldtype=='REFERENCE'){
+                    List<Schema.SObjectType> referenceTo = field.getDescribe().getReferenceTo(); 
+                    for (Schema.SObjectType relatedObject : referenceTo) 
+                    { 
+                        referenceValue=relatedObject.getDescribe().getName();
+                    }
+                }
+                fieldDetails.add(new FieldInfo(label, fieldName, fieldtype, referenceValue));
+        }
+        return fieldDetails;
+    }
     
     public String getchartData(String compName){
         String qoeMdt =[SELECT Id,Label,Graph_Values__c,DeveloperName  FROM QOEGraph__mdt  Where DeveloperName  =: compName].Graph_Values__c;
@@ -1977,6 +2281,9 @@ pw.opportunityName = mapOpportunity.get(''+obj.get('Opportunity__c')).Name;
         
         @AuraEnabled
         public Decimal listPrice {get; set;}
+
+        @AuraEnabled
+        public Decimal contractPrice {get; set;}
         
         @AuraEnabled
         public String nationalName {get; set;}
@@ -2058,13 +2365,10 @@ pw.opportunityName = mapOpportunity.get(''+obj.get('Opportunity__c')).Name;
 
         @AuraEnabled
         public Decimal adddiscount { get; set; }
-
-        
    
         public ProductWrapper(){
-        this.discountApplied = false;
-    }
-   
+            this.discountApplied = false;
+        }
     }
 
 
@@ -2160,6 +2464,9 @@ pw.opportunityName = mapOpportunity.get(''+obj.get('Opportunity__c')).Name;
         @AuraEnabled
         public String displayValue {get; set;}
         
+         @AuraEnabled
+        public date dateValue {get; set;}
+        
         @AuraEnabled
         public String fieldLookupName {get; set;}
         
@@ -2186,6 +2493,9 @@ pw.opportunityName = mapOpportunity.get(''+obj.get('Opportunity__c')).Name;
         
         @AuraEnabled
         public Boolean isLocation {get; set;}
+
+          @AuraEnabled
+        public Boolean iswholesale {get; set;}
         
         @AuraEnabled
         public Boolean isType {get; set;}
@@ -2321,6 +2631,24 @@ pw.opportunityName = mapOpportunity.get(''+obj.get('Opportunity__c')).Name;
             this.errorMessage = errorMessage;
         }
     }
+    
+     public class filterRequirements{
+        @AuraEnabled
+        public String id {get; set;}
+        
+        @AuraEnabled
+        public String field  {get; set;}
+        
+        @AuraEnabled
+        public String operator {get; set;}
+        
+        @AuraEnabled
+        public String value {get; set;}
+         
+         @AuraEnabled
+        public list<String> selectedValues {get; set;}
+   
+     }
      
       
 }

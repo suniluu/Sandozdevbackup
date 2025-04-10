@@ -15,6 +15,7 @@ export default class ProductNameComponent extends LightningElement {
     @api priceList;
     @api productName ;
     @api recId;
+    @api fields;
     @track isProduct = true;
     
     // matchingInfo = {
@@ -26,9 +27,7 @@ export default class ProductNameComponent extends LightningElement {
     // }
     
     connectedCallback() {
-         console.log('Product name cmp recordId  :: '+this.recordId);
-         console.log('Product name cmp recId  :: '+this.recId);
-            console.log('price list in product name comp :: '+this.priceList);
+       
        /*  // var additionalSearch = this.addfield ? this.addfield : this.fieldLookupName;
           var additionalSearch = this.addfield ? this.addfield : 'Name';
         this.matchingInfo = {
@@ -60,7 +59,7 @@ export default class ProductNameComponent extends LightningElement {
     }
 
     handleRecordSelect(event){
-        console.log('handleRecordSelect '+event.detail);
+        console.log('handleRecordSelect '+JSON.stringify(event.detail));
       //  if(this.aggrementId){
            let selectedData = {productId: event.detail.id, rowId: this.recordId, fieldapi : this.fieldapi, recordfieldAPI: this.fieldapiname, addcol: this.addcol};
             const selectedEvent = new CustomEvent('productchanged', {

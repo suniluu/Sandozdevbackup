@@ -27,6 +27,48 @@ public with sharing class AgreementController {
         }
         return result;
     }
+
+     @AuraEnabled(cacheable=true)
+    public static List<object> getFields(){
+        List<object> lstrecord;
+        IGenerateAgreementController customPlugin = AgreementRequestController.getCerPluginInstance('AgreementRequest');
+        if(customPlugin != null){
+            try{
+                lstrecord = customPlugin.getFields();
+            } catch(Exception e){
+                system.debug('Error in adding products to cart');
+            }
+        }
+        return lstrecord;        
+    } 
+
+        @AuraEnabled(cacheable=true)
+    public static List<object> getPicklistValues(String objectApiName,string fieldApiName){
+        List<object> lstrecord;
+        IGenerateAgreementController customPlugin = AgreementRequestController.getCerPluginInstance('AgreementRequest');
+        if(customPlugin != null){
+            try{
+                lstrecord = customPlugin.getPicklistValues(objectApiName,fieldApiName);
+            } catch(Exception e){
+                system.debug('Error in adding products to cart');
+            }
+        }
+        return lstrecord;        
+    } 
+
+    @AuraEnabled(cacheable=true)
+    public static List<object> getSObjectFields(String sObjectApiName){
+        List<object> lstrecord;
+        IGenerateAgreementController customPlugin = AgreementRequestController.getCerPluginInstance('AgreementRequest');
+        if(customPlugin != null){
+            try{
+                lstrecord = customPlugin.getSObjectFields(sObjectApiName);
+            } catch(Exception e){
+                system.debug('Error in adding products to cart');
+            }
+        }
+        return lstrecord;        
+    }
     
 
     @AuraEnabled(cacheable=true)
@@ -70,6 +112,22 @@ public with sharing class AgreementController {
         }
         return accList;
     }
+
+
+     @AuraEnabled(cacheable=true)
+    public static List<Object> customPriceCalculation(string agreementdata ) {
+        List<Object> accList = new List<Object>();
+        IGenerateAgreementController customPlugin = AgreementRequestController.getCerPluginInstance('AgreementRequest');
+        if(customPlugin != null){
+            try{
+            	accList = customPlugin.customPriceCalculation( agreementdata );
+            } catch(Exception e){
+              system.debug('Error encountered');
+            }
+        }
+        return accList;
+    }
+
 
 
 	@AuraEnabled(cacheable=true)
@@ -134,12 +192,12 @@ public with sharing class AgreementController {
         
         
     @AuraEnabled(cacheable=true)
-    public static Object validateData(Map<String, String> fieldValues) {
+    public static Object validateData(Map<String, String> fieldValues, String cartcount) {
         List<Object> result = new List<Object>();
         IGenerateAgreementController customPlugin = AgreementRequestController.getCerPluginInstance('AgreementRequest');
         if(customPlugin != null){
             try{
-            	result = customPlugin.validateData(fieldValues);
+            	result = customPlugin.validateData(fieldValues,cartcount);
             } catch(Exception e){
                 system.debug('Error encountered');
             }
@@ -242,7 +300,7 @@ public with sharing class AgreementController {
             try{
                 lstrecord = customPlugin.AgreementPricevalidate( agreementLineItemData);
             } catch(Exception e){
-                system.debug('Error in Pricevalidation');
+                system.debug(e);
             }
         }
         return lstrecord;        
@@ -271,7 +329,7 @@ public with sharing class AgreementController {
         List<Object> lstOrderData = (List<Object>) JSON.deserializeUntyped(agreementLineItemData);
         if(customPlugin != null){
             try{
-                lstrecord = customPlugin.updateAgreementLineItemData(recordId, lstOrderData);
+                lstrecord = customPlugin.updateAgreementLineItemData(recordId, agreementLineItemData);
             } catch(Exception e){
                 system.debug('Error in updating agreement line items');
             }
@@ -376,6 +434,20 @@ public with sharing class AgreementController {
         }
         return titleDetails;
     }
+
+    @AuraEnabled(cacheable=true)
+    public static String objectApiname(){
+        String objectApiname;
+        IGenerateAgreementController customPlugin = AgreementRequestController.getCerPluginInstance('AgreementRequest');
+        if(customPlugin != null){
+            try{
+            	objectApiname = customPlugin.objectApiname();
+            } catch(Exception e){
+                customPlugin.errorHandleling('',e);
+            }
+        }
+        return objectApiname;
+    }
      /**
      * @description: getTabs to get all the tabs on the order request page based on the order of the tab
      * @return: return type list of Data_Table_Column__mdt
@@ -402,7 +474,22 @@ public with sharing class AgreementController {
      */
     @AuraEnabled(cacheable=true)
     public static Data_Table_Column__mdt getColumns(String columnData){
-        return [select id, Column_JSON__c from Data_Table_Column__mdt  where DeveloperName = :columnData WITH SECURITY_ENFORCED];
+        Data_Table_Column__mdt columns;
+       if(columnData=='Agreement_Catelog_Selection'){
+           Enable_Agreement_Line_Level_Filter__mdt checkbox =[select id,Enable_Agreement_Line_Filters__c from Enable_Agreement_Line_Level_Filter__mdt];
+            
+            if(checkbox.Enable_Agreement_Line_Filters__c==true){
+           columns= [select id, Column_JSON__c from Data_Table_Column__mdt  where DeveloperName = 'Agreement_Catelog_Selection' WITH SECURITY_ENFORCED];
+            }else{
+              columns= [select id, Column_JSON__c from Data_Table_Column__mdt  where DeveloperName = 'Agreement_Catelog_Wihtout_Filters' WITH SECURITY_ENFORCED];
+            
+            }
+        }
+        else{
+        columns= [select id, Column_JSON__c from Data_Table_Column__mdt  where DeveloperName = :columnData WITH SECURITY_ENFORCED];
+        }
+        return columns;
+        //return [select id, Column_JSON__c from Data_Table_Column__mdt  where DeveloperName = :columnData WITH SECURITY_ENFORCED];
         //return Data_Table_Column__mdt.getInstance('Table_Columns');
     }
     
@@ -645,4 +732,114 @@ public with sharing class AgreementController {
         }
         return lineitems;
     }
+
+    /*@AuraEnabled
+    public static Boolean savePDF(Id recordId, String fileName, String base64Data) {
+        try {
+            // Create a ContentVersion record
+            ContentVersion contentVersion = new ContentVersion();
+            contentVersion.Title = fileName;
+            contentVersion.PathOnClient = fileName;
+            contentVersion.VersionData = EncodingUtil.base64Decode(base64Data);
+            insert contentVersion;
+
+            // Retrieve the ContentDocument ID
+            ContentDocument contentDocument = [
+                SELECT Id
+                FROM ContentDocument
+                WHERE Id IN (
+                    SELECT ContentDocumentId
+                    FROM ContentVersion
+                    WHERE Id = :contentVersion.Id
+                )
+            ];
+
+            // Link the file to the record using ContentDocumentLink
+            ContentDocumentLink link = new ContentDocumentLink();
+            link.LinkedEntityId = recordId;
+            link.ContentDocumentId = contentDocument.Id;
+            link.ShareType = 'V';
+            link.Visibility = 'AllUsers';
+            insert link;
+
+            return true;
+        } catch (Exception e) {
+            System.debug('Error saving PDF: ' + e.getMessage());
+            throw new AuraHandledException('Failed to save PDF. ' + e.getMessage());
+        }
+    }
+
+    
+    @AuraEnabled(cacheable=true)
+    public static List<Agreement_Line_Item__c> getALIRecordData(String recordId) {
+        try {
+                        System.debug('recordIdKK: ' + recordId); 
+            List<Agreement_Line_Item__c> aliList = [SELECT Id, Aggreement__r.Name, Product__r.Name, Product_Code__c, List_Price__c
+                                                    FROM Agreement_Line_Item__c
+                                                    WHERE Aggreement__c = :recordId];
+            System.debug('Fetched Line Items: ' + aliList); 
+            return aliList;
+        } catch (Exception e) {
+            System.debug('Error in Apex: ' + e.getMessage());
+            return new List<Agreement_Line_Item__c>(); 
+        }
+    }*/
+
+    @AuraEnabled
+    public static List<Agreement_Line_Item__c> getAgreementLineItems(Id agreementId) {
+        System.debug('kkrecordID'+agreementId);
+        try {
+            List<Agreement_Line_Item__c> aliList = [SELECT Id, Aggreement__r.Name, Product__r.Name, Product_Code__c, List_Price__c
+                                                    FROM Agreement_Line_Item__c
+                                                    WHERE Aggreement__c = :agreementId];
+            System.debug('Fetched Line Items: ' + aliList); 
+            return aliList;
+        } catch (Exception e) {
+            System.debug('Error in Apex: ' + e.getMessage());
+            return new List<Agreement_Line_Item__c>(); 
+        }
+    }
+
+
+     @AuraEnabled
+    public static void savePdfToContentVersion(String fileName, String base64Data, Id agreementId) {
+        try {
+            // Decode the Base64 string to get the binary data
+            Blob pdfBlob = EncodingUtil.base64Decode(base64Data);
+            if (pdfBlob == null) {
+                throw new AuraHandledException('Invalid PDF data');
+            }
+
+            // Create a new ContentVersion record
+            ContentVersion contentVersion = new ContentVersion(
+                Title = fileName,
+                PathOnClient = fileName,
+                VersionData = pdfBlob
+            );
+
+            insert contentVersion;
+
+            ContentDocument contentDocument = [
+                SELECT Id
+                FROM ContentDocument
+                WHERE Id IN (
+                    SELECT ContentDocumentId
+                    FROM ContentVersion
+                    WHERE Id = :contentVersion.Id
+                )
+            ];
+
+            ContentDocumentLink link = new ContentDocumentLink();
+            link.LinkedEntityId = agreementId;
+            link.ContentDocumentId = contentDocument.Id;
+            link.ShareType = 'V';
+            link.Visibility = 'AllUsers';
+            insert link;
+
+        } catch (Exception e) {
+            System.debug('Error saving PDF: ' + e.getMessage());
+            throw new AuraHandledException('Error saving PDF: ' + e.getMessage());
+        }
+    }
+
 }

@@ -11,8 +11,14 @@
             <template if:true={fields}>
                 <template for:each={fields} for:item="f">
                     <div key={f.Id} class="slds-col slds-size_1-of-2">
+                        <template if:false={f.isDate}>
                         <lightning-input-field  field-name={f.fieldName} onchange={handleFieldChange} field-label={f.Label} value={f.value} disabled={f.isDisabled} required={f.isRequired}>
                         </lightning-input-field>
+                        </template>
+                          <template if:true={f.isDate}>
+                        <lightning-input-field  field-name={f.fieldName} onchange={handleFieldChange} field-label={f.Label} value={f.dateValue} disabled={f.isDisabled} required={f.isRequired}>
+                        </lightning-input-field>
+                        </template>
                     </div>
                 </template>
             </template>

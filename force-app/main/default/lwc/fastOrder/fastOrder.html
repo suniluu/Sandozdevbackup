@@ -1,9 +1,5 @@
 <template>
-    <div if:true={showLoader}>
-        <lightning-spinner variant="brand" alternative-text="Loading Data" size="medium" >
-        </lightning-spinner>
-        <div class="slds-backdrop slds-backdrop_open"></div>
-    </div>
+  
     <div>
         <div class="slds-grid slds-p-bottom_x-small">
             <div class="slds-col slds-size_4-of-12">
@@ -27,20 +23,34 @@
             </div>
         </div>
     </div>
-    <div if:true={dataLoading} class="slds-align_absolute-center slds-spinner_inline spinner-padding spinner-style">
+    <template if:true={loading} class="slds-align_absolute-center slds-spinner_inline spinner-padding spinner-style">
         <lightning-spinner variant="brand" alternative-text="Loading Data" size="medium" >
         </lightning-spinner>
-    </div>
-    <template  if:false={dataLoading}>
+         <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+    <!-- <template  if:false={loading}> -->
+        <div class="slds-scrollable_y">
         <c-custom-type-datatable  key-field="recordId" columns={columns} data={productData} onrowselection={handleRowSelection}
             class="divDataTable" sorted-by={sortBy} sorted-direction={sortDirection} onsort={doSorting}  selected-rows={preFastSelectedRows}
             onproductselected={handleproductselected} onheaderaction={handleHeaderAction} onproductchanged={handleproductchanged}></c-custom-type-datatable>
-    </template>
+        </div>
+       <div class="slds-grid slds-grid_vertical-align-center slds-grid_align-center" style="padding-top : 10px;">
+            <lightning-button variant="brand" label="Add to Cart" title="Add to Cart"
+                disabled={disableButton} onclick={handleAddToCart} class="slds-m-left_x-small">
+            </lightning-button>
+        </div>
+    <!-- </template> -->
     <template if:true={isModalOpen}>
+       
         <!-- Modal/Popup Box LWC starts here -->
         <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
             aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
             <div class="slds-modal__container">
+                   <div if:true={showLoader}>
+        <lightning-spinner variant="brand" alternative-text="Loading Data" size="medium" >
+        </lightning-spinner>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </div>
                 <!-- Modal/Popup Box LWC header here -->
                 <header class="slds-modal__header">
                     <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse"

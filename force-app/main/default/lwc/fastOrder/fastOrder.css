@@ -6,7 +6,7 @@
 }
 .addrow-input{
     float: left; 
-    width:19%;
+    width:23%;
 }
 .spinner-style{
     padding-top :10rem; 
@@ -22,4 +22,7 @@
 .backgroundcolor {
    --sds-c-icon-color-background: var(--lwc-brandAccessible, rgb(1, 118, 211));
     
+}
+.slds-scrollable_y{
+	height:20rem;
 }

@@ -12,7 +12,7 @@
             </div>
             <div class="main">
                 <template if:true={fields}>
-                    <c-body onvaluerecieved={handlevaluerecieved} onparentloader={handleparentloader}  ongetrecorddata={handlegetrecorddata} order-data={orderData} orderdate={orderdate} selected-location={selectedLocation}
+                    <c-body onvaluerecieved={handlevaluerecieved} fielddata={fielddata} datefield={datefield} locationfield={locationfield}  wholesalerfield={wholesalerfield} onparentloader={handleparentloader}  ongetrecorddata={handlegetrecorddata} order-data={orderData}    
                     typename={typename} price-list={priceList} cer-api={cerApi} rec-id={recId} fields={fields} cart-count={cartCount} objname={relatedobject} ontotalnetpricebody={handleTotalnetPrice} 
                     aggrementselected={aggrementselected} orderid={orderid} pre-selected-rows={preSelectedRows} pre-fast-selected-rows={preFastSelectedRows}></c-body>
                 </template>

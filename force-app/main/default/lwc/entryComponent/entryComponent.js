@@ -9,6 +9,7 @@ export default class EntryComponent extends LightningElement {
     @api fields;
     @api preSelectedRows ;
     @api preFastSelectedRows;
+    @api cartCount;
     @track isLoading = false;
     @track showButtons = false;
     accumulatedFieldData = {};
@@ -104,13 +105,20 @@ export default class EntryComponent extends LightningElement {
     handleSave(){
         if (this.validateFields()) {
             const fieldData = {};
-
             this.fields.forEach(field => {
-                if (this.modifiedFields.hasOwnProperty(field.fieldName)) {
-                    fieldData[field.fieldName] = field.value;
-                }
+                fieldData[field.fieldName] = field.value;
             });
-            validateData({ fieldValues: fieldData })
+            const modifiedfieldData = {};
+            this.fields.forEach(field => {
+                if(this.modifiedFields[field.fieldName] == true){
+                    modifiedfieldData[field.fieldName] = field.value;
+                }   
+            });
+            let cartProductCount =0;
+            if(this.cartCount){
+                cartProductCount = this.cartCount?this.cartCount:0;
+            }
+            validateData({ fieldValues: fieldData ,updatedfieldValues:modifiedfieldData, cartcount:cartProductCount})
                 .then((results) => {
                     if (results.length === 0) {
                         // No validation errors, submit the form

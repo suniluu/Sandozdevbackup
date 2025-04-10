@@ -18,20 +18,20 @@ export default class QuickOrder extends NavigationMixin(LightningElement) {
     @api prodData;
     @track showLoader = false;
     @api fields;
-    @api relatedobject;
-    @api orderdate;
+    @api relatedobject; 
     @api datefield;
     @api priceList;
-    @api cerApi;
-    @track selectedLocation;
+    @api cerApi; 
     @track userCurrencySymbol;
     @track userCurrencyCode;
     @track userLocale;
+    @track fielddata=[];
     @track netTotal = 0;
     @track preSelectedRows ;
     @track preFastSelectedRows;
     componentLoaded=false;
-
+  @track locationfield='';
+    @track wholesalerfield=''; 
     connectedCallback() {
         this.fetchRecord();
         this.loadHeaderData();
@@ -102,16 +102,19 @@ export default class QuickOrder extends NavigationMixin(LightningElement) {
             if (this.fields) {
                 for (var i = 0; i < this.fields.length; i++) {
                     if (this.fields[i].isDate) {
-                        this.datefield = this.fields[i].fieldName;
-                        this.orderdate = this.fields[i].value;
+                        this.datefield = this.fields[i].fieldName; 
                     }
-                    if (this.fields[i].isLocation) {
-                        this.selectedLocation = this.fields[i].value;
-                        this.locationfield = this.fields[i].fieldName;
+                    if (this.fields[i].isLocation) { 
+                        this.locationfield = this.fields[i].fieldName; 
                     }
+                    if(this.fields[i].iswholesale){ 
+                        this.wholesalerfield = this.fields[i].fieldName;
+                    }
+                        this.fielddata[this.fields[i].fieldName]= this.fields[i].value;
                 }
                 this.relatedobject = this.fields[0].relatedObject;
                 this.showLoader = false;
+                console.log(JSON.stringify(this.fielddata)+' this.fielddata');
             }
         })
         .catch(error => {
@@ -138,12 +141,8 @@ export default class QuickOrder extends NavigationMixin(LightningElement) {
                 if (field.fieldName === fieldName) {
                     updatedField.value = value;
                 }
-                if (this.locationField === fieldName) {
-                    this.selectedLocation = value;
-                }
-                if (this.dateField === fieldName) {
-                    this.orderDate = value;
-                }
+              
+                
                 return updatedField;
             });
 

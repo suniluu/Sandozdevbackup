@@ -14,9 +14,10 @@
         </lightning-record-picker> -->     
         <c-reusable-lookup  selected-icon-name="standard:product" price-list={priceList} selected-record-id={value} selected-record-name={productName}
                             object-api-name={objname} field-api-name="Name" other-field-api-name={addfield}
-                            onvalueselected={handleRecordSelect} onremoveval={handleRecordRemove}  rec-id={recId}>
+                            onvalueselected={handleRecordSelect} onremoveval={handleRecordRemove}  rec-id={recId} fields={fields}>
         </c-reusable-lookup>
     </template>
+ 
     <template if:false={isDisabled}>
        <template if:true={hasValue}>
             <lightning-record-picker
@@ -35,4 +36,22 @@
             </lightning-record-picker>
         </template>
     </template>
+       <!-- <template if:false={isDisabled}>
+       <template if:true={value}>
+            <lightning-record-picker
+                object-api-name={objname}
+                placeholder="Search..."
+                label="Select a record"
+                variant="label-hidden"
+                onchange={handleRecordSelect}
+                display-info={displayInfo}
+                value={value}
+                matching-info={matchingInfo}
+                filter={filter}
+                size="small"
+                disabled="true"
+                class="slds-size_full slds-combobox-addon_end">
+            </lightning-record-picker>
+        </template>
+    </template> -->
 </template>

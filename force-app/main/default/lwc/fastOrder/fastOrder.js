@@ -15,12 +15,13 @@ export default class FastOrder extends LightningElement {
     @track rowIndex = 1;
     @track isOpenFilterInput = false;
     @track filterAppliedValue = '';
-    @track numRows = 1;
-    @track dataLoading = false;
+    @track numRows = 20;
+    @api  loading;
     @track isDisabled = false;
     @track showLoader = false;
+    @track disableButton = true;
     
-    @api recId;
+    @api recId; 
     @api fields;
     @api preFastSelectedRows;
     @api priceListApi;
@@ -51,6 +52,7 @@ export default class FastOrder extends LightningElement {
 
     connectedCallback() {
        console.log('fast order redId ::: '+ this.recId);
+       this.addRows();
     }
     @wire(getColumns, { columnData: 'Quick_Order_Table' }) wiredColumns({data, error}){
         if (data) {
@@ -102,6 +104,7 @@ export default class FastOrder extends LightningElement {
     }
 
     uploadFile() {
+        this.loading=true;
         if (this.filesUploaded[0].size > this.MAX_FILE_SIZE) {
             this.dispatchEvent(
                     new ShowToastEvent({
@@ -137,6 +140,7 @@ export default class FastOrder extends LightningElement {
             }
         };
         this.fileReader.readAsText(this.filesUploaded[0]);
+        this.loading=false;
     }
 
     saveFile() {
@@ -303,6 +307,21 @@ export default class FastOrder extends LightningElement {
             detail:selectedData, bubbles: true, composed: true
         });
         this.dispatchEvent(selectFastOrder);
+         if(this.selectedRows.length > 0){
+            this.disableButton = false;
+        }else{
+            this.disableButton = true;
+        }
+    }
+                
+    handleAddToCart(event){
+        let selectedData = {selectedRecord: this.fastSelection, preselected :this.preFastSelectedRows};
+        console.log('Faste add to cart button :: '+ JSON.stringify(selectedData));
+        const handleadd = new CustomEvent("fasthandleaddtocart",{
+            detail:selectedData, bubbles: true, composed: true
+        });
+        this.dispatchEvent(handleadd);
+         this.disableButton = true;
     }
 
     async handleMassDelete() {
@@ -330,14 +349,18 @@ export default class FastOrder extends LightningElement {
     addRows() {
         var uploadedData = [];
         var pricelistId='';
-
+       /* var fielddata ;
+         if (this.fields) {
+                fielddata =JSON.stringify(fields);
+            }*/
         for (var row of this.fields) {
             if (row.isPriceList) {
                 pricelistId = row.value;
             }
         }
         for (let i = 1; i <= this.numRows; i++) {
-            var rowData = {"recordId": this.rowIndex,"isDisabled" :true,"priceList" : pricelistId,"recId":this.recId};
+          // var rowData = {"recordId": this.rowIndex,"isDisabled" :true,"priceList" : pricelistId,"recId":this.recId,"fields" : fielddata};
+             var rowData = {"recordId": this.rowIndex,"isDisabled" :true,"recId":this.recId,"fields": JSON.stringify(this.fields)};
             uploadedData.push(rowData);
             this.rowIndex++;
         }

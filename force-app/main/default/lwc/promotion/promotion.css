@@ -1,17 +1,88 @@
+.custom-header {
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 1rem;
+    background: linear-gradient(45deg, #5390D9,#80e1ff86);
+    border-bottom: 1px solid #262525;
+    border-radius: 8px 8px 0 0;
+}
+.fontColor{
+    color: black;
+}
+.icon-title-container {
+    display: flex;
+    align-items: center;
+}
+.button-container {
+    display: flex;
+    justify-content: flex-end; 
+    align-items: center; 
+}
+.criteriaSize{
+    min-height: 250px;
+}
+.slds-text-title_bold{
+    font-size: 0.75rem;
+}
+.header-title {
+    font-size: 2rem;
+    font-weight: Bold;
+    margin-left: 0.5rem;
+    color: white;
+}
+.slds-p-around_medium {
+    padding: 1rem;
+}
+.tabset-container {
+    margin: 0;
+    padding: 0;
+}
 .table-header {
-    background-color: #F3F3F3;
-    font-weight: bold;    
-	font-size: medium;    
-    color: #333333;
-	border-top: 1px solid rgb(141, 130, 130);
-	border-bottom:  1px solid rgb(141, 130, 130);     
+    font-weight: medium;
 }
-.adjustmentClass{
-	padding-top: 5%;
+.adjustmentClass {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
-.sidebox{
-	height: 2%;
+.lightning-card {
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    border: 1px solid #eaeaea;
 }
-.sideBoxAlignment{
-	margin-left: 5%;
+.lightning-input,
+.lightning-combobox {
+    margin-bottom: 1rem;
+}
+.slds-m-left_small {
+    margin-left: 1rem;
+}
+.slds-m-top_medium {
+    margin-top: 1.5rem;
+}
+.lightning-dual-listbox {
+    margin-top: 1rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+.tabset-container {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    background-color: #aad9f4;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e0e0e0;
+}
+.bold-input-label .slds-form-element__label {
+    font-weight: bold;
+    font-size: 16px;
+}
+.custom-tab {
+    color: #043d8d;
+    font-weight: bold;
+    padding: 10px;
+}
+.flexWrap {
+    flex: 1 1 10%;
+    padding: 8px;
 }

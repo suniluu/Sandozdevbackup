@@ -11,6 +11,10 @@
         <value xsi:nil="true"/>
     </values>
     <values>
+        <field>Enable_Promotions__c</field>
+        <value xsi:type="xsd:boolean">false</value>
+    </values>
+    <values>
         <field>Home_Page_Child_Object_Name__c</field>
         <value xsi:nil="true"/>
     </values>

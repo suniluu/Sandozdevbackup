@@ -2,6 +2,8 @@ import { LightningElement, track, wire, api } from "lwc";
 import getColumns from "@salesforce/apex/AgreementController.getColumns";
 import Agreementlineitemsvalidate from "@salesforce/apex/AgreementController.Agreementlineitemsvalidate";
 import AgreementPricevalidate from "@salesforce/apex/AgreementController.AgreementPricevalidate";
+import customPriceCalculation from "@salesforce/apex/AgreementController.customPriceCalculation";
+import getRecordsFromPromoAction from "@salesforce/apex/ProductController.getRecordsFromPromoAction";
 import { ShowToastEvent } from "lightning/platformShowToastEvent";
 import { NavigationMixin } from "lightning/navigation";
 import LightningConfirm from "lightning/confirm";
@@ -38,13 +40,14 @@ export default class agreementpriceproduct extends NavigationMixin(
   discount;
   price;
   listPrice;
+  contractPrice;
   netPrice;
   columnIndex;
   saveDraftValues = [];
   @track inlineEditCol = [];
   massColumnUpdates = [];
   cancelArray = [];
-  @track itemListmap = new Map();
+  @api itemListmap ;
   @track itemListmapbackup = new Map();
   @track flatmapbackup = new Map();
   mapFilterData = new Map();
@@ -52,7 +55,7 @@ export default class agreementpriceproduct extends NavigationMixin(
   mapSortColumn = new Map();
   mapProductData = new Map();
   @track mapProductDatabackup=new Map();
-   @track initialRecordsbackup=new Map();
+  @track initialRecordsbackup=new Map();
   
   @api initialData = [];
   @track fieldinlineAPIs = [];
@@ -61,6 +64,15 @@ export default class agreementpriceproduct extends NavigationMixin(
   @track disableicon;
   @track displayerror='';
 
+  @track modalColumns = [
+    { label: 'Name', fieldName: 'Name', type: 'text' },
+    { label: 'Adjustment Type', fieldName: 'Adjustment_Type__c', type: 'text' },
+    { label: 'Adjustment Amount', fieldName: 'Adjustment_Amount__c', type: 'currency' }
+  ];
+  @track promodata=[];
+  @track isPromoModalOpen=false;
+
+ 
 
   get discountOption() {
     let options = [
@@ -80,9 +92,12 @@ export default class agreementpriceproduct extends NavigationMixin(
     return options;
   }
   addRow() {
-    ++this.keyIndex;
+  ++this.keyIndex;
     let newItem = { id: this.keyIndex };
-    this.itemList.push(newItem);
+    let pusharr=[];
+    pusharr=this.itemList.length>0?[...this.itemList]:[];
+   pusharr.push(newItem);
+   this.itemList=[...pusharr];
     this.disableicon = this.itemList.length > 1 ? false : true;
   }
 
@@ -90,10 +105,22 @@ export default class agreementpriceproduct extends NavigationMixin(
     var rowIndex = event.currentTarget.dataset.index;
     console.log(rowIndex + 'rowindex');
     console.log(JSON.stringify(this.itemList[rowIndex]));
+    console.log(JSON.stringify(this.itemList[rowIndex]));
     if (this.itemList.length > 1) {
       const itemRecord = this.itemList[rowIndex];
       if (itemRecord.dataindex) {
+            const filteredList = this.itemList.filter(item => Object.keys(item).length > 1);
+            if(filteredList.length>1){
         this.onRemove(itemRecord.dataindex, rowIndex);
+            }else{
+               this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'Error',
+                    message: "You cannot Delete Record.",
+                    variant: 'error'
+                })
+            );
+            }
       } else {
         this.itemList.splice(rowIndex, 1);
         this.disableicon = this.itemList.length > 1 ? false : true;
@@ -117,15 +144,25 @@ export default class agreementpriceproduct extends NavigationMixin(
   }
   confirmClick(id, index) {
     console.log(id + 'id');
+    console.log(index+' index');
     this.productData = this.productData.filter(
       (element) => element.recordIndex != id
     );
     this.initialRecords = this.initialRecords.filter(
       (element) => element.recordIndex != id
     );
-    console.log(JSON.stringify(this.initialRecords + 'initialRecords'));
+ let keysToDelete = [];
+console.log(JSON.stringify(this.itemListmap) + ' this.itemListmap');
 
-    console.log(JSON.stringify(this.productData + 'productData'));
+
+    delete this.itemListmap[id];
+
+  for (let key in this.itemListmap) {
+      this.itemListmap[key] = this.itemListmap[key].filter(item => id != item.dataindex);
+  }
+
+  console.log(JSON.stringify(this.itemListmap) + ' this.itemListmap');
+
     let datawithindex = { productdata: this.productData, index: this.index };
 
     const discountdata = new CustomEvent("discount", {
@@ -136,7 +173,7 @@ export default class agreementpriceproduct extends NavigationMixin(
     this.dispatchEvent(discountdata);
     this.itemList.splice(index, 1);
     this.disableicon = this.itemList.length > 1 ? false : true;
-
+      this.closeinlineEditPopup();
   }
 
   @wire(getColumns, { columnData: "agreementpriceproduct" }) wiredColumns({
@@ -146,127 +183,131 @@ export default class agreementpriceproduct extends NavigationMixin(
     if (data) {
       this.columns = JSON.parse(data.Column_JSON__c);
       for (var i = 0; i < this.columns.length; i++) {
-        this.fieldinlineAPIs.push(this.columns[i].fieldName);
-        if (
-          this.columns[i].editable == true ||
-          this.columns[i].editable == "true"
-        ) {
-
-          if (
+         this.fieldinlineAPIs.push(this.columns[i].fieldName);
+         if (
+            this.columns[i].editable == true ||
+            this.columns[i].editable == "true"
+         ) {
+            if (
+               this.columns[i].typeAttributes &&
+               this.columns[i].fieldName == "productName"
+            ) {
+               this.discount = this.columns[i].typeAttributes.discount ?
+                  this.columns[i].typeAttributes.discount :
+                  "";
+               this.price = this.columns[i].typeAttributes.price ?
+                  this.columns[i].typeAttributes.price :
+                  "";
+               this.listPrice = this.columns[i].typeAttributes.listPrice ?
+                  this.columns[i].typeAttributes.listPrice :
+                  "";
+               this.netPrice = this.columns[i].typeAttributes.netPrice ?
+                  this.columns[i].typeAttributes.netPrice :
+                  "";
+            }
+         }
+         if (
             this.columns[i].typeAttributes &&
-            this.columns[i].fieldName == "productName"
-          ) {
-            this.discount = this.columns[i].typeAttributes.discount
-              ? this.columns[i].typeAttributes.discount
-              : "";
-            this.price = this.columns[i].typeAttributes.price
-              ? this.columns[i].typeAttributes.price
-              : "";
-            this.listPrice = this.columns[i].typeAttributes.listPrice
-              ? this.columns[i].typeAttributes.listPrice
-              : "";
-            this.netPrice = this.columns[i].typeAttributes.netPrice
-              ? this.columns[i].typeAttributes.netPrice
-              : "";
-          }
-
-
-        }
-        if (
-          this.columns[i].typeAttributes &&
-          (this.columns[i].typeAttributes.massedit == "true" ||
-            this.columns[i].typeAttributes.massedit)
-        ) {
-          var massColObj = {};
-          massColObj.type = this.columns[i].type;
-          massColObj.label = this.columns[i].label;
-          massColObj.fieldName = this.columns[i].fieldName;
-          if (this.columns[i].type == "customName") {
-            massColObj.lookup = true;
-            massColObj.objname = this.columns[i].typeAttributes.objname;
-            massColObj.fieldLookupName =
-              this.columns[i].typeAttributes.fieldLookupName;
-            this.fieldLookupName =
-              this.columns[i].typeAttributes.fieldLookupName;
-            this.addfield = this.columns[i].typeAttributes.addfield;
-          } else if (this.columns[i].type == "customCombox") {
-            massColObj.combobox = true;
-            massColObj.selectedField =
-              this.columns[i].typeAttributes.selectedValue.fieldName;
-          } else {
-            massColObj.regularType = true;
-            massColObj.reqDropdown =
-              this.columns[i].typeAttributes.reqDropdown == "true"
-                ? true
-                : false;
-            massColObj.label =
-              this.columns[i].typeAttributes.reqDropdown == "true"
-                ? "Discount Value"
-                : this.columns[i].label;
-            massColObj.selectedDropdownValue = "";
-            massColObj.discountoption = "";
-            massColObj.inputValue = "";
-          }
-          this.massColumnUpdates.push(massColObj);
-        }
-        if (
-          this.columns[i].typeAttributes &&
-          (this.columns[i].typeAttributes.inline == "true" ||
-            this.columns[i].typeAttributes.inline)
-        ) {
-          var inlinecol = {};
-          inlinecol.type = this.columns[i].type;
-          inlinecol.fieldName = this.columns[i].fieldName;
-          if (this.columns[i].type == "customName") {
-            inlinecol.lookup = true;
-            inlinecol.objname = this.columns[i].typeAttributes.objname;
-            inlinecol.fieldLookupName =
-              this.columns[i].typeAttributes.fieldLookupName;
-            // this.fieldLookupName = this.columns[i].typeAttributes.fieldLookupName;
-            this.addfield = this.columns[i].typeAttributes.addfield;
-          } else if (this.columns[i].type == "customCombox") {
-            inlinecol.combobox = true;
-            inlinecol.selectedField =
-              this.columns[i].typeAttributes.selectedValue.fieldName;
-          } else {
-            inlinecol.regularType = true;
-            inlinecol.reqDropdown =
-              this.columns[i].typeAttributes.reqDropdown == "true"
-                ? true
-                : false;
-            inlinecol.label =
-              this.columns[i].typeAttributes.reqDropdown == "true"
-                ? "Discount Value"
-                : this.columns[i].label;
-
-            // inlinecol.label = this.columns[i].fieldName == 'price' ? 'Base Price Override' : this.columns[i].label;
-            inlinecol.selectedDropdownValue = "";
-            inlinecol.discountoption = "";
-            inlinecol.inputValue = "";
-          }
-          this.inlineEditCol.push(inlinecol);
-        }
-
-        this[this.columns[i].fieldName] = this.columns[i].fieldName
-          ? this.columns[i].fieldName
-          : "";
-
-        if (
-          this.columns[i].typeAttributes &&
-          this.columns[i].typeAttributes.sortField
-        ) {
-          this.mapSortColumn[this.columns[i].fieldName] =
-            this.columns[i].typeAttributes.sortField;
-        }
+            (this.columns[i].typeAttributes.massedit == "true" ||
+               this.columns[i].typeAttributes.massedit)
+         ) {
+            var massColObj = {};
+            massColObj.type = this.columns[i].type;
+            massColObj.label = this.columns[i].label;
+            massColObj.fieldName = this.columns[i].fieldName;
+            console.log('this.columns[i] :'+JSON.stringify(this.columns[i]));
+            if (this.columns[i].type == "customName") {
+               massColObj.lookup = true;
+               massColObj.objname = this.columns[i].typeAttributes.objname;
+               massColObj.fieldLookupName =
+                  this.columns[i].typeAttributes.fieldLookupName;
+               this.fieldLookupName =
+                  this.columns[i].typeAttributes.fieldLookupName;
+               this.addfield = this.columns[i].typeAttributes.addfield;
+            } else if (this.columns[i].type == "customCombox") {
+               massColObj.combobox = true;
+               massColObj.selectedField =
+                  this.columns[i].typeAttributes.selectedValue.fieldName;
+            } else {
+               massColObj.customdiscount = this.columns[i].typeAttributes.customdiscount == "true" ?
+                  true :
+                  false;
+               massColObj.regularType = true;
+               massColObj.reqDropdown =
+                  this.columns[i].typeAttributes.reqDropdown == "true" ?
+                  true :
+                  false;
+               massColObj.label =
+                  this.columns[i].typeAttributes.reqDropdown == "true" ?
+                  "Discount Value" :
+                  this.columns[i].label;
+               massColObj.selectedDropdownValue = "";
+               massColObj.discountoption = "";
+               massColObj.inputValue = "";
+            }
+            this.massColumnUpdates.push(massColObj);
+         }
+         if (
+            this.columns[i].typeAttributes &&
+            (this.columns[i].typeAttributes.inline == "true" ||
+               this.columns[i].typeAttributes.inline)
+         ) {
+            var inlinecol = {};
+            inlinecol.type = this.columns[i].type;
+            inlinecol.fieldName = this.columns[i].fieldName;
+            if (this.columns[i].type == "customName") {
+               inlinecol.lookup = true;
+               inlinecol.objname = this.columns[i].typeAttributes.objname;
+               inlinecol.fieldLookupName =
+                  this.columns[i].typeAttributes.fieldLookupName;
+               // this.fieldLookupName = this.columns[i].typeAttributes.fieldLookupName;
+               this.addfield = this.columns[i].typeAttributes.addfield;
+            } else if (this.columns[i].type == "customCombox") {
+               inlinecol.combobox = true;
+               inlinecol.selectedField =
+                  this.columns[i].typeAttributes.selectedValue.fieldName;
+            } else {
+               inlinecol.customdiscount = this.columns[i].typeAttributes.customdiscount == "true" ?
+                  true :
+                  false;
+               inlinecol.regularType = true;
+               inlinecol.reqDropdown =
+                  this.columns[i].typeAttributes.reqDropdown == "true" ?
+                  true :
+                  false;
+               inlinecol.label =
+                  this.columns[i].typeAttributes.reqDropdown == "true" ?
+                  "Discount Value" :
+                  this.columns[i].label;
+   
+               // inlinecol.label = this.columns[i].fieldName == 'price' ? 'Base Price Override' : this.columns[i].label;
+               inlinecol.selectedDropdownValue = "";
+               inlinecol.discountoption = "";
+               inlinecol.inputValue = "";
+            }
+            this.inlineEditCol.push(inlinecol);
+         }
+         console.log(JSON.stringify(this.inlineEditCol) + ' this.inlineEditCol255');
+         this[this.columns[i].fieldName] = this.columns[i].fieldName ?
+            this.columns[i].fieldName :
+            "";
+   
+         if (
+            this.columns[i].typeAttributes &&
+            this.columns[i].typeAttributes.sortField
+         ) {
+            this.mapSortColumn[this.columns[i].fieldName] =
+               this.columns[i].typeAttributes.sortField;
+         }
       }
       this.columns = this.columns.map((column, index) => {
-        const columnWithNumber = {
-          ...column,
-          columnNumber: index
-        };
-        return columnWithNumber;
+         const columnWithNumber = {
+            ...column,
+            columnNumber: index
+         };
+         return columnWithNumber;
       });
-    } else if (error) {
+   }else if (error) {
       console.log(error + "priceproducterror");
     }
   }
@@ -672,9 +713,13 @@ export default class agreementpriceproduct extends NavigationMixin(
                     obj.selectedDropdownValue = this.massColumnUpdates[j].selectedDropdownValue;
                     obj.discountoption = this.massColumnUpdates[j].discountoption;
                   }
+                    if(this.massColumnUpdates[j].customdiscount){
+                     obj.customdiscount=this.massColumnUpdates[j].customdiscount?this.massColumnUpdates[j].customdiscount:'';
+                  }
                   obj[this.massColumnUpdates[j].fieldName] = this.massColumnUpdates[j].inputValue;
                   draftObj[this.massColumnUpdates[j].fieldName] = this.massColumnUpdates[j].inputValue;
                 }
+                
               }
             }
 
@@ -1038,9 +1083,12 @@ export default class agreementpriceproduct extends NavigationMixin(
       // this.dispatchEvent(event);
       inlinetypeval = false;
     }
-
+let  itmlst=[];
     const prodrecordindex = {};
     for (let z = 0; z < this.itemList.length; z++) {
+      const itm= Object.assign({}, this.itemList[z]);
+        itmlst.push(itm);
+
       for (var i = 0; i < this.productData.length; i++) {
         console.log(JSON.stringify(this.itemList[z])+ 'itemlist');
         if (this.productData[i].EndRange == this.itemList[z].UpperBound &&
@@ -1052,7 +1100,7 @@ export default class agreementpriceproduct extends NavigationMixin(
 
       }
     }
-    // console.log(JSON.stringify(this.itemList)+'this.productDataitemlist');
+     console.log(JSON.stringify(itmlst)+'this.itmlst');
     console.log(JSON.stringify(this.productData) + 'this.productData');
     if (this.inlinerecordindex && valuenull == false && inlinetypeval == true) {
       for (let z = 0; z < this.itemList.length; z++) {
@@ -1101,7 +1149,9 @@ export default class agreementpriceproduct extends NavigationMixin(
                     console.log(JSON.stringify(obj) + ' obj');
                     this.itemList[z].record = true;
                     this.itemList[z].dataindex = obj.recordIndex;
-                    this.itemListmap[obj.recordIndex] = this.itemList;
+                 //   const itmlst = [...this.itemList]; // Create a shallow copy of this.itemList
+this.itemListmap[obj.recordIndex] = itmlst; // Store the copy in the map
+                    console.log(JSON.stringify( this.itemList)+' constthis.itemlist');
                     recordchange=false;
                     // console.log(   obj.recordIndex+'  obj ');
                     //console.log( typeof  obj.recordIndex+'  typeof ');
@@ -1119,7 +1169,9 @@ export default class agreementpriceproduct extends NavigationMixin(
                     console.log(obj.discount + ' obj.discount');
                     this.itemList[z].record = true;
                     this.itemList[z].dataindex = obj.recordIndex;
-                    this.itemListmap[obj.recordIndex] = this.itemList;
+                  //  const itmlst = [...this.itemList]; // Create a shallow copy of this.itemList
+this.itemListmap[obj.recordIndex] = itmlst; // Store the copy in the map
+                    console.log(JSON.stringify( this.itemList)+'const this.itemlist');
                     recordchange=false;
                       console.log(   obj+'  obj if');
                     //  console.log( typeof  obj.recordIndex+'  typeof ');
@@ -1137,7 +1189,9 @@ export default class agreementpriceproduct extends NavigationMixin(
                     draftObj.discount = this.itemList[z].Discount;
                     this.itemList[z].record = true;
                     this.itemList[z].dataindex = obj.recordIndex;
-                    this.itemListmap[obj.recordIndex] = this.itemList;
+                 // const itmlst = [...this.itemList]; // Create a shallow copy of this.itemList
+this.itemListmap[obj.recordIndex] = itmlst; // Store the copy in the map
+                    console.log(JSON.stringify( this.itemList)+'const this.itemlist');
                     recordchange=false;
                     //   console.log(   obj.recordIndex+'  obj ');
                     //  console.log( typeof  obj.recordIndex+'  typeof ');
@@ -1147,7 +1201,8 @@ export default class agreementpriceproduct extends NavigationMixin(
                 }
               }
    console.log(JSON.stringify(obj) + 'obj between');
-              if (this.inlineEditCol[j].inputValue && this.inlinerecordindex == obj.recordIndex) {
+      console.log(JSON.stringify( this.inlineEditCol[j])+'  this.inlineEditCol[j]');
+              if (this.inlineEditCol[j].inputValue && this.inlinerecordindex == obj.recordIndex &&  this.inlineEditCol[j].isvaluechanged==false ) {
                 if (this.inlineEditCol[j].type === "customName") {
                   obj[this.inlineEditCol[j].fieldName] = this.inlineEditCol[j].inputValue;
                   draftObj[this.inlineEditCol[j].fieldName] = this.inlineEditCol[j].inputValue;
@@ -1168,26 +1223,37 @@ export default class agreementpriceproduct extends NavigationMixin(
                       changed = true;
                       obj.EndRange=obj.EndRange?'':'';
                     }
-
-                    obj.selectedDropdownValue = this.inlineEditCol[j].selectedDropdownValue;
+                     obj.selectedDropdownValue = this.inlineEditCol[j].selectedDropdownValue;
                        console.log(JSON.stringify(this.inlineEditCol[j]) + 'inlineEditCol[j]');
                     obj.discountoption = this.inlineEditCol[j].discountoption;
-                    
-
-                    if( obj.selectedDropdownValue == 'Flat'){
+                      console.log(obj.selectedDropdownValue+'dropdown');
+                      if( obj.selectedDropdownValue == 'Flat'){
                       recordchange=false;
+                     
+                    
                       obj[this.inlineEditCol[j].fieldName] = this.inlineEditCol[j].inputValue;
                       draftObj[this.inlineEditCol[j].fieldName] = this.inlineEditCol[j].inputValue;
                     }
+                    
 
                   } else {
-                    if( obj.selectedDropdownValue == 'Flat'){
+                         if( obj.selectedDropdownValue == 'Flat'){
                       recordchange=false;
+                    
+                    
                     obj[this.inlineEditCol[j].fieldName] = this.inlineEditCol[j].inputValue;
                     draftObj[this.inlineEditCol[j].fieldName] = this.inlineEditCol[j].inputValue;
                     }
                   }
+                    if(this.inlineEditCol[j].customdiscount){
+                   obj[this.inlineEditCol[j].fieldName] =
+                      this.inlineEditCol[j].inputValue;
+                draftObj[this.inlineEditCol[j].fieldName] =
+                      this.inlineEditCol[j].inputValue;
+                      obj.customdiscount=this.inlineEditCol[j].customdiscount;
                 }
+                }
+                this.inlineEditCol[j].isvaluechanged=true;
               }
             }
             console.log(JSON.stringify(obj) + 'obj flat');
@@ -1214,7 +1280,7 @@ export default class agreementpriceproduct extends NavigationMixin(
             console.log(JSON.stringify(editedArray) + 'editedArray');
 
             if (obj.selectedDropdownValue === 'Volume' && this.itemList[z].record != true) {
-              this.itemListmap[obj.recordIndex] = this.itemList;
+             this.itemListmap[obj.recordIndex] = this.itemList;
             } else {
               if (changed) {
                 let dataindexToRemove = [];             // Step 1: Delete the specific entry if it exists
@@ -1536,9 +1602,12 @@ export default class agreementpriceproduct extends NavigationMixin(
             this.inlineEditCol[j].type == "customName"
               ? event.detail.recordId
               : event.detail.value;
+              this.inlineEditCol[j].isvaluechanged=false;
         } else if (this.inlineEditCol[j].reqDropdown == true) {
-          if (event.target.name == "DiscountType") {
+          if (event.target.name == "DiscountType"  &&
+          this.inlineEditCol[j].reqDropdown == true) {
             this.inlineEditCol[j].selectedDropdownValue = event.detail.value;
+           //  this.inlineEditCol[j].isvaluechanged=false;
             if (event.detail.value == "Flat") {
               this.flatdiscount = true;
               this.Volumediscount = false;
@@ -1546,11 +1615,14 @@ export default class agreementpriceproduct extends NavigationMixin(
               this.Volumediscount = true;
               this.flatdiscount = false;
             }
-          } else if (event.target.name == "Type") {
+          } else if (event.target.name == "Type"  &&
+          this.inlineEditCol[j].reqDropdown == true) {
             this.inlineEditCol[j].discountoption = event.detail.value;
+             this.inlineEditCol[j].isvaluechanged=false;
           }
         }
       }
+      console.log(JSON.stringify( this.inlineEditCol)+'  this.inlineEditCol');
     } else {
       for (var j = 0; j < this.massColumnUpdates.length; j++) {
         if (this.massColumnUpdates[j].fieldName == event.target.name) {
@@ -1620,11 +1692,13 @@ export default class agreementpriceproduct extends NavigationMixin(
   }
 
   handleSave(event) {
+    let prodatawithcustomdiscount=[];
     this.saveDraftValues = event.detail.draftValues;
     var dataArray = [];
     this.totalNetPrice = 0;
     let checkingvalue;
     let errormsg;
+     console.log(JSON.stringify(this.saveDraftValues) + 'saveDraftValues');
     console.log(JSON.stringify(this.productData) + 'productdaaata');
       Agreementlineitemsvalidate({
       agreementLineItemData: JSON.stringify(this.productData)
@@ -1679,7 +1753,10 @@ export default class agreementpriceproduct extends NavigationMixin(
           //     console.log(   this.saveDraftValues[j].recordIndex+'  this.saveDraftValues[j].recordIndex ');
           // console.log( typeof this.saveDraftValues[j].recordIndex+'  typeof  this.saveDraftValues[j].recordIndex');
           for (var k = 0; k < this.fieldinlineAPIs.length; k++) {
-
+if (this.saveDraftValues[j][this.fieldinlineAPIs[k]]=='') {
+    obj[this.fieldinlineAPIs[k]] =
+                  this.saveDraftValues[j][this.fieldinlineAPIs[k]]?this.saveDraftValues[j][this.fieldinlineAPIs[k]]:null;
+}
             if (this.saveDraftValues[j][this.fieldinlineAPIs[k]]) {
               if (this.fieldinlineAPIs[k] == "aggrementVal") {
                 obj.selectedValue =
@@ -1687,6 +1764,8 @@ export default class agreementpriceproduct extends NavigationMixin(
               } else {
                 obj[this.fieldinlineAPIs[k]] =
                   this.saveDraftValues[j][this.fieldinlineAPIs[k]];
+                  console.log(obj[this.fieldinlineAPIs[k]] + '  obj[this.fieldinlineAPIs[k]] ');
+                  console.log(this.saveDraftValues[j][this.fieldinlineAPIs[k]] + '  this.saveDraftValues[j][this');
               }
               if (
                 this.fieldinlineAPIs[k] == this.discount ||
@@ -1722,8 +1801,30 @@ console.log(JSON.stringify(obj)+' HandleSave');
       obj.recordIndex = parseInt(obj.recordIndex);
       //    console.log(   obj.recordIndex+'  afterobj ');
       //  console.log( typeof  obj.recordIndex+'  aftertypeof ');
-      dataArray.push(obj);
+       if(obj.customdiscount){
+          prodatawithcustomdiscount.push(obj);
+       
+        }
+        else{
+             dataArray.push(obj);
+        }
     }
+
+    if (prodatawithcustomdiscount.length > 0) {
+ customPriceCalculation({ agreementdata: JSON.stringify(prodatawithcustomdiscount) })
+        .then((result) => {
+            console.log('Processed result:', JSON.stringify(result));
+            result.forEach(res => {
+    this.mapProductData[res.recordIndex] = res;
+});
+             this.productData =result.length>0?result.concat(dataArray):dataArray;
+    
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+} else {
+    
     this.productData = dataArray;
     if (dataArray.length >= 1) {
       let checkingvalue=true;
@@ -1736,7 +1837,7 @@ console.log(JSON.stringify(obj)+' HandleSave');
       });
       this.dispatchEvent(errormsg1);
     }
-
+}
     console.log(JSON.stringify(this.productData) + 'dataArray');
 
     this.saveDraftValues = [];
@@ -1764,12 +1865,32 @@ console.log(JSON.stringify(obj)+' HandleSave');
     this.dispatchEvent(discountdata);
     this.selectedids = [];
 
+        
         }
       })
       .catch((error) => {
         this.error = error;
       });
    
+  }
+  handledropdownselected(event) {
+    const { selectedRecord, rowId } = event.detail;
+    this.productData = this.productData.map(product => {
+        if (product.recordIndex === rowId) {
+            return { ...product, bonus: selectedRecord,selectedValue: selectedRecord};
+        }
+        return product;
+    });
+    console.log(JSON.stringify(this.productData)+'prdouct data');
+    const draftObj = { recordIndex: rowId, bonus: selectedRecord,selectedValue: selectedRecord };
+
+    if (Object.keys(draftObj).length > 0) {
+        this.mapProductData[draftObj.recordIndex] = draftObj;
+        this.saveDraftValues = [
+            ...this.saveDraftValues.filter(item => item.recordIndex !== rowId),
+            draftObj,
+        ];
+    }
   }
 
   onrowaction(event) {
@@ -1790,11 +1911,25 @@ console.log(JSON.stringify(obj)+' HandleSave');
       }
       this.isInlinepopup = true;
       console.log(obj.selectedDropdownValue + 'obj.selectedDropdownValue==');
-      if (this.itemListmap[this.inlinerecordindex] && obj.selectedDropdownValue == 'Volume') {
+       for (var j = 0; j < this.inlineEditCol.length; j++) {
+       if (this.inlineEditCol[j].customdiscount == true &&  obj.customdiscount == true) {
+                  this.inlineEditCol[j].inputValue = obj[this.inlineEditCol[j].fieldName]?obj[this.inlineEditCol[j].fieldName]:'';
+          
+
+
+
+          }
+       }
+
+      if (this.itemListmap[this.inlinerecordindex] && obj.selectedDropdownValue == 'Volume' ) {
         for (var j = 0; j < this.inlineEditCol.length; j++) {
+            if( 
+          this.inlineEditCol[j].reqDropdown == true){
           this.inlineEditCol[j].inputValue = "";
           this.inlineEditCol[j].selectedDropdownValue = "Volume";
           this.inlineEditCol[j].discountoption = "";
+
+          }
         }
         this.itemList = this.itemListmap[this.inlinerecordindex];
 
@@ -1804,14 +1939,18 @@ console.log(JSON.stringify(obj)+' HandleSave');
 
         console.log(this.flatmap[this.inlinerecordindex] + 'mappp');
         for (var j = 0; j < this.inlineEditCol.length; j++) {
+            if( 
+          this.inlineEditCol[j].reqDropdown == true){
           this.inlineEditCol[j].inputValue = obj.discount;
           this.inlineEditCol[j].selectedDropdownValue = "Flat";
           this.inlineEditCol[j].discountoption = obj.discountoption;
+          }
 
         }
         this.flatdiscount = true;
 
       }
+      
       else {
         for (var j = 0; j < this.inlineEditCol.length; j++) {
           this.inlineEditCol[j].inputValue = "";
@@ -1819,6 +1958,11 @@ console.log(JSON.stringify(obj)+' HandleSave');
           this.inlineEditCol[j].discountoption = "";
         }
       }
+      console.log(JSON.stringify(this.inlineEditCol)+' This.inline');
+    }
+    else if (event.detail.name == "Apply Promotions") {
+      const selectedProductIndex= event.detail.index;
+      this.promoDataModal(selectedProductIndex);
     }
     this.disableicon = this.itemList.length > 1 ? false : true;
   }
@@ -1831,6 +1975,7 @@ console.log(JSON.stringify(obj)+' HandleSave');
         id: 0
       }
     ];
+                    console.log(JSON.stringify( this.itemListmap)+' this.itemListmap');
   }
 
   toggleInput() {
@@ -2001,14 +2146,42 @@ console.log(JSON.stringify(obj)+' HandleSave');
     this.template.querySelector(".divDataTable").appendChild(style);
   }
 
+
+  promoDataModal(selectedProductIndex){
+    const selectedProduct = [this.productData[selectedProductIndex - 1]];
+    getRecordsFromPromoAction({
+      productData: JSON.stringify(selectedProduct)
+    })
+    .then(result => {
+      this.promodata = result;
+      this.isPromoModalOpen = true;
+    })
+    .catch(error => {
+      console.error('Error fetching records:', error);
+    });
+  }
+  handleRowSelection(event){
+    const selectedRows = event.detail.selectedRows;
+    console.log('selectedRows :'+JSON.stringify(selectedRows));
+  }
+  closePromoModal(){
+    this.isPromoModalOpen=false;
+  }
+  applyPromotion(){
+    //Apply Promotion on Product
+  }
+
+
+
+
   handleChange(event) {
     const filterColumnName = this.columns[this.columnIndex].fieldName.trim();
     this.columnFilterValues[filterColumnName] = event.target.value;
     this.filterAppliedValue = event.target.value;
   }
   onRowSelection(event) {
-if(event.detail.config.action!=undefined){
-    let updatedItemsSet = new Set();
+    if(event.detail.config.action!=undefined){
+        let updatedItemsSet = new Set();
         let selectedItemsSet = new Set(this.selectedids);
         let loadedItemsSet = new Set();
 
@@ -2032,79 +2205,81 @@ if(event.detail.config.action!=undefined){
                 selectedItemsSet.delete(id);
             }
         });
-this.selectedids = [...selectedItemsSet];
-        console.log('selectedids==> ' + JSON.stringify(this.selectedids));
-    }
-    
-     console.log('event.detail.config.action'  + event.detail.config.action);
-    console.log('selectedids rows :::handlesearch ' + this.selectedids);
-  }
-  cloneProducts() {
-    var selectedRecords = this.template
-      .querySelector("c-agreement-custom-data-table")
-      .getSelectedRows()?this.template
-      .querySelector("c-agreement-custom-data-table")
-      .getSelectedRows():'';
-      console.log('clone record :: '+selectedRecords);
-    this.selectedrows = selectedRecords;
-    const selectedIds = Array.from(selectedRecords).map(
-      (item) => item.recordIndex
-    );
-
-    this.selectedids = selectedIds;
- console.log('selectedIds record :: '+selectedIds);
-   console.log('this.itemListmap :: '+JSON.stringify(this.itemListmap));
-    const productDataWithIndex = this.selectedrows.map((record, i) => {
-      let oldrecindex = record.recordIndex;
-       console.log('this.oldrecindex :: '+oldrecindex);
-      let itemlstrec = this.itemListmap[record.recordIndex];
-      let aa=[];
-      console.log('this.itemlstrec :: '+itemlstrec);
-      let index = this.index++;
-      console.log('this.index :: '+index);
-      if(itemlstrec){
-       aa = itemlstrec.filter((record) => {
-        if (record.dataindex == oldrecindex) {
-          return { ...record };
-        }
-      })
-        .map(record => ({ ...record, dataindex: index }));
-      console.log(JSON.stringify(aa) + 'aa');
-      console.log(JSON.stringify(itemlstrec) + 'itemlstrec');
-      this.itemListmap[index] = aa;
+          this.selectedids = [...selectedItemsSet];
+          console.log('selectedids==> ' + JSON.stringify(this.selectedids));
       }
-      return { ...record, recordIndex: index };
-    });
-    console.log(JSON.stringify(productDataWithIndex) + 'productDataWithIndex');
-    console.log(JSON.stringify(this.itemListmap) + 'itemListmap');
-    const cloningdata = [...this.productData];
-    cloningdata.push(...productDataWithIndex);
-    this.productData = cloningdata;
-
-    console.log(JSON.stringify(this.productData) + 'this.productData');
-    const initalrec = [...this.initialRecords];
-    initalrec.push(...productDataWithIndex);
-    this.initialRecords = initalrec;
-    const arr = [];
-    for (var i = 0; i < this.productData.length; i++) {
-      var obj = { ...this.productData[i] };
-      obj = this.mapProductData[obj.recordIndex]
-        ? this.mapProductData[obj.recordIndex]
-        : obj;
-      arr.push(obj);
+      
+      console.log('event.detail.config.action'  + event.detail.config.action);
+      console.log('selectedids rows :::handlesearch ' + this.selectedids);
     }
+    cloneProducts() {
+      var selectedRecords = this.template
+        .querySelector("c-agreement-custom-data-table")
+        .getSelectedRows()?this.template
+        .querySelector("c-agreement-custom-data-table")
+        .getSelectedRows():'';
+        console.log('clone record :: '+selectedRecords);
+      this.selectedrows = selectedRecords;
+      const selectedIds = Array.from(selectedRecords).map(
+        (item) => item.recordIndex
+      );
 
-    let datawithindex = { productdata: arr, index: this.index };
+      this.selectedids = selectedIds;
+    console.log('selectedIds record :: '+selectedIds);
+    console.log('this.itemListmap :: '+JSON.stringify(this.itemListmap));
+      const productDataWithIndex = this.selectedrows.map((record, i) => {
+        let oldrecindex = record.recordIndex;
+        console.log('this.oldrecindex :: '+oldrecindex);
+        let itemlstrec = this.itemListmap[record.recordIndex];
+        let aa=[];
+        console.log('this.itemlstrec :: '+itemlstrec);
+        let index = this.index++;
+        console.log('this.index :: '+index);
+        if(itemlstrec){
+        aa = itemlstrec.filter((record) => {
+          if (record.dataindex == oldrecindex) {
+            return { ...record };
+          }
+        })
+          .map(record => ({ ...record, dataindex: index }));
+        console.log(JSON.stringify(aa) + 'aa');
+        console.log(JSON.stringify(itemlstrec) + 'itemlstrec');
+        this.itemListmap[index] = aa;
+        }else if(record.selectedDropdownValue == 'Flat'){
+          this.flatmap[index]=[ { ...record, recordIndex: index }];
+        }
+        return { ...record, recordIndex: index };
+      });
+      console.log(JSON.stringify(productDataWithIndex) + 'productDataWithIndex');
+      console.log(JSON.stringify(this.itemListmap) + 'itemListmap');
+      const cloningdata = [...this.productData];
+      cloningdata.push(...productDataWithIndex);
+      this.productData = cloningdata;
 
-    const discountdata = new CustomEvent("discount", {
-      detail: datawithindex,
-      bubbles: true,
-      composed: true
-    });
-    this.dispatchEvent(discountdata);
+      console.log(JSON.stringify(this.productData) + 'this.productData');
+      const initalrec = [...this.initialRecords];
+      initalrec.push(...productDataWithIndex);
+      this.initialRecords = initalrec;
+      const arr = [];
+      for (var i = 0; i < this.productData.length; i++) {
+        var obj = { ...this.productData[i] };
+        obj = this.mapProductData[obj.recordIndex]
+          ? this.mapProductData[obj.recordIndex]
+          : obj;
+        arr.push(obj);
+      }
 
-    this.selectedrows = [];
-    this.selectedids = [];
+      let datawithindex = { productdata: arr, index: this.index };
+
+      const discountdata = new CustomEvent("discount", {
+        detail: datawithindex,
+        bubbles: true,
+        composed: true
+      });
+      this.dispatchEvent(discountdata);
+
+      this.selectedrows = [];
+      this.selectedids = [];
   }
   deleterecords() {
     var selectedRecords = this.template
@@ -2241,12 +2416,12 @@ this.selectedids = [...selectedItemsSet];
     if(this.productData.length>0)
     {
 
-    
+     console.log(JSON.stringify(this.productData) + 'before result');
     Agreementlineitemsvalidate({
       agreementLineItemData: JSON.stringify(this.productData)
     })
       .then((result) => {
-     
+       console.log(JSON.stringify(result) + 'result');
         if (result) {
              this.displayerror = true;
         checkingvalue=true;
@@ -2301,12 +2476,14 @@ this.selectedids = [...selectedItemsSet];
             }
   }
   onValidatePricing(event) {
+         console.log(JSON.stringify(this.productData) + 'before result');
     AgreementPricevalidate({
       agreementLineItemData: JSON.stringify(this.productData)
     })
       .then((result) => {
         this.productData = result.length>=1?result:this.productData;
         console.log(JSON.stringify(result) + 'result');
+             console.log(JSON.stringify(this.productData) + 'after result');
         const event = new ShowToastEvent({
                 title: "Success",
                 message: "Cart calculations performed successfully!",
@@ -2330,7 +2507,15 @@ this.selectedids = [...selectedItemsSet];
       })
       .catch((error) => {
         this.error = error;
-        
+        console.log(JSON.stringify(error)+'error');
+         console.log(JSON.stringify(error.message)+'errormessage');
+         this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'Error',
+                    message: "Both Quantity in Invoice and qty out of invoice cannot have value simultaneously.",
+                    variant: 'error'
+                })
+            );
             
       });
   }

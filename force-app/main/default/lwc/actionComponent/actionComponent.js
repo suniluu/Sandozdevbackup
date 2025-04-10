@@ -3,7 +3,7 @@ export default class ActionComponent extends LightningElement {
     @api value;
 
     connectedCallback() {
-        console.log('index: '+this.value);
+       
     }
 
     removeRow(event){

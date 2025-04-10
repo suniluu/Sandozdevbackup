@@ -1,6 +1,6 @@
 import { LightningElement, track, wire, api } from "lwc";
 import { getRecord } from 'lightning/uiRecordApi';
-import getColumns from "@salesforce/apex/ProductController.getColumns";
+import getColumns from "@salesforce/apex/ProductController.getdatatableColumn";
 import { ShowToastEvent } from "lightning/platformShowToastEvent";
 import { NavigationMixin } from "lightning/navigation";
 import getButtonsInfo from "@salesforce/apex/ProductController.getButtonsInfo";
@@ -15,6 +15,8 @@ import applyPromotionToProduct from "@salesforce/apex/ProductController.applyPro
 import orderPricevalidate from "@salesforce/apex/ProductController.orderPricevalidate";
 import orderlineitemsvalidate from "@salesforce/apex/ProductController.orderlineitemsvalidate";
 import customPriceCalculation from "@salesforce/apex/ProductController.customPriceCalculation";
+import cancelorderlinestatus from '@salesforce/label/c.Cancel_OrderLine_Item';
+
 const FIELDS = [
     'QOEGraph__mdt.MasterLabel',
     'QOEGraph__mdt.DeveloperName',
@@ -42,13 +44,18 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
   @api productData;
   @track discountmap = new Map();
   componentLoaded = false;
+  @api enablecancelbutton;
+  @api orderlinestatus;
+  @api neworderlinestatus;
+  @track cancelorderlinestatus=cancelorderlinestatus;
   discount;
   quantity;
   price;
   listPrice;
   netPrice;
   columnIndex;
-  saveDraftValues = [];
+  @track selectedDropdownValues = {};
+@track  saveDraftValues = [];
   inlineEditCol = [];
   massColumnUpdates = [];
   cancelArray = [];
@@ -65,11 +72,13 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
   @track searchKey = '';
   @track displayerror='';
   @api newlineitems=[];
+  @api typename;
  @track metadatarecord=[];
   //added by K
   @track isModalOpen = false;
   @track Promodata = [];
-  @track selectedPromotion;
+  @track selectedPromotion = null;
+  @track showWarning = false;
   modalColumns = [
     { label: 'Name', fieldName: 'Name', type: 'text' },
     { label: 'Adjustment Type', fieldName: 'Adjustment_Type__c', type: 'text' },
@@ -113,19 +122,22 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
   }
 
   connectedCallback() {
+      console.time("Productsummay Execution Time"); // Start timer
     this.loadButtons();
     this.chartvalues();
   }
-
+renderedCallback(){
+   console.timeEnd("Productsummay Execution Time");
+}
 
   
-  @wire(getColumns, { columnData: "Price_Products" }) wiredColumns({
+  @wire(getColumns, { orderType: '$typename'}) wiredColumns({
     data,
     error
   }) {
       
     if (data) {
-      this.columns = JSON.parse(data.Column_JSON__c);
+      this.columns = JSON.parse(data);
       for (var i = 0; i < this.columns.length; i++) {
         this.fieldinlineAPIs.push(this.columns[i].fieldName);
         if (
@@ -446,6 +458,16 @@ export default class ProductsSummary extends NavigationMixin(LightningElement) {
         this.saveDraftValues.length > 0
           ? this.saveDraftValues.concat(editedArray)
           : editedArray;
+          this.saveDraftValues = this.saveDraftValues.reduce((acc, curr) => {
+  let existingRecord = acc.find((item) => item.recordIndex === curr.recordIndex);
+  if (existingRecord) { 
+    Object.assign(existingRecord, curr);
+  } else { 
+    acc.push({ ...curr });
+  }
+  return acc;
+}, []);
+          console.log(JSON.stringify(this.saveDraftValues) +' this.saveDraftValues');
       this.closeMassEditPopup();
       this.selectedids = [];
       this.selectedrows=[];
@@ -625,6 +647,15 @@ if(editedArray.length > 0 && editedArray!=''){
         this.saveDraftValues.length > 0
           ? this.saveDraftValues.concat(editedArray)
           : editedArray : [];
+          this.saveDraftValues = this.saveDraftValues.reduce((acc, curr) => {
+  let existingRecord = acc.find((item) => item.recordIndex === curr.recordIndex);
+  if (existingRecord) { 
+    Object.assign(existingRecord, curr);
+  } else { 
+    acc.push({ ...curr });
+  }
+  return acc;
+}, []);
           console.log(JSON.stringify(this.saveDraftValues) +' this.saveDraftValues'); 
 }
       this.closeinlineEditPopup();
@@ -781,10 +812,12 @@ if(editedArray.length > 0 && editedArray!=''){
   }
 
   handleCancel() {
+    this.selectedDropdownValues={};
     if (this.cancelArray.length > 0) {
       this.productData = this.cancelArray;
       this.cancelArray = [];
       this.saveDraftValues=[];
+      
     }
   }
 
@@ -878,10 +911,40 @@ if(editedArray.length > 0 && editedArray!=''){
         });
     }
   }
+checkboxevent(event){
+  console.log(JSON.stringify(event.detail)+' eventdetail productsummary');
+  var editedArray = [];
+   var draftObj = {};
+   draftObj.recordIndex=event.detail.recordIndex;
+   draftObj.checkboxorder=event.detail.isChecked?true:false;
+   
+      const isOnlyRecordIndex2 = Object.keys(draftObj).length === 0;
+            if (!isOnlyRecordIndex2) {
+            editedArray.push(draftObj);
+            this.mapProductData[draftObj.recordIndex] = draftObj;
+            this.saveDraftValues = editedArray.length > 0 ?
+        this.saveDraftValues.length > 0
+          ? this.saveDraftValues.concat(editedArray)
+          : editedArray : [];
+this.saveDraftValues = this.saveDraftValues.reduce((acc, curr) => {
+  let existingRecord = acc.find((item) => item.recordIndex === curr.recordIndex);
+  if (existingRecord) { 
+    Object.assign(existingRecord, curr);
+  } else { 
+    acc.push({ ...curr });
+  }
+  return acc;
+}, []);
+          console.log(JSON.stringify(this.saveDraftValues) +' this.saveDraftValues');
+           console.log(JSON.stringify(this.mapProductData) +' this.mapProductData'); 
+            }
+
+}
 
   handleSave(event) {
     let prodatawithcustomdiscount=[];
     this.saveDraftValues = event.detail.draftValues;
+     console.log(JSON.stringify(this.saveDraftValues) + '  this.saveDraftValues ');
     var dataArray = [];
     let quantityUpdated = false;
     let checkingvalue;
@@ -962,12 +1025,25 @@ if(editedArray.length > 0 && editedArray!=''){
     } else {
       for (var i = 0; i < this.productData.length; i++) {
         var obj = { ...this.productData[i] };
+        let contdiscount=false;
+         console.log(JSON.stringify(this.saveDraftValues) + '  this.saveDraftValues ');
         for (var j = 0; j < this.saveDraftValues.length; j++) {
           if (
             this.productData[i].recordIndex ==
             this.saveDraftValues[j].recordIndex
           ) {
             for (var k = 0; k < this.fieldinlineAPIs.length; k++) {
+               console.log(obj.selectedDropdownValue + ' before obj.selectedDropdownValue');
+              if (this.selectedDropdownValues[obj.recordIndex] != undefined) {
+                 contdiscount=true;
+                 obj.contractdiscount=0;
+  obj.selectedDropdownValue = this.selectedDropdownValues[obj.recordIndex]?this.selectedDropdownValues[obj.recordIndex]:obj.selectedDropdownValue?obj.selectedDropdownValue:'';
+  obj.adddiscount=this.saveDraftValues[j][this.discount]?this.saveDraftValues[j][this.discount]:obj.adddiscount?obj.adddiscount:'';
+  console.log(obj.selectedDropdownValue + ' obj.selectedDropdownValue');
+   console.log(this.discount + ' this.discount');
+  console.log(this.saveDraftValues[j][this.discount] + ' this.saveDraftValues[j].this.saveDraftValues[j][this.discount]');
+}
+
               if (this.saveDraftValues[j][this.fieldinlineAPIs[k]]) {
                 if (this.fieldinlineAPIs[k] == "aggrementVal") {
                   obj.selectedValue =
@@ -976,6 +1052,7 @@ if(editedArray.length > 0 && editedArray!=''){
                   obj[this.fieldinlineAPIs[k]] =
                     this.saveDraftValues[j][this.fieldinlineAPIs[k]];
                 }
+                console.log(obj.selectedDropdownValue+' obj.selectedDropdownValue');
                 if (
                   this.fieldinlineAPIs[k] == this.quantity ||
                   this.fieldinlineAPIs[k] == this.discount ||
@@ -1038,7 +1115,13 @@ if(editedArray.length > 0 && editedArray!=''){
             }
           }
         }
+         if(contdiscount){
+                obj.contractdiscount=this.productData[i].contractdiscount;
+              }
         this.mapProductData[obj.recordIndex] = obj;
+        console.log(JSON.stringify(obj) + '  obj ');
+        obj.recordIndex = parseInt(obj.recordIndex);
+         console.log(JSON.stringify(obj) + ' after obj ');
         if(obj.customdiscount){
           prodatawithcustomdiscount.push(obj);
        
@@ -1047,6 +1130,7 @@ if(editedArray.length > 0 && editedArray!=''){
              dataArray.push(obj);
         }
       }
+      this.selectedDropdownValues={};
      console.log('dataArray before stringifying:', JSON.stringify(dataArray));
      console.log('prodatawithcustomdiscount before stringifying:', JSON.stringify(prodatawithcustomdiscount));
 
@@ -1064,7 +1148,7 @@ if (prodatawithcustomdiscount.length > 0) {
             console.error('Error:', error);
         });
 } else {
-     this.productData =dataArray;
+     this.productData =[...dataArray];
       this.handleAfterSave();
 }
      
@@ -1077,6 +1161,10 @@ if (prodatawithcustomdiscount.length > 0) {
         this.error = error;
       });
   
+  }
+
+  productchanged(event){
+    console.log('productsummary '+JSON.stringify(event.detail));
   }
 
   handleAfterSave() {
@@ -1124,7 +1212,7 @@ if (prodatawithcustomdiscount.length > 0) {
     this.dispatchEvent(
       new ShowToastEvent({
         title: "Success!!",
-        message: "Saved Successfully!!!",
+        message: "Saved Successfully!",
         variant: "success"
       })
     );
@@ -1136,131 +1224,138 @@ if (prodatawithcustomdiscount.length > 0) {
     const id = event.detail.index;
     this.totalNetPrice = 0;
     this.inlinerecordindex = event.detail.index;
-    console.log('detailname' + event.detail.name);
     if (event.detail.name == "Apply Promotions") {
-      const proddata = this.productData.filter(
-        (element) => element.recordIndex == this.inlinerecordindex
-      );
-      getRecordsFromPromoAction({
-        productData: JSON.stringify(proddata)
-      })
-        .then(result => {
-          this.promodata = result;
-          this.isModalOpen = true;
-        })
-        .catch(error => {
-          console.error('Error fetching records:', error);
-        });
-    }
-    else if (event.detail.name == "Discounts") {
-console.log(  JSON.stringify(this.inlineEditCol)+'  1120');
-      this.isInlinepopup = true;
-      var obj = [];
-      const proddata = this.productData.filter(
-        (element) => element.recordIndex == this.inlinerecordindex
-      );
-      for (var i = 0; i < proddata.length; i++) {
-        if (this.inlinerecordindex == proddata[i].recordIndex && proddata[i].selectedDropdownValue != '') {
-          obj = { ...proddata[i] };
-          break
-        }
-      }
-      console.log(  JSON.stringify(obj)+'  obj');
-const discontmap=this.discountmap[this.inlinerecordindex];
-  console.log(  obj.selectedDropdownValue+'  obj.selectedDropdownValue');
-          console.log( obj.selectedDropdownValue != '  obj.selectedDropdownValue != ');
-          console.log(  obj.customdiscount+'  obj.customdiscount');
-          console.log(  obj.customdiscount == true+'  obj.customdiscount == true');
-          console.log( discontmap!=undefined+'   this.discontmap!=undefined[this.inlinerecordindex]');
-            console.log(   discontmap+'   this.discountmap');
-          console.log(  obj.selectedDropdownValue != '' || obj.customdiscount == true && discontmap!=undefined+' Alll');
-      if (obj.selectedDropdownValue != undefined || obj.customdiscount == true && discontmap!=undefined) {
-        
-        for (var j = 0; j < this.inlineEditCol.length; j++) {
-          if (obj.selectedDropdownValue == 'PriceOverride' && this.inlineEditCol[j].reqDropdown == true) {
-            this.inlineEditCol[j].inputValue = obj.listPrice;
-              this.inlineEditCol[j].selectedDropdownValue = obj.selectedDropdownValue?obj.selectedDropdownValue:'';
-          }  else if(obj.selectedDropdownValue !=''&& this.inlineEditCol[j].reqDropdown == true){
-            this.inlineEditCol[j].inputValue = obj.adddiscount ? obj.adddiscount : obj.discount>0?obj.discount:'';
-              this.inlineEditCol[j].selectedDropdownValue = obj.selectedDropdownValue?obj.selectedDropdownValue:'';
-               console.log(  JSON.stringify(this.inlineEditCol[j].inputValue)+'  ].inputValue');
-                  console.log(  JSON.stringify(this.inlineEditCol[j].fieldName)+'  ].fieldName');
-             console.log(  JSON.stringify(obj)+'  obj1143');
-             console.log(  JSON.stringify(this.inlineEditCol[j])+'  1144');
-          }
-          if (this.inlineEditCol[j].customdiscount == true && obj.customdiscount == true) {
-                  this.inlineEditCol[j].inputValue = obj[this.inlineEditCol[j].fieldName]?obj[this.inlineEditCol[j].fieldName]:'';
-          
-
-
-
-          }
-        
-        }
-         console.log(  JSON.stringify(this.inlineEditCol)+'  1107');
-      } else {
-        for (var j = 0; j < this.inlineEditCol.length; j++) {
-           console.log(  JSON.stringify(this.inlineEditCol[j].inputValue)+'  ].inputValueelse');
-                  console.log(  JSON.stringify(this.inlineEditCol[j].fieldName)+'  ].fieldNameelse');
-          this.inlineEditCol[j].inputValue = "";
-          this.inlineEditCol[j].selectedDropdownValue = "";
-          
-        }
-        
-      }
-      console.log(  JSON.stringify(this.inlineEditCol)+'  1152');
-    } else {
-     
-       const valuesArray =this.metadatarecord.split("\r\n");
-         console.log(JSON.stringify(valuesArray)+'  valuesArray');
-         console.log(JSON.stringify(this.productData)+'  productData');
-      let chartData = [];
-      let chartLabels = [];
-
-      this.productData.forEach((opp) => {
-        valuesArray.forEach((value) => {
-        if (opp.recordIndex == id) {
-          value= String(value);
-             console.log(value+' value');
-          console.log(JSON.stringify(opp)+' opp');
-          console.log(opp[value]+' opp.value');
-           
-       
-          chartData.push(opp[value]);
-          chartLabels.push(value);
-        }
-        
-      })
-      });
-       console.log(JSON.stringify(chartData)+'  chartData');
-       console.log(JSON.stringify(chartLabels)+'  chartLabels');
-      this.chartConfiguration = {
-        type: "bar",
-        data: {
-          labels: chartLabels,
-          datasets: [
-            {
-              label: "Pricing",
-
-              backgroundColor: "rgba(69, 183, 109, 1)",
-
-              data: chartData
+        // const proddata = this.productData.filter(
+        //   (element) => element.recordIndex == this.inlinerecordindex
+        // );
+        const proddata = this.productData[this.inlinerecordindex - 1];
+        const updatedProduct = {
+            ...proddata,
+            productId: proddata.Id
+        };
+        console.log('updatedProduct :' + JSON.stringify(updatedProduct));
+        getRecordsFromPromoAction({
+                productData: JSON.stringify([updatedProduct])
+            })
+            .then(result => {
+                this.promodata = result;
+                this.isModalOpen = true;
+            })
+            .catch(error => {
+                console.error('Error fetching records:', error);
+            });
+    } else if (event.detail.name == "Discounts") {
+        console.log(JSON.stringify(this.inlineEditCol) + '  1120');
+        this.isInlinepopup = true;
+        var obj = [];
+        const proddata = this.productData.filter(
+            (element) => element.recordIndex == this.inlinerecordindex
+        );
+        for (var i = 0; i < proddata.length; i++) {
+            if (this.inlinerecordindex == proddata[i].recordIndex && proddata[i].selectedDropdownValue != '') {
+                obj = {
+                    ...proddata[i]
+                };
+                break
             }
-          ]
-        },
-        options: {
-          scales: {
-            yAxes: [
-              {
-                ticks: {
-                  beginAtZero: true
-                }
-              }
-            ]
-          }
         }
-      };
-      this.barchart = true;
+        console.log(JSON.stringify(obj) + '  obj');
+        const discontmap = this.discountmap[this.inlinerecordindex];
+        console.log(obj.selectedDropdownValue + '  obj.selectedDropdownValue');
+        console.log(obj.selectedDropdownValue != '  obj.selectedDropdownValue != ');
+        console.log(obj.customdiscount + '  obj.customdiscount');
+        console.log(obj.customdiscount == true + '  obj.customdiscount == true');
+        console.log(discontmap != undefined + '   this.discontmap!=undefined[this.inlinerecordindex]');
+        console.log(discontmap + '   this.discountmap');
+        console.log(obj.selectedDropdownValue != '' || obj.customdiscount == true && discontmap != undefined + ' Alll');
+        if (obj.selectedDropdownValue != undefined || obj.customdiscount == true && discontmap != undefined) {
+            for (var j = 0; j < this.inlineEditCol.length; j++) {
+                if (obj.selectedDropdownValue == 'PriceOverride' && this.inlineEditCol[j].reqDropdown == true) {
+                    this.inlineEditCol[j].inputValue = obj.listPrice;
+                    this.inlineEditCol[j].selectedDropdownValue = obj.selectedDropdownValue ? obj.selectedDropdownValue : '';
+                } else if (obj.selectedDropdownValue != '' && this.inlineEditCol[j].reqDropdown == true) {
+                    this.inlineEditCol[j].inputValue = obj.adddiscount ? obj.adddiscount : obj.discount > 0 ? obj.discount : '';
+                    this.inlineEditCol[j].selectedDropdownValue = obj.selectedDropdownValue ? obj.selectedDropdownValue : '';
+                    console.log(JSON.stringify(this.inlineEditCol[j].inputValue) + '  ].inputValue');
+                    console.log(JSON.stringify(this.inlineEditCol[j].fieldName) + '  ].fieldName');
+                    console.log(JSON.stringify(obj) + '  obj1143');
+                    console.log(JSON.stringify(this.inlineEditCol[j]) + '  1144');
+                }
+                if (this.inlineEditCol[j].customdiscount == true && obj.customdiscount == true) {
+                    this.inlineEditCol[j].inputValue = obj[this.inlineEditCol[j].fieldName] ? obj[this.inlineEditCol[j].fieldName] : '';
+                }
+
+            }
+            console.log(JSON.stringify(this.inlineEditCol) + '  1107');
+        } else {
+            for (var j = 0; j < this.inlineEditCol.length; j++) {
+                console.log(JSON.stringify(this.inlineEditCol[j].inputValue) + '  ].inputValueelse');
+                console.log(JSON.stringify(this.inlineEditCol[j].fieldName) + '  ].fieldNameelse');
+                this.inlineEditCol[j].inputValue = "";
+                this.inlineEditCol[j].selectedDropdownValue = "";
+
+            }
+
+        }
+        console.log(JSON.stringify(this.inlineEditCol) + '  1152');
+    } else {
+        let valuesArray = [];
+        console.log(JSON.stringify(this.metadatarecord) + ' entry');
+        console.log((this.metadatarecord.includes('\r\n') + ' (entry.includes(\r\n))'));
+        console.log(this.metadatarecord.includes('\r') + ' /rentry');
+        if (this.metadatarecord.includes('\r\n')) {
+            valuesArray = this.metadatarecord.split('\r\n');
+        } else if (this.metadatarecord.includes('\r')) {
+            valuesArray = this.metadatarecord.split('\r');
+        } else {
+            valuesArray = this.metadatarecord.split('\n');
+        }
+        console.log(valuesArray + ' valuesArray');
+        console.log(JSON.stringify(valuesArray) + '  valuesArray');
+        console.log(JSON.stringify(this.productData) + '  productData');
+        let chartData = [];
+        let chartLabels = [];
+
+        this.productData.forEach((opp) => {
+            valuesArray.forEach((value) => {
+                if (opp.recordIndex == id) {
+                    value = String(value);
+                    console.log(value + ' value');
+                    console.log(JSON.stringify(opp) + ' opp');
+                    console.log(opp[value] + ' opp.value');
+
+
+                    chartData.push(opp[value]);
+                    chartLabels.push(value);
+                }
+
+            })
+        });
+        console.log(JSON.stringify(chartData) + '  chartData');
+        console.log(JSON.stringify(chartLabels) + '  chartLabels');
+        this.chartConfiguration = {
+            type: "bar",
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    label: "Pricing",
+
+                    backgroundColor: "rgba(69, 183, 109, 1)",
+
+                    data: chartData
+                }]
+            },
+            options: {
+                scales: {
+                    yAxes: [{
+                        ticks: {
+                            beginAtZero: true
+                        }
+                    }]
+                }
+            }
+        };
+        this.barchart = true;
     }
   }
   closebarchart() {
@@ -1472,11 +1567,14 @@ if(selectedid.length>=1){
         console.log('selectedids==> ' + this.selectedids);
             console.log('selectedids' + selectedid);
              console.log('initialRecords==> ' + JSON.stringify(this.initialRecords));
-                console.log('selectedrows==> ' + JSON.stringify(this.selectedrows));
-       this.selectedrows = this.initialRecords.filter((ele) =>
-    selectedid.map((id) => String(id).trim().toLowerCase())
-             .includes(String(ele.recordIndex).trim().toLowerCase())
-);
+                console.log('mapProductData==> ' + JSON.stringify(this.mapProductData));
+    let normalizedIds = selectedid.map((id) => String(id).trim().toLowerCase());
+
+this.selectedrows = this.productData.filter((ele) => {
+  let updatedEle = this.mapProductData?.[ele.recordIndex] || ele;
+  console.log(JSON.stringify(normalizedIds.includes(String(updatedEle.recordIndex).trim().toLowerCase()))+' record row')
+  return normalizedIds.includes(String(updatedEle.recordIndex).trim().toLowerCase());
+});
 
        console.log('selectedrows==> ' + JSON.stringify(this.selectedrows));
 }
@@ -1484,7 +1582,7 @@ if(selectedid.length>=1){
     }
     
      console.log('event.detail.config.action'  + event.detail.config.action);
-    console.log('selectedids rows :::handlesearch ' + this.selectedids);
+    console.log('selectedids rows :::handlesearch ' + this.selectedrows);
   }
 
   cloneProducts(event) {
@@ -1551,12 +1649,32 @@ console.log('productDataWithIndex '+JSON.stringify(productDataWithIndex));
 
   deleterecords() {
     var selectedRecords = this.selectedrows;
-
+     let lineitems=true;
+  for(let record of this.selectedrows){
+    if(record.status!=this.neworderlinestatus){
+      lineitems=false;
+      const event = new ShowToastEvent({
+            title: "Error",
+            message: "Draft Line Items Can only be Deleted",
+            variant: "error",
+            mode: "dismissable"
+          });
+          this.dispatchEvent(event);
+          break;
+    }
+    }
+   
+if(lineitems){
     this.productData = this.productData.filter((record) => {
-      return !this.selectedrows.some(
+       
+      return !selectedRecords.some(
         (selected) => selected.recordIndex === record.recordIndex
+         
       );
     });
+     console.log(JSON.stringify(this.selectedrows)+' this.selectedrows');
+     console.log(JSON.stringify(selectedRecords)+' selectedRecords');
+    console.log(JSON.stringify(this.productData)+' this.productData');
     const initrec = this.initialRecords.filter((record) => {
       return !this.selectedrows.some(
         (selected) => selected.recordIndex == record.recordIndex
@@ -1606,6 +1724,7 @@ console.log('productDataWithIndex '+JSON.stringify(productDataWithIndex));
     });
     this.dispatchEvent(deletedata);
     this.totalNetPrice = 0;
+}
   }
 
   closeFilterModal() {
@@ -1647,6 +1766,8 @@ console.log('productDataWithIndex '+JSON.stringify(productDataWithIndex));
         ".divDataTable .dt-outer-container .slds-table_header-fixed_container {background-color : white}"
       );
 
+      this.applyStyles(".backgroundcolor .Products"," .backgroundcolor .Products {background-color : orange}")
+
       this.componentLoaded = true;
     }
   }
@@ -1661,13 +1782,14 @@ console.log('productDataWithIndex '+JSON.stringify(productDataWithIndex));
 
   openmodal() {
     this.fetchRecords();
+    console.log('keer1');
   }
 
   closeModal() {
     this.isModalOpen = false;
   }
 
-  handleRowSelection(event) {
+/*  handleRowSelection(event) {
     const selectedRows = event.detail.selectedRows;
     if (selectedRows.length === 1) {
       this.selectedPromotion = selectedRows[0];
@@ -1677,17 +1799,37 @@ console.log('productDataWithIndex '+JSON.stringify(productDataWithIndex));
       console.warn('Please select exactly one promotion.');
       return;
     }
-  }
+  } */
+
+  handleRowSelection(event) {
+    const selectedRows = event.detail.selectedRows;
+    if (selectedRows.length === 1) {
+        this.selectedPromotion = selectedRows[0];
+        console.log('Selected Promotion:', JSON.stringify(this.selectedPromotion));
+    } else {
+        this.selectedPromotion = null;
+        this.showWarning = true;
+        console.log('more than on Selected Promotion:');
+    }
+}
+
+closeWarning() {
+    this.showWarning = false;
+}
+
+
+
 
 
   applyPromotion() {
     if (this.selectedPromotion && this.productData) {
       let productDataPromo = JSON.stringify(this.productData);
       let promotionId = this.selectedPromotion.Id;
-      console.log('productData' + JSON.stringify(this.productData));
+      console.log('productData@@' + JSON.stringify(this.productData));
       applyPromotionToProduct({ productData: productDataPromo, promotionId: promotionId })
         .then(result => {
           this.productData = result;
+          console.log('productData@@@@' + JSON.stringify(this.productData));
           this.dispatchEvent(
             new ShowToastEvent({
               title: 'Success',
@@ -1720,6 +1862,7 @@ console.log('productDataWithIndex '+JSON.stringify(productDataWithIndex));
       .then(result => {
         this.promodata = result;
         this.isModalOpen = true;
+        console.log('keer2');
       })
       .catch(error => {
         console.error('Error fetching records:', error);
@@ -1780,11 +1923,136 @@ console.log('productDataWithIndex '+JSON.stringify(productDataWithIndex));
     })
       .then((result) => {
         this.productData = result;
+         const event = new ShowToastEvent({
+                title: "Success",
+                message: "Cart validated successfully! No errors found!",
+                variant: "Success",
+                mode: "dismissable"
+            });
+            this.dispatchEvent(event);
         console.log(JSON.stringify(result) + 'result');
       })
       .catch((error) => {
         this.error = error;
       });
   }
+onCancelOrderlineitems(){
+  var editedArray = [];
+   let cancellineitems=true;
+console.log('cancelorderlinestatus==> ' + this.cancelorderlinestatus);
+   console.log('selectedrows==> ' + JSON.stringify(this.selectedrows));
+   console.log('selectedids==> ' + JSON.stringify(this.selectedids));
+    for(let record of this.selectedrows){
+    if(record.status!=this.orderlinestatus){
+      cancellineitems=false;
+      const event = new ShowToastEvent({
+            title: "Error",
+            message: "Activated Line Items Can only be cancel",
+            variant: "error",
+            mode: "dismissable"
+          });
+          this.dispatchEvent(event);
+          break;
+    }
+    }
+   if(cancellineitems){
+   for(let record of this.selectedrows){
+       let draftObj = {
+    recordIndex: record.recordIndex,
+    status: this.cancelorderlinestatus
+  };
+   console.log('draftObj==> ' + JSON.stringify(draftObj));
+      const isOnlyRecordIndex2 = Object.keys(draftObj).length === 0;
+            if (!isOnlyRecordIndex2) {
+            editedArray.push(draftObj);
+            this.mapProductData[draftObj.recordIndex] = draftObj;
+            }
+   }
+            this.saveDraftValues = editedArray.length > 0 ?
+        this.saveDraftValues.length > 0
+          ? this.saveDraftValues.concat(editedArray)
+          : editedArray : [];
+this.saveDraftValues = this.saveDraftValues.reduce((acc, curr) => {
+  let existingRecord = acc.find((item) => item.recordIndex === curr.recordIndex);
+  if (existingRecord) { 
+    Object.assign(existingRecord, curr);
+  } else { 
+    acc.push({ ...curr });
+  }
+  return acc;
+}, []);
+   }
 
+  console.log(' this.saveDraftValues==> ' + JSON.stringify( this.saveDraftValues));
+            
+}
+ handleCellChange(event) {
+  this.cancelArray=[...this.productData];
+    console.log('Cell Change Detected');
+    console.log('Changed Cell Details:', JSON.stringify(event.detail));
+if(event.detail.draftValues.length>0){
+  let draftvalue=event.detail.draftValues;
+  draftvalue.forEach((value) => {
+  if (value.discount !== '' && value.discount != null && value.discount !== undefined) {
+   this.selectedDropdownValues[value.recordIndex]='Percent';
+  }
+});
+
+//   draftvalue.map((value) => {
+//   if (value.discount !== '' && value.discount != null && value.discount !== undefined) {
+//     this.productData = this.productData.map((obj) => {
+//       if (obj.recordIndex === value.recordIndex) {
+//         obj.selectedDropdownValue = 'Percent'; 
+//          obj.adddiscount=value.discount?value.discount:obj.adddiscount?obj.adddiscount:'';
+//       }
+//       return { ...obj }; 
+//     });
+//   }
+// });
+
+  // draftvalue.map((value) => {
+  //         if (value.discount!=''&& value.discount!=null && value.discount!=undefined) {
+  //           this.productData.map((obj) => {
+  //               if(obj.recordIndex==value.recordIndex){
+  //                 obj.selectedDropdownValue='Percent'; 
+  
+                //  obj.adddiscount=value.discount?value.discount:obj.adddiscount?obj.adddiscount:'';
+  //               }  
+  //               return{...obj};
+  //           });
+  //         //  value.selectedDropdownValue='Percent';
+  //          // return { ...value };
+  //         }
+  //         // else{
+  //         //   return { ...value };
+  //         // }
+  // });
+  //  this.saveDraftValues = draftvalue.length > 0 ?
+  //       this.saveDraftValues.length > 0
+  //         ? this.saveDraftValues.concat(draftvalue)
+  //         : draftvalue : [];
+
+//    this.saveDraftValues = this.saveDraftValues.reduce((acc, curr) => {
+//   let existingRecord = acc.find((item) => item.recordIndex === curr.recordIndex);
+//   if (existingRecord) { 
+//     Object.assign(existingRecord, curr);
+//   } else { 
+//     acc.push({ ...curr });
+//   }
+//   return acc;
+// }, []);       
+
+          console.log('Changed Cell after:', JSON.stringify(draftvalue));
+           console.log('Changed Cell after this.selectedDropdownValues:', JSON.stringify(this.selectedDropdownValues));
+}
+
+    /*
+      event.detail will have the following structure:
+      {
+        draftValues: [
+          { id: '1', name: 'Updated Name' },
+        ]
+      }
+    */
+  }
 }
